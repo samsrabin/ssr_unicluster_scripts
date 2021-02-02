@@ -1,21 +1,35 @@
 #!/bin/bash
 set -e
 
-timemin=720
+timemin=600
 
 N_jobname=""
 dependency=""
 nprocs=8
-while getopts ":d:N:p:t:" opt; do
+reservation=""
+if [[ "$CLUSTER" == fh1 || "$SLURM_CLUSTER_NAME" == fh1 ]]; then
+	part="singlenode"
+elif [[ "$CLUSTER" == uc2 || "$SLURM_CLUSTER_NAME" == uc2 ]]; then
+	part="single"
+else
+	part=""
+fi
+while getopts ":d:N:p:a:r:t:" opt; do
     case $opt in
         d) dependency="-d ${OPTARG}" ;;
         N) N_jobname="-J jobfin_${OPTARG}" ;;
         p) nprocs=$OPTARG ;;
+	  	  a) part=$OPTARG ;;
+	  	  r) reservation="--reservation $OPTARG" ;;
         t) timemin=$OPTARG ;;
         :) echo "Missing argument for option -${OPTARG}"; exit 1;;
        \?) echo "Unknown option -${OPTARG}"; exit 1;;
     esac
 done
+if [[ "${part}" == "" ]]; then
+	echo "partition not specified"
+	exit 1
+fi
 
 # Get working directory
 runid=$(basename $PWD)
@@ -31,8 +45,7 @@ fi
 rundir_top=$(pwd | sed "s@${HOME}/@${WORK}@")
 homedir=$(pwd | sed "s@${WORK}@${HOME}@")
 if [[ ! -e ${homedir} ]]; then
-   echo "homedir ${homedir} does not exist"
-   exit 1
+   mkdir -p "${homedir}"
 fi
 
 # Define log and error files
@@ -48,11 +61,9 @@ fi
 export LANG=en_US.UTF-8
 export WORK=$WORK
 if [[ "$CLUSTER" == fh1 || "$SLURM_CLUSTER_NAME" == fh1 ]]; then
-   echo ${dependency}
-   sbatch --partition singlenode -n ${nprocs} -t ${timemin} ${dependency} -o ${outfile} $N_jobname --mail-type=ALL --export=outfile ~/scripts/finishup_scc.sh $homedir
+   sbatch --partition ${part} -n ${nprocs} -t ${timemin} ${dependency} -o ${outfile} $N_jobname ${reservation} --mail-type=ALL --export=outfile ~/scripts/finishup_scc.sh $homedir
 elif [[ "$CLUSTER" == uc2 || "$SLURM_CLUSTER_NAME" == uc2 ]]; then
-   echo ${dependency}
-   sbatch --partition single -n ${nprocs} --mem-per-cpu=4000 -t ${timemin} ${dependency} -o ${outfile} $N_jobname --mail-type=ALL --export=outfile ~/scripts/finishup_scc.sh $homedir
+   sbatch --partition ${part} -n ${nprocs} -t ${timemin} ${dependency} -o ${outfile} $N_jobname ${reservation} --ntasks-per-core=1 --mem=20000mb --mail-type=ALL --export=outfile ~/scripts/finishup_scc.sh $homedir
 else
    echo "ERROR: This cluster not recognized!"
    echo "   CLUSTER:            $CLUSTER"

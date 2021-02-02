@@ -23,7 +23,7 @@ echo -e "example: $script -s fhlr2 -g GFDL-ESM4 -p \"picontrol historical\" -t 1
 
 function usage {
 echo " "
-echo -e "usage: $script INSFILE \"INSFILE2 ...\" GRIDLIST MODULE NPROC ARCH WALLTIME [-d JOBNUM --dev]\n"
+echo -e "usage: $script INSFILE \"INSFILE2 ...\" GRIDLIST MODULE NPROC ARCH walltime [-d JOBNUM --dev]\n"
 }
 
 function help {
@@ -31,8 +31,12 @@ usage
 echo -e "OPTIONAL:"
 echo -e "  -d --dependency JOBNUM  Start this job after completion of Slurm job JOBNUM\n"
 echo -e "  -p --prefix VAL  Add VAL to beginning of Slurm job names\n"
-echo -e "  -s --state_path_absolute VAL Absolute path to state directory, if path in ins-files can't be trusted\n"
-echo -e "  --dev 						  Use one of the dev queues\n"
+echo -e "  -r --reservation VAL Job reservation name\n"
+echo -e "  --pp Start postprocessing run. Default when --dev is not specified. To disable, do --no-pp\n"
+echo -e "  --no_fu Do not start finishup job\n"
+echo -e "  --no_pp Do not start postprocessing job\n"
+echo -e "  --dev 						  Use one of the dev queues. Add --pp to also start a postprocessing job.\n"
+echo -e "  --submit					  Go ahead and submit the job (and postprocessing, if applicable).\n"
 echo -e "  -h,  --help             Prints this help\n"
 example
 }
@@ -85,41 +89,40 @@ shift
 # Set default values for non-positional arguments
 dependency=
 prefix=
-state_path_absolute=
 dev=0
+do_finishup=1
+do_postproc=1
+arg_yes_fu=
+arg_no_fu=
+submit=0
+reservation=
+linked_restart_dir=
 
 # Args while-loop
 while [ "$1" != "" ];
 do
 	case $1 in
-#		-i  | --insfile)  shift
-#			insfile=$1
-#			;;
-#		-x  | --extra_insfiles )  shift
-#			extra_insfiles=$1
-#			;;
-#		-g  | --gridlist)  shift
-#			gridlist=$1
-#			;;
-#		-m  | --input_module)  shift
-#			input_module=$1
-#			;;
-#		-n  | --nprocess)  shift
-#			nprocess=$1
-#			;;
-#		-a  | --arch)  shift
-#			arch=$1
-#			;;
 		-d  | --dependency)  shift
-			dependency="#SBATCH -d afterany:$1"
+			dependency_tmp=$1
+			;;
+		-L  | --linked_restart_dir)  shift
+			linked_restart_dir=$1
 			;;
 		-p  | --prefix)  shift
 			prefix=$1
 			;;
-		-s  | --state_path_absolute)  shift
-			state_path_absolute=$1
-			;;
+		-r  | --reservation )  shift
+         reservation=$1
+         ;;
 		--dev)  dev=1
+			;;
+		--fu)  arg_yes_fu=1
+			;;
+		--no_fu)  arg_no_fu=1
+			;;
+		--no_pp)  do_postproc=0
+			;;
+		--submit)  submit=1
 			;;
 		-h   | --help )        help
 			exit
@@ -137,15 +140,44 @@ done
 # Pass here your mandatory args for check
 margs_check $insfile "$extra_insfiles" $gridlist $input_module $nprocess $arch $walltime
 
+# Parse dependency
+if [[ "${dependency_tmp}" == "LATEST" ]]; then
+	dependency_tmp=$(awk 'END {print $NF}' ~/submitted_jobs.log)
+	echo "Using latest submitted job (${dependency_tmp}) as dependency"
+	dependency="#SBATCH -d afterany:$dependency_tmp"
+elif [[ "${dependency_tmp}" != "" ]]; then
+	echo "Depending on job ${dependency_tmp}"
+	dependency="#SBATCH -d afterany:$dependency_tmp"
+fi
+
+# Do finishup or no?
+if [[ ${arg_no_fu} == "1" && ${arg_yes_fu} == "1" ]]; then
+	if [[ ${dev} -eq 1 ]]; then
+		echo "Both --pp and --no_pp specified. Using dev default of NO postprocessing."
+		do_finishup=0
+	else
+		echo "Both --pp and --no_pp specified. Using non-dev default of YES postprocessing."
+		do_finishup=1
+	fi
+elif [[ ${arg_no_fu} == "1" ]]; then
+	do_finishup=0
+elif [[ ${dev} -eq 1 ]]; then
+	if [[ ${arg_yes_fu} == "1" ]]; then
+		do_finishup=1
+	else
+		do_finishup=0
+	fi
+fi
+
 # End function-parsing code
 #############################################################################################
 
 # For running on UniCluster
 cores_per_node=40 #uc2 nodes, 40 cores with hyperthreading *2. 
-tasks_per_core=2 # Might not be needed.
+#tasks_per_core=2 # Ends up running out of memory...
+tasks_per_core=1
 tasks_per_node=$((cores_per_node*tasks_per_core))
 finishup_t_min=720
-finishup_nprocs=8
 if [[ ${nprocess} -gt ${tasks_per_node} ]]; then
 	if [[ $((nprocess%tasks_per_node)) != 0 ]]; then
 		echo "Please set nprocess to a multiple of ${tasks_per_node}!"
@@ -164,7 +196,6 @@ else
 	if [[ ${dev} -eq 1 ]]; then
 		queue=dev_single
 		walltime=30:00
-		finishup_t_min=30
 		finishup_nprocs=2
 	else
 		queue=single
@@ -172,10 +203,27 @@ else
 	excl_text=""
 fi
 
+# Get info for job_finish, assuming that reservation is only on one queue
+if [[ ${reservation} == "" ]]; then
+	finishup_partition="single"
+	finishup_nprocs=8
+	if [[ ${dev} -eq 1 ]]; then
+		finishup_t_min=30
+		finishup_partition="dev_single"
+	fi 
+else
+	finishup_partition=${queue}
+fi
+if [[ ${finishup_partition} == "multiple" ]]; then
+	finishup_nprocs=$((tasks_per_node * 2))
+fi
+
 echo "queue: ${queue}"
 echo "nprocess: ${nprocess}"
 echo "nnodes: ${nnodes}"
 echo "walltime: ${walltime}"
+echo "finishup_partition: ${finishup_partition}"
+echo "finishup_nprocs: ${finishup_nprocs}"
 
 lpjg_dir=${lpjg_topdir}/build_$arch
 #scripts_dir=/pfs/data1/home/kit/imk-ifu/lr8247/scripts
@@ -208,6 +256,7 @@ if [[ ${dev} -eq 1 ]]; then
 	rundir_top="${rundir_top}_test"
 fi
 mkdir -p "${rundir_top}"
+echo "rundir_top = ${rundir_top}"
 
 # ============================================================ prepare work dir ... ===================
 
@@ -225,15 +274,19 @@ for ins in $insfile $extra_insfiles; do
 	cp $ins $rundir_top
 done
 
-# If there's a postproc somewhere, copy it over to work
-if [[ -e ./postproc.sh ]]; then
-	cp  ./postproc.sh $rundir_top
-elif [[ -e ../postproc.sh ]]; then
-	cp  ../postproc.sh $rundir_top
-elif [[ -e ../../postproc.sh ]]; then
-	cp  ../../postproc.sh $rundir_top
-elif [[ -e ~/scripts/postproc.sh ]]; then
-	cp  ~/scripts/postproc.sh $rundir_top
+# Copy postprocessing script to work
+if [[ ${do_postproc} -eq 1 ]]; then
+	cp /home/kit/imk-ifu/lr8247/scripts/start_isimip3_pp.sh $rundir_top/postproc.sh
+	
+	if [[ -e ./postproc.sh ]]; then
+		cp  ./postproc.sh $rundir_top
+	elif [[ -e ../postproc.sh ]]; then
+		cp  ../postproc.sh $rundir_top
+	elif [[ -e ../../postproc.sh ]]; then
+		cp  ../../postproc.sh $rundir_top
+	elif [[ -e ~/scripts/postproc.sh ]]; then
+		cp  ~/scripts/postproc.sh $rundir_top
+	fi
 fi
 
 cd $rundir_top
@@ -275,27 +328,6 @@ for ((b=1; b <= $nprocess ; b++)); do
   fi
 
 done
-echo " "
-
-# Set up state directory
-state_path_relative=$(get_state_dir.sh "${insfile}" | sed 's@%Y@@' | sed "s@//@/@g")
-if [[ "${state_path_relative}" != "" ]]; then
-#	mkdir -p run1/${state_path_relative}
-	if [[ "${state_path_absolute}" == "" ]]; then
-		state_path_absolute="$(realpath "run1/${state_path_relative}")"
-	fi
-	if [[ ${dev} -eq 1 ]]; then
-		state_path_absolute=${state_path_absolute}_test
-	fi
-	echo "state_path_relative: ${state_path_relative}"
-	echo "state_path_absolute: ${state_path_absolute}"
-	echo " "
-	mkdir -p "${state_path_absolute}"
-else
-	# No state path found; fill with value that mpi_run_guess_on_tmp.sh will interpret as dummy
-	state_path_relative=xyz
-	state_path_absolute=xyz
-fi
 
 # Split gridlist up into files for each process
 lines_per_run=$(wc -l $gridlist | awk '{ x = $1/'$nprocess'; d = (x == int(x)) ? x : int(x)+1; print d}')
@@ -308,7 +340,25 @@ for file in $files; do
 	i=$((i+1))
 done
 
-cat<<EOL > startguess.sh 
+# Set up reservation
+if [[ ${reservation} == "" ]]; then
+	reservation_txt_sbatch=""
+	reservation_txt=""
+	reservation_txt_fu=""
+else
+	reservation_txt_sbatch="#SBATCH --reservation=${reservation}"
+	reservation_txt="--reservation=${reservation}"
+	reservation_txt_fu="-r ${reservation}"
+fi
+
+
+##################################################
+# Create script that will mpirun guess -parallel #
+##################################################
+
+
+# Write submit.sh
+cat<<EOL > submit.sh
 #!/bin/bash
 #SBATCH --partition $queue
 #SBATCH -N $nnodes
@@ -320,6 +370,7 @@ cat<<EOL > startguess.sh
 #SBATCH --error guess_x.e%j
 ${excl_text}
 ${dependency}
+${reservation_txt_sbatch}
 
 set -e
 
@@ -327,13 +378,13 @@ set -e
 module unload \$(module -t list 2>&1 | grep "tools\|app\|io\|compiler\|mpi\|lib\|math\|devel\|numlib\|cae\|chem\|system")
 module load compiler/gnu mpi/impi
 module list
-#this requires a locally compilled netcdf with hdf5
+#this requires a locally compiled netcdf with hdf5
 export LD_LIBRARY_PATH=\$SOFTWARE/hdf5-1.12.0/lib:\$SOFTWARE/lib:\$LD_LIBRARY_PATH
 
-cd $rundir_top 
+cd $rundir_top
 date +%F\ %H:%M:%S > $rundir_top/RUN_INPROGRESS
 echo \$(date) \$PWD job $SLURM_JOBID started >> ~/lpj-model-runs.txt
-mpirun -print-rank-map -prepend-rank -n $nprocess ${scripts_dir}/mpi_run_guess_on_tmp.sh $rundir_top/$binary "${state_path_relative}" "${state_path_absolute}" -parallel -input $input_module ${insfile}
+mpirun -print-rank-map -prepend-rank -n $nprocess $rundir_top/$binary -parallel -input $input_module ${insfile}
 LASTERR=\$?
 rm $rundir_top/RUN_INPROGRESS
 [[ \$LASTERR != 0 ]] && date +%F\ %H:%M:%S > $rundir_top/RUN_FAILED
@@ -341,20 +392,67 @@ rm $rundir_top/RUN_INPROGRESS
 exit 0
 
 EOL
+chmod +x submit.sh
 
+##########################################################
+# Create script that will submit jobs and postprocessing #
+##########################################################
+
+cat<<EOL > startguess.sh
+#!/bin/bash
+set -e
+
+jobID=\$(sbatch --mail-type=ALL submit.sh /| sed 's/[^0-9]//g');
+if [[ "\${jobID}" == "" ]]; then
+	exit 1
+fi
+echo "LPJ-GUESS run: \$jobID"
+date > latest_submitted_jobs.log
+echo $PWD >> latest_submitted_jobs.log
+echo "LPJ-GUESS run: \$jobID" >> latest_submitted_jobs.log
+
+EOL
+if [[ ${do_finishup} -eq 1 ]]; then
+	cat<<EOL >> startguess.sh
+jobID_finish=\$(job_finish.sh -a ${finishup_partition} -d afterany:\$jobID -t ${finishup_t_min} -p ${finishup_nprocs} -N ${jobname} ${reservation_txt_fu})
+if [[ "\${jobID_finish}" == "" ]]; then
+	exit 1
+fi
+echo "job_finish.sh: \$jobID_finish"
+echo "job_finish.sh: \$jobID_finish" >> latest_submitted_jobs.log
+echo " " >> ~/submitted_jobs.log
+cat latest_submitted_jobs.log >> ~/submitted_jobs.log
+EOL
+fi
+cat<<EOL >> startguess.sh
+exit 0
+EOL
 chmod +x startguess.sh
 
-echo "To submit:"
-echo "cd $rundir_top"
-echo "source ~/scripts_peter/module.sh 1>/dev/null 2>&1"
-echo "jobID=\$(sbatch --mail-type=ALL startguess.sh /| sed 's/[^0-9]//g'); echo \$jobID; job_finish.sh -d \$jobID -t ${finishup_t_min} -p ${finishup_nprocs} -N ${jobname}"
 
-if [[ ${dev} -eq 1 ]]; then
-	echo " "
-	echo "To submit interactively:"
+####################################################
+# Either submit or print instructions for doing so #
+####################################################
+
+if [[ ${submit} -eq 1 ]]; then
+	echo "Submitting..."
+   pushd "${rundir_top}" 1>/dev/null 2>&1
+   source ~/scripts_peter/module.sh 1>/dev/null 2>&1
+   ./startguess.sh
+   popd 1>/dev/null 2>&1
+else
+	echo "To submit:"
 	echo "cd $rundir_top"
 	echo "source ~/scripts_peter/module.sh 1>/dev/null 2>&1"
-	echo "salloc --partition $queue -N $nnodes -n $nprocess --ntasks-per-core ${tasks_per_core} -t $walltime startguess.sh" 
+	echo "./startguess.sh"
+	
+#	if [[ ${dev} -eq 1 ]]; then
+		echo " "
+		echo "To submit interactively:"
+		echo "cd $rundir_top"
+		echo "source ~/scripts_peter/module.sh 1>/dev/null 2>&1"
+		echo "salloc --partition $queue -N $nnodes -n $nprocess --ntasks-per-core ${tasks_per_core} -t $walltime ${reservation_txt} submit.sh" 
+#	fi
 fi
 
 

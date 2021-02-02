@@ -36,9 +36,6 @@ shift
 # The rest of this script's arguments will be used as arguments for call of guess
 guess_options=$*
 
-# Get the main ins-file
-main_insfile=$(echo ${guess_options} | awk 'NF>1{print $NF}')
-
 # Get rank of this process
 unset local_nrank
 #for uc2 if run with module mpi/impi mpirun
@@ -79,39 +76,12 @@ if [[ ! -e ${scratch_run_dir} ]]; then
 fi
 
 # rsync state, if necessary
-scratch_state_dir="$(realpath ${scratch_run_dir}/${state_path_relative})"
-do_restart=$(get_integer_param.sh ${main_insfile} restart)
-try_transfer_all=0
-if [[ ${do_restart} == "1" ]]; then
-	if [[ "${state_path_absolute}" == xyz ]]; then
-		echo "When restarting, you must provide state_path_absolute"
-		exit 1
-	elif [[ ! -e ${state_path_absolute} ]]; then
-		echo "state_path_absolute not found: ${state_path_absolute}"
-		exit 1
-	fi
+if [[ "${state_path_absolute}" != xyz && -e ${state_path_absolute} ]]; then
 	# Note that this means state_path in ins-files must be "state/%Y/"
-	restart_year=$(get_integer_param.sh ${main_insfile} restart_year)
-	restart_dir=${state_path_absolute}/${restart_year}
+	scratch_state_dir="$(realpath ${scratch_run_dir}/${state_path_relative})"
 	echo "Transferring state from work to scratch..."
-	if [[ ${restart_year} == "" || ! -d "${restart_dir}" ]]; then
-		if [[ ${restart_year} == "" ]]; then
-			echo "Couldn't parse restart_year; will transfer all state dirs"
-		else
-			echo "Directory not found for parsed restart_dir (${restart_year}); will try transferring all state dirs"
-		fi
-		try_transfer_all=1
-	else
-		rsync -avzL --partial --include="meta.bin" --include="${local_nrank}.state" --include="${restart_year}/" --exclude="**" ${state_path_absolute}/ ${scratch_state_dir}/
-		rsync -azL --partial --include="meta.bin" --include="${local_nrank}.state" --include="${restart_year}/" --exclude="**" ${state_path_absolute}/ ${scratch_state_dir}/
-	fi
-elif [[ ${do_restart} != "0" ]]; then
-	try_transfer_all=1
-fi
-if [[ ${try_transfer_all} -eq 1 ]]; then
-	echo "Couldn't parse whether this run is restarting. Will try transferring any and all state dirs"
-	rsync -avzL --partial --include="meta.bin" --include="${local_nrank}.state" --include="*/" --exclude="**" ${state_path_absolute}/ ${scratch_state_dir}/
-	rsync -azL --partial --include="meta.bin" --include="${local_nrank}.state" --include="*/" --exclude="**" ${state_path_absolute}/ ${scratch_state_dir}/
+	rsync -avz --partial --include="meta.bin" --include="${local_nrank}.state" --include="*/" --exclude="**" ${state_path_absolute}/ ${scratch_state_dir}/
+	rsync -az --partial --include="meta.bin" --include="${local_nrank}.state" --include="*/" --exclude="**" ${state_path_absolute}/ ${scratch_state_dir}/
 fi
 
 # rsync (twice to be sure!!) work runfiles (ins etc) to scratch rundir
@@ -135,8 +105,8 @@ rsync -az --partial --exclude="state/" ${scratch_run_dir}/ ${work_run_dir}/
 # rsync state, if necessary
 if [[ "${state_path_absolute}" != xyz && -e ${state_path_absolute} ]]; then
 	echo "Transferring state from scratch to work..."
-	rsync -avzK --partial --include="meta.bin" --include="${local_nrank}.state" --include="*/" --exclude="**" ${scratch_state_dir}/ ${state_path_absolute}/
-	rsync -azK --partial --include="meta.bin" --include="${local_nrank}.state" --include="*/" --exclude="**" ${scratch_state_dir}/ ${state_path_absolute}/
+	rsync -avz --partial --include="meta.bin" --include="${local_nrank}.state" --include="*/" --exclude="**" ${scratch_state_dir}/ ${state_path_absolute}/
+	rsync -az --partial --include="meta.bin" --include="${local_nrank}.state" --include="*/" --exclude="**" ${scratch_state_dir}/ ${state_path_absolute}/
 fi
 
 echo ${HOSTNAME} ls ${work_run_dir}

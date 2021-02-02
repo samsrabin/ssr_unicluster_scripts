@@ -2,6 +2,8 @@
 set -e
 #Script for postprocessing of LPJ-GUESS output run on multiple cpus
 
+date
+
 LANG=en_US.UTF-8
 
 # Make sure you're okay to do this
@@ -81,7 +83,7 @@ echo "+++Postprocessing..."
 if [[ -e "postproc.sh" || -e "../postproc.sh"  || -e "../../postproc.sh" ]]; then
    [[ -e "../../postproc.sh" ]] && cp ../../postproc.sh .
    [[ -e "../postproc.sh" ]] && cp ../postproc.sh .
-   postproc.sh
+   ./postproc.sh
 else
    echo "+++ NONE!!!!"
 fi
@@ -116,7 +118,8 @@ grep 'guess.log\|Finished' guess_runs.log > runs_finished.txt
 
 skipped=`grep -i 'skip' guess_runs.log | wc -l`
 warned=`grep -i 'warning' guess_runs.log | wc -l`
-errors=`grep -i 'error' guess_runs.log | wc -l`
+errors=`grep -i 'errori\|fail' guess_runs.log | wc -l`
+
 successes=`grep 'Finished' guess_runs.log | wc -l`
 echo Skipped   ${skipped}
 echo Warnings  ${warned}
@@ -128,6 +131,7 @@ echo "+++Getting md5sums for concatenated .out files..."
 find . -maxdepth 1 -name '*.out' | xargs -n $NPROCS -P$NPROCS md5sum > md5_out.txt
 
 # Get four lists of files for efficient zipping
+echo "" > file_lists
 for i in `seq -s' ' 1 $NPROCS`; do
    echo "" > file_list_$i
 done
@@ -143,29 +147,39 @@ done
 
 # Zip up output files
 echo "+++gziping..."
-###gzip -f [a-l]*.out &
-###gzip -f [m]*.out &
-###gzip -f [n-y]*.out &
 for i in `seq -s' ' 1 $NPROCS`; do
+
+	# Save contents of this file list in parent file_lists,
+	# since we'll be deleting file_list_* later
+	echo file_list_${i} >> file_lists
+	echo " "
+	cat file_list_${i} >> file_lists
+	printf "\n\n\n" >> file_lists
+
+	# Submit gzip job as background process
    gzip -f $(cat file_list_${i}) &
 done
 wait
+
+# Clean up file lists
+rm file_list_*
+
 #gzip -f guess_runs.log
 
 # Get md5sums
 echo "+++Getting md5sums for zipped files..."
 find . -maxdepth 1 -name '*.gz' | xargs -n $NPROCS -P$NPROCS md5sum > md5_gz.txt
 
-# Copy to $HOME
-cd ..
-mkdir -p $homedir
-echo "+++Copying to $homedir..."
-cp -v -r $outdir $homedir
-
-echo "+++checking gz md5..."
-pushd $homedir/$outdir
-md5sum -c md5_gz.txt > md5_gz_check.txt
-popd
+## Copy to $HOME
+#cd ..
+#mkdir -p $homedir
+#echo "+++Copying to $homedir..."
+#cp -v -r $outdir $homedir
+#
+#echo "+++checking gz md5..."
+#pushd $homedir/$outdir
+#md5sum -c md5_gz.txt > md5_gz_check.txt
+#popd
 
 echo `date` `pwd` >> ~/lpj-model-runs.txt
 echo   `basename $0` $* into ${homedir}/$outdir >> ~/lpj-model-runs.txt
@@ -174,9 +188,10 @@ echo     Warnings  ${warned} >> ~/lpj-model-runs.txt
 echo     Errors    ${errors} >> ~/lpj-model-runs.txt
 
 echo "All done!"
+date
 
-cd ..
-cp $OUTFILE $outdir/
-cp $OUTFILE $homedir/$outdir/
+#cd ..
+#cp $OUTFILE $outdir/
+#cp $OUTFILE $homedir/$outdir/
 
 exit 0
