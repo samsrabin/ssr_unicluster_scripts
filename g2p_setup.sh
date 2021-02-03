@@ -5,13 +5,15 @@ prefix="g2p_uk_a2d"
 realinsfile="main.ins"
 testinsfile="main_test2.ins"
 inputmodule="cfx"
-nproc=320
+nproc=160
 arch="landsymm-dev-crops"
-walltime_hist="12:00:00"
-walltime_fut="12:00:00"
-walltime_pot="1:00:00"
+walltime_hist="72:00:00"
+walltime_fut="72:00:00"
+walltime_pot="8:00:00"
 future_y1=2015
 future_yN=2089 # Because last year of emulator output is 2084
+Nyears_getready=5
+Nyears_pot=5
 
 #############################################################################################
 # Function-parsing code from https://gist.github.com/neatshell/5283811
@@ -82,7 +84,7 @@ if [[ ${thisSSP} != "" ]]; then
 	topdir_hist=$(echo $PWD | sed "s@/${thisSSP}@/hist@")
 	link_arguments=""
 	for y in $(get_param.sh ${topdir_hist}/${topinsfile} "save_years"); do
-		if [[ ${y} -ge ${restart_year} && ${y} -le ${lasthistyear} ]]; then
+		if [[ ${y} -ge $((restart_year - 2*Nyears_pot))  && ${y} -le ${lasthistyear} ]]; then
 			link_arguments="${link_arguments} -L ${state_path_hist}/$y"
 		fi
 	done
@@ -105,7 +107,6 @@ function do_setup {
    fi
    if [[ "${state_path}" == "" ]]; then
       state_path=$(get_state_path)
-		echo $state_path
    fi
    g2p_setup_1run.sh ${topinsfile} "$(get_ins_files)" ${gridlist} ${inputmodule} ${nproc} ${arch} ${walltime} -p "${prefix}" -s ${state_path} ${submit} ${ppfudev} ${dependency}
 }
