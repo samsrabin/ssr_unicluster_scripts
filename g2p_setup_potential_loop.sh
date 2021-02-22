@@ -84,9 +84,13 @@ do
 done
 
 # How many years are we discarding at the beginning of the potential run?
-Nyears_getready=5
+if [[ ${Nyears_getready} == "" ]]; then
+	Nyears_getready=5
+fi
 # How many years are we averaging over at the end of the potential run?
-Nyears_pot=5
+if [[ ${Nyears_pot} == "" ]]; then
+	Nyears_pot=5
+fi
 
 ###################
 # Setup
@@ -149,6 +153,9 @@ for y1 in ${y1_list}; do
 	
 	# Don't simulate natural land
 	sed -i "s/_g2p.txt/_g2p.justCPB_1yr.txt/g" landcover.ins
+
+	# Don't use N deposition
+	sed -i -E "s@param\s+(\"file_mN[HO][xy]\S\S\Sdep\")\s+\(str\s+(\".+\")\)@param \1 \(str \"\"\)@g" main.ins
 	
 #	# Replace shell scripts with potential-yield versions
 #	rm *.sh
@@ -160,7 +167,7 @@ for y1 in ${y1_list}; do
 	fi
 
 	exit 1
-	
+
 	popd 1>/dev/null
 
 done
