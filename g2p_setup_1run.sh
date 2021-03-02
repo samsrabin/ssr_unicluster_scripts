@@ -201,6 +201,8 @@ if [[ ${dev} -eq 1 ]]; then
 		thisbasename=$(basename $(realpath ../..))
 	elif [[ $PWD == *"/potential/"* ]]; then
 		thisbasename=$(basename $(realpath ../../..))
+	elif [[ $PWD == *"/calibration"* ]]; then
+		thisbasename=$(basename $(realpath ..))
 	else
 		>&2 echo "Can't parse this path to tell whether it's an actual or potential run"
 		exit 1
