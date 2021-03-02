@@ -102,7 +102,9 @@ if [[ ${do_restart} == "1" ]]; then
 		fi
 		try_transfer_all=1
 	else
+		set +e
 		rsync -avzL --partial --include="meta.bin" --include="${local_nrank}.state" --include="${restart_year}/" --exclude="**" ${state_path_absolute}/ ${scratch_state_dir}/
+		set -e
 		rsync -azL --partial --include="meta.bin" --include="${local_nrank}.state" --include="${restart_year}/" --exclude="**" ${state_path_absolute}/ ${scratch_state_dir}/
 	fi
 elif [[ ${do_restart} != "0" ]]; then
@@ -110,13 +112,17 @@ elif [[ ${do_restart} != "0" ]]; then
 fi
 if [[ ${try_transfer_all} -eq 1 ]]; then
 	echo "Couldn't parse whether this run is restarting. Will try transferring any and all state dirs"
+	set +e
 	rsync -avzL --partial --include="meta.bin" --include="${local_nrank}.state" --include="*/" --exclude="**" ${state_path_absolute}/ ${scratch_state_dir}/
+	set -e
 	rsync -azL --partial --include="meta.bin" --include="${local_nrank}.state" --include="*/" --exclude="**" ${state_path_absolute}/ ${scratch_state_dir}/
 fi
 
 # rsync (twice to be sure!!) work runfiles (ins etc) to scratch rundir
 echo "rsyncing working directory to scratch..."
+set +e
 rsync -az --partial --exclude="state" ${work_run_dir}/ ${scratch_run_dir}/
+set -e
 rsync -az --partial --exclude="state" ${work_run_dir}/ ${scratch_run_dir}/
 
 # cd into the top-level scratch_work_dir ("guess -parallel" later changes into the actual runNN directory)
@@ -129,13 +135,20 @@ wait
 
 # rsync (twice to be sure!!) things back to the work_dir
 echo "rsyncing scratch directory to work..."
+set +e
 rsync -avz --partial --exclude="state/" ${scratch_run_dir}/ ${work_run_dir}/
+set -e
 rsync -az --partial --exclude="state/" ${scratch_run_dir}/ ${work_run_dir}/
 
 # rsync state, if necessary
-if [[ "${state_path_absolute}" != xyz && -e ${state_path_absolute} ]]; then
+ls
+tree
+do_savestate=$(get_param.sh ${scratch_run_dir}/${main_insfile} save_state)
+if [[ ${do_savestate} -eq 1 && "${state_path_absolute}" != xyz && -e ${state_path_absolute} ]]; then
+	set +e
 	echo "Transferring state from scratch to work..."
 	rsync -avzK --partial --include="meta.bin" --include="${local_nrank}.state" --include="*/" --exclude="**" ${scratch_state_dir}/ ${state_path_absolute}/
+	set -e
 	rsync -azK --partial --include="meta.bin" --include="${local_nrank}.state" --include="*/" --exclude="**" ${scratch_state_dir}/ ${state_path_absolute}/
 fi
 
