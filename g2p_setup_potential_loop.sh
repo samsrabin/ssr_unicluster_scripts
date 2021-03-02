@@ -141,9 +141,10 @@ for y1 in ${y1_list}; do
 	restart_year_txt=$(grep -oE "restart_year\s+[0-9]+" main.ins)
 	sed -i "s/${restart_year_txt}/restart_year ${y1}/g" main.ins
 	
-	# Set lasthistyear
+	# Set lasthistyear to year AFTER last year we care about, because
+	# file_plantyear_st only saves year Y at the end of year Y+1
 	lasthistyear_txt=$(grep -oE "lasthistyear\s+[0-9]+" main.ins)
-	sed -i "s/${lasthistyear_txt}/lasthistyear ${yN}/g" main.ins
+	sed -i "s/${lasthistyear_txt}/lasthistyear $((yN + 1))/g" main.ins
 	
 	# Tell LPJ-GUESS to use do_potyield (and rename this ins-file section)
 	sed -i "s/! SSR: future/! SSR: potential yields\ndo_potyield 1/g" main.ins
@@ -152,10 +153,17 @@ for y1 in ${y1_list}; do
 	sed -i "s/^param \"file_Nfert\".*/\param \"file_Nfert\" (str \"\")/g" crop.ins
 	
 	# Don't simulate natural land
-	sed -i "s/_g2p.txt/_g2p.justCPB_1yr.txt/g" landcover.ins
+	file_lu=$(get_param.sh landcover.ins file_lu)
+	sed -i "s@${file_lu}@${file_lu/someOfEachCrop/justCPB_1yr}@" landcover.ins
+
+	# Set do_potyield to 1 and remove file_lucrop, which is thus unnecessary.
+	sed -i -E 's@param "file_lucrop".*$@param "file_lucrop" (str "")\ndo_potyield 1@g' landcover.ins
 
 	# Don't use N deposition
 	sed -i -E "s@param\s+(\"file_mN[HO][xy]\S\S\Sdep\")\s+\(str\s+(\".+\")\)@param \1 \(str \"\"\)@g" main.ins
+
+	# Only save the years needed
+	sed -i -E "s@firstoutyear\s+[0-9]+@firstoutyear $((yN - Nyears_pot + 1))@" main.ins
 	
 #	# Replace shell scripts with potential-yield versions
 #	rm *.sh
