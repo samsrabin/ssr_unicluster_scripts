@@ -3,7 +3,8 @@ set -e
 
 prefix="g2p_uk_a2d"
 realinsfile="main.ins"
-testinsfile="main_test2.ins"
+#testinsfile="main_test2.ins"; testnproc=1
+testinsfile="main_test2x2.ins"; testnproc=2
 inputmodule="cfx"
 nproc=160
 #arch="landsymm-dev-crops"
@@ -56,7 +57,7 @@ if [[ ${istest} -eq 1 ]]; then
    walltime_hist="30:00"
    walltime_fut="30:00"
    walltime_pot="30:00"
-   nproc=1
+   nproc=${testnproc}
    ppfudev="--no_fu --dev"
 else
    topinsfile=${realinsfile}
