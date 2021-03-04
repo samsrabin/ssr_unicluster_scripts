@@ -141,8 +141,6 @@ set -e
 rsync -az --partial --exclude="state/" ${scratch_run_dir}/ ${work_run_dir}/
 
 # rsync state, if necessary
-ls
-tree
 do_savestate=$(get_param.sh ${scratch_run_dir}/${main_insfile} save_state)
 if [[ ${do_savestate} -eq 1 && "${state_path_absolute}" != xyz && -e ${state_path_absolute} ]]; then
 	set +e
