@@ -117,6 +117,14 @@ mkdir -p potential
 
 #############################################################################################
 
+while [[ ! -d actual ]]; do
+	if [[ "$PWD" == "/" ]]; then
+		echo "g2p_setup.sh must be called from a (subdirectory of a) directory that has an actual/ directory"
+		exit 1
+	fi
+	cd ../
+done
+
 # Set up "actual" historical run (no dependency)
 dependency=""
 thisSSP=""
