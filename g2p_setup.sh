@@ -28,6 +28,7 @@ echo -e "usage: $script [-t]\n"
 
 # Set default values for non-positional arguments
 istest=0
+arg_do_fu=0
 submit=""
 
 # Args while-loop
@@ -40,6 +41,9 @@ do
       -t  | --test)
          istest=1
          ;;
+       --fu)
+         arg_do_fu=1
+         ;;
       *)
          echo "$script: illegal option $1"
          usage
@@ -48,6 +52,11 @@ do
    esac
    shift
 done
+
+do_fu=0
+if [[ $istest -eq 0 || $arg_do_fu -eq 1 ]]; then
+	do_fu=1
+fi
 
 #############################################################################################
 
@@ -58,10 +67,17 @@ if [[ ${istest} -eq 1 ]]; then
    walltime_fut="30:00"
    walltime_pot="30:00"
    nproc=${testnproc}
-   ppfudev="--no_fu --dev"
+   ppfudev="--dev"
+	if [[ $do_fu -eq 0 ]]; then
+		ppfudev="--dev"
+	else
+		ppfudev="--dev --fu"
+	fi
 else
    topinsfile=${realinsfile}
-   ppfudev="--no_pp"
+	if [[ $do_fu -eq 0 ]]; then
+		ppfudev="--no_fu"
+	fi
 fi
 
 # Set up function for getting ins files
@@ -98,7 +114,6 @@ echo "${state_path_absolute}"
 # Set up function to set up
 function do_setup {
    walltime=$1
-   shift
    if [[ "${walltime}" == "" ]]; then
       echo "You must provide walltime to do_setup()"
       exit 1
@@ -110,6 +125,7 @@ function do_setup {
    if [[ "${state_path}" == "" ]]; then
       state_path=$(get_state_path)
    fi
+	croplist=$(grep "pft" $(ls -tr crop_n_pftlist.*.ins  | tail -n 1) | sed -E 's/pft\s+"([^".]+)"\s*\(/\1/g' | grep -v "ExtraCrop")
    g2p_setup_1run.sh ${topinsfile} "$(get_ins_files)" ${gridlist} ${inputmodule} ${nproc} ${arch} ${walltime} -p "${prefix}" -s ${state_path} ${submit} ${ppfudev} ${dependency}
 }
 
@@ -118,11 +134,11 @@ mkdir -p potential
 #############################################################################################
 
 while [[ ! -d actual ]]; do
+	cd ../
 	if [[ "$PWD" == "/" ]]; then
 		echo "g2p_setup.sh must be called from a (subdirectory of a) directory that has an actual/ directory"
 		exit 1
 	fi
-	cd ../
 done
 
 # Set up "actual" historical run (no dependency)
@@ -141,6 +157,44 @@ if [[ "${gridlist}" == "" ]]; then
    exit 1
 fi
 
+# Set up postprocessing
+firstpotyear=$((future_y1 - Nyears_getready - 2*Nyears_pot))
+firstactyear=$((firstpotyear + Nyears_getready))
+# Copy over template script
+postproc_template="$HOME/scripts/g2p_postproc.template.act.sh"
+if [[ ! -f ${postproc_template} ]]; then
+   echo "postproc_template file not found: ${postproc_template}"
+   exit 1
+fi
+cp ${postproc_template} postproc.sh
+# Replace years
+sed -i "s/OUTY1/${firstactyear}/g" postproc.sh
+sed -i "s/OUTYN/$((future_y1 - 1))/g" postproc.sh
+sed -i "s/NYEARS_POT/${Nyears_pot}/g" postproc.sh
+# Set up top-level output directory
+workdir=$WORK
+if [[ "${workdir}" == "" ]]; then
+   echo "\$WORK undefined"
+   exit 1
+elif [[ ! -e "${workdir}" ]]; then
+   echo "\$WORK not found: $WORK"
+   exit 1
+fi
+rundir_top=$workdir/$(pwd | sed "s@/pfs/data5/home@/home@" | sed "s@${HOME}/@@")
+if [[ ${istest} -eq 1 ]]; then
+	thisbasename=$(basename $(realpath ../..))
+	rundir_top=$(echo ${rundir_top} | sed "s@${thisbasename}@${thisbasename}_test@")
+fi
+if [[ ! -d ${rundir_top} ]]; then
+	echo "rundir_top not found: ${rundir_top}"
+	exit 1
+fi
+dirForPLUM=$(realpath ${rundir_top}/../..)/outputs/outForPLUM-$(date "+%Y-%m-%d-%H%M%S")
+echo " "
+echo "Top-level output directory: $dirForPLUM"
+echo " "
+mkdir -p ${dirForPLUM}
+
 state_path=""
 do_setup ${walltime_hist}
 cd ..
@@ -157,6 +211,18 @@ for thisSSP in $(ls -d ssp*); do
    echo "#####################"
    set " "
    cd ${thisSSP}
+	# Copy over template script
+   postproc_template="$HOME/scripts/g2p_postproc.template.act.sh"
+   if [[ ! -f ${postproc_template} ]]; then
+      echo "postproc_template file not found: ${postproc_template}"
+      exit 1
+   fi
+   cp ${postproc_template} postproc.sh
+   # Replace years
+   sed -i "s/OUTY1/${future_y1}/g" postproc.sh
+   sed -i "s/OUTYN/${future_yN}/g" postproc.sh
+   sed -i "s/NYEARS_POT/${Nyears_pot}/g" postproc.sh
+	# Set up run
    state_path=""
    do_setup ${walltime_fut}
    cd ..

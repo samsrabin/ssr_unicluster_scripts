@@ -94,12 +94,13 @@ prefix=
 state_path_absolute=
 dev=0
 do_finishup=1
-do_postproc=1
 arg_yes_fu=
 arg_no_fu=
 submit=0
 reservation=
 linked_restart_dir_array=()
+pp_y1=
+pp_yN=
 
 # Args while-loop
 while [ "$1" != "" ];
@@ -120,13 +121,17 @@ do
 		-r  | --reservation )  shift
 			reservation=$1
 			;;
+		--pp_y1)  shift
+			pp_y1=$1
+			;;
+		--pp_yN)  shift
+			pp_yN=$1
+			;;
 		--dev)  dev=1
 			;;
 		--fu)  arg_yes_fu=1
 			;;
 		--no_fu)  arg_no_fu=1
-			;;
-		--no_pp)  do_postproc=0
 			;;
 		--submit)  submit=1
 			;;
@@ -181,6 +186,18 @@ if [[ "${state_path_absolute}" == "" ]]; then
 	state_path_absolute=$(realpath $(echo $topdir | sed "s@/pfs/data5@@" | sed "s@$HOME@$WORK@" | sed "s@/$topdir@@")/states)
 fi
 
+# Are we in an actual, potential, or calibration run?
+if [[ $PWD == *"/actual/"* ]]; then
+	whichrun="act"
+elif [[ $PWD == *"/potential/"* ]]; then
+	whichrun="pot"
+elif [[ $PWD == *"/calibration"* ]]; then
+	whichrun="cal"
+else
+	echo "Can't parse this path to tell whether it's an actual or potential run"
+	exit 1
+fi
+
 # Get directories, modifying paths if testing
 runid=$(basename $PWD)
 jobname=${runid}_$(date "+%Y%m%d%H%M%S")
@@ -197,11 +214,11 @@ elif [[ ! -e "${workdir}" ]]; then
 fi
 rundir_top=$workdir/$(pwd | sed "s@/pfs/data5/home@/home@" | sed "s@${HOME}/@@")
 if [[ ${dev} -eq 1 ]]; then
-	if [[ $PWD == *"/actual/"* ]]; then
+	if [[ ${whichrun} == "act" ]]; then
 		thisbasename=$(basename $(realpath ../..))
-	elif [[ $PWD == *"/potential/"* ]]; then
+	elif [[ ${whichrun} == "pot" ]]; then
 		thisbasename=$(basename $(realpath ../../..))
-	elif [[ $PWD == *"/calibration"* ]]; then
+	elif [[ ${whichrun} == "cal" ]]; then
 		thisbasename=$(basename $(realpath ..))
 	else
 		>&2 echo "Can't parse this path to tell whether it's an actual or potential run"
@@ -305,19 +322,8 @@ for ins in $insfile $extra_insfiles; do
 	cp $ins $rundir_top
 done
 
-# Copy postprocessing script(s) to work
-if [[ ${do_postproc} -eq 1 ]]; then
-	cp /home/kit/imk-ifu/lr8247/scripts/start_isimip3_pp.sh $rundir_top/postproc.sh
-
-	if [[ -e ./postproc.sh ]]; then
-		cp  ./postproc.sh $rundir_top
-	elif [[ -e ../postproc.sh ]]; then
-		cp  ../postproc.sh $rundir_top
-	elif [[ -e ../../postproc.sh ]]; then
-		cp  ../../postproc.sh $rundir_top
-	elif [[ -e ~/scripts/postproc.sh ]]; then
-		cp  ~/scripts/postproc.sh $rundir_top
-	fi
+if [[ -e postproc.sh ]]; then
+	cp postproc.sh $rundir_top/
 fi
 
 cd $rundir_top

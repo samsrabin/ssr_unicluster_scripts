@@ -56,13 +56,26 @@ fi
 
 # SSR: Process positional arguments
 # Which SSP?
+if [[ "$1" == "" ]]; then
+	echo "g2p_setup_potential_loop.sh: You must provide thisSSP, future_y1, and future_yN"
+	exit 1
+fi
 thisSSP=$1
 shift
 # Years of the future period
+if [[ "$1" == "" ]]; then
+	echo "g2p_setup_potential_loop.sh: You must provide thisSSP, future_y1, and future_yN"
+	exit 1
+fi
 future_y1=$1
 shift
+if [[ "$1" == "" ]]; then
+	echo "g2p_setup_potential_loop.sh: You must provide thisSSP, future_y1, and future_yN"
+	exit 1
+fi
 future_yN=$1
 shift
+
 
 # Set default values for non-positional arguments
 # (none)
@@ -109,9 +122,15 @@ y1_list=$(seq $((future_y1 - Nyears - Nyears_pot)) $Nyears_pot $((future_yN - Ny
 if [[ "${topinsfile}" != "" && "${gridlist}" != "" && "${inputmodule}" != "" && "${nproc}" != "" && "${arch}" != "" && "${walltime}" != "" && "${prefix}" != "" ]]; then
 	actually_setup=1
 else
+#	echo topinsfile $topinsfile
+#	echo gridlist $gridlist
+#	echo inputmodule $inputmodule
+#	echo nproc $nproc
+#	echo arch $arch
+#	echo walltime $walltime
+#	echo prefix $prefix
 	actually_setup=0
 fi
-
 for y1 in ${y1_list}; do
 
 	# Get dirname
@@ -163,7 +182,33 @@ for y1 in ${y1_list}; do
 	sed -i -E "s@param\s+(\"file_mN[HO][xy]\S\S\Sdep\")\s+\(str\s+(\".+\")\)@param \1 \(str \"\"\)@g" main.ins
 
 	# Only save the years needed
-	sed -i -E "s@firstoutyear\s+[0-9]+@firstoutyear $((yN - Nyears_pot + 1))@" main.ins
+	firstoutyear=$((yN - Nyears_pot + 1))
+	sed -i -E "s@firstoutyear\s+[0-9]+@firstoutyear ${firstoutyear}@" main.ins
+
+	# Copy over template script
+   postproc_template="$HOME/scripts/g2p_postproc.template.pot.sh"
+   if [[ ! -f ${postproc_template} ]]; then
+      echo "postproc_template file not found: ${postproc_template}"
+      exit 1
+   fi
+   cp ${postproc_template} postproc.sh
+   # Replace years
+   sed -i "s/OUTY1/${firstoutyear}/g" postproc.sh
+   sed -i "s/OUTYN/${yN}/g" postproc.sh
+   # Replace croplist
+   croplist=$(echo $(grep "pft" $(ls -tr crop_n_pftlist.*.ins  | tail -n 1) | sed -E 's/pft\s+"([^".]+)"\s*\(/\1/g' | grep -v "ExtraCrop") | sed 's/ /\" \"/g')
+   if [[ "${croplist}" == "" ]]; then
+      echo "Unable to parse croplist; failing"
+      exit 1
+   fi
+	sed -i "s/CROPLIST/${croplist}/g" postproc.sh
+   # Replace Nfertlist
+   nfertlist=$(echo $(grep "st " crop_n_stlist.*.ins | sed "s/C[34]//g" | grep -oE "[0-9]+\"" | sort | uniq | sed 's/"//') | sed 's/ /\" \"/g')
+   if [[ "${nfertlist}" == "" ]]; then
+      echo "Unable to parse nfertlist; failing"
+      exit 1
+   fi
+   sed -i "s/NFERTLIST/${nfertlist}/g" postproc.sh
 	
 #	# Replace shell scripts with potential-yield versions
 #	rm *.sh
@@ -171,7 +216,7 @@ for y1 in ${y1_list}; do
 
 	# Actually set up and even submit, if being called from within setup_all.sh
 	if [[ ${actually_setup} -eq 1 ]]; then
-		do_setup ${walltime}
+		do_setup ${walltime} ${firstoutyear} ${yN}
 	fi
 
 	exit 1
