@@ -136,18 +136,18 @@ wait
 # rsync (twice to be sure!!) things back to the work_dir
 echo "rsyncing scratch directory to work..."
 set +e
-rsync -avz --partial --exclude="state/" ${scratch_run_dir}/ ${work_run_dir}/
+rsync -avz --partial --inplace --exclude="state/" ${scratch_run_dir}/ ${work_run_dir}/
 set -e
-rsync -az --partial --exclude="state/" ${scratch_run_dir}/ ${work_run_dir}/
+rsync -az --partial --inplace --exclude="state/" ${scratch_run_dir}/ ${work_run_dir}/
 
 # rsync state, if necessary
 do_savestate=$(get_param.sh ${scratch_run_dir}/${main_insfile} save_state)
 if [[ ${do_savestate} -eq 1 && "${state_path_absolute}" != xyz && -e ${state_path_absolute} ]]; then
 	set +e
 	echo "Transferring state from scratch to work..."
-	rsync -avzK --partial --include="meta.bin" --include="${local_nrank}.state" --include="*/" --exclude="**" ${scratch_state_dir}/ ${state_path_absolute}/
+	rsync -avzK --partial --inplace --include="meta.bin" --include="${local_nrank}.state" --include="*/" --exclude="**" ${scratch_state_dir}/ ${state_path_absolute}/
 	set -e
-	rsync -azK --partial --include="meta.bin" --include="${local_nrank}.state" --include="*/" --exclude="**" ${scratch_state_dir}/ ${state_path_absolute}/
+	rsync -azK --partial --inplace --include="meta.bin" --include="${local_nrank}.state" --include="*/" --exclude="**" ${scratch_state_dir}/ ${state_path_absolute}/
 fi
 
 echo ${HOSTNAME} ls ${work_run_dir}
