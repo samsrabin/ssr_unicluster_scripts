@@ -119,7 +119,7 @@ y1_list=$(seq $((future_y1 - Nyears - Nyears_pot)) $Nyears_pot $((future_yN - Ny
 # Loop through periods
 ###################
 
-if [[ "${topinsfile}" != "" && "${gridlist}" != "" && "${inputmodule}" != "" && "${nproc}" != "" && "${arch}" != "" && "${walltime}" != "" && "${prefix}" != "" ]]; then
+if [[ "${topinsfile}" != "" && "${gridlist}" != "" && "${inputmodule}" != "" && "${nproc}" != "" && "${arch}" != "" && "${walltime_pot}" != "" && "${prefix}" != "" ]]; then
 	actually_setup=1
 else
 #	echo topinsfile $topinsfile
@@ -127,7 +127,7 @@ else
 #	echo inputmodule $inputmodule
 #	echo nproc $nproc
 #	echo arch $arch
-#	echo walltime $walltime
+#	echo walltime_pot $walltime_pot
 #	echo prefix $prefix
 	actually_setup=0
 fi
@@ -216,7 +216,7 @@ for y1 in ${y1_list}; do
 
 	# Actually set up and even submit, if being called from within setup_all.sh
 	if [[ ${actually_setup} -eq 1 ]]; then
-		do_setup ${walltime} ${firstoutyear} ${yN}
+		do_setup ${walltime_pot} ${firstoutyear} ${yN}
 	fi
 
 	popd 1>/dev/null
