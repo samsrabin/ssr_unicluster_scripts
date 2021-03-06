@@ -219,8 +219,6 @@ for y1 in ${y1_list}; do
 		do_setup ${walltime} ${firstoutyear} ${yN}
 	fi
 
-	exit 1
-
 	popd 1>/dev/null
 
 done
