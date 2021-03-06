@@ -482,11 +482,12 @@ module list
 #this requires a locally compiled netcdf with hdf5
 export LD_LIBRARY_PATH=\$SOFTWARE/hdf5-1.12.0/lib:\$SOFTWARE/lib:\$LD_LIBRARY_PATH
 
-diagnostics=0
+diagnostics=1
 mpirun_options=""
 if [[ \$diagnostics -eq 1 ]]; then
 	if [[ \$(which mpirun | grep "openmpi" | wc -l) -eq 1 ]]; then
-		mpirun_options="-display-map -tag-output"
+		#mpirun_options="-display-map -tag-output"
+		mpirun_options="--bind-to core --map-by core -report-bindings -display-map -tag-output"
 	elif [[ \$(which mpirun | grep "intel" | wc -l) -eq 1 ]]; then
 		mpirun_options="-print-rank-map -prepend-rank"
 	else
