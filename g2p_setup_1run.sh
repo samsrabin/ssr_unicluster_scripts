@@ -240,9 +240,11 @@ fi
 
 # For running on UniCluster
 cores_per_node=40 #uc2 nodes, 40 cores with hyperthreading *2. 
+#cores_per_node=32 # Running out of memory again, so trying 32 instead of 40
 #tasks_per_core=2 # Ends up running out of memory...
 tasks_per_core=1
 tasks_per_node=$((cores_per_node*tasks_per_core))
+mem_per_node=90000 # MB
 finishup_t_min=720
 if [[ ${nprocess} -gt ${tasks_per_node} ]]; then
 	if [[ $((nprocess%tasks_per_node)) != 0 ]]; then
@@ -368,7 +370,7 @@ done
 echo " "
 
 # Set up state directory
-state_path_relative=$(get_state_dir.sh "${insfile}" | sed 's@%Y@@' | sed "s@//@/@g")
+state_path_relative=$(get_param.sh "${insfile}" state_path | sed 's@%Y@@' | sed "s@//@/@g")
 if [[ "${state_path_relative}" != "" ]]; then
 #	mkdir -p run1/${state_path_relative}
 	echo "state_path_relative: ${state_path_relative}"
@@ -464,7 +466,8 @@ cat<<EOL > submit.sh
 #SBATCH -N $nnodes
 #SBATCH -n $nprocess
 #SBATCH --ntasks-per-core ${tasks_per_core}
-#SBATCH --ntasks-per-node 40
+#SBATCH --ntasks-per-node ${tasks_per_node}
+#SBATCH --mem ${mem_per_node}
 #SBATCH -t $walltime
 #SBATCH -J $jobname
 #SBATCH --output guess_x.o%j
