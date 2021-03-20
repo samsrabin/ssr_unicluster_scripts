@@ -112,7 +112,7 @@ function get_symbol {
 			else
 				symbol="${symbol_pend_other}"
 			fi
-		elif [[ "${status}" == "RUNNING" || "${status}" == "COMPLETING" ]]; then
+		elif [[ "${status}" == "CONFIGURING" || "${status}" == "RUNNING" || "${status}" == "COMPLETING" ]]; then
 		   symbol="${symbol_running}"
 		else
 			>&2 echo ${matching_jobs}

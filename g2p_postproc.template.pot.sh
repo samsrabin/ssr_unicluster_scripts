@@ -33,8 +33,9 @@ while [[ ! -d outputs/ ]]; do
 	fi
 done
 cd outputs/
-dirForPLUM=$(ls -d outForPLUM-* | tail -n 1)
+dirForPLUM=${PWD}/$(ls -d outForPLUM-* | tail -n 1)
 rsync -ahm "${thisDir}/postproc/OUTY1-OUTYN" ${dirForPLUM}/
+cd "${thisDir}"
 
 # Save run info to directory for PLUM
 tarfile=${dirForPLUM}/OUTY1-OUTYN/runinfo_pot.tar
