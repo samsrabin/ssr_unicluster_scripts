@@ -53,8 +53,11 @@ if [[ "${failranks}" != "" ]]; then
 			exit 1
 		fi
       tmp=$(grep "Commenc" logs/run$((r+1)).out | tail -n 1 | grep -oE " at .*$" | grep -oE "[-0-9\.]+,[-0-9\.]+" | sed "s/(\|)//g" | sed "s/,/ /")
-      echo $tmp >> ${gl_failcells}
-      sed -i "/${tmp}/d" ${gl_minusfailed}   
+		# It's possible that failures happened because of something that happened before any gridcells began
+		if [[ "${tmp}" != "" ]]; then
+	      echo $tmp >> ${gl_failcells}
+   	   sed -i "/${tmp}/d" ${gl_minusfailed}   
+		fi
    done
 fi
 
