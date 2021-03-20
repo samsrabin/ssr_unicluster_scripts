@@ -13,6 +13,7 @@ fi
 
 # Change to the directory
 cd $(dirname ${insfile})
+insfile=$(basename "${insfile}")
 
 # Name of this parameter
 thisparam="$2"
