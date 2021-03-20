@@ -59,7 +59,7 @@ if [[ "${failranks}" != "" ]]; then
 fi
 
 # Get not-run cells
-if [[ $(cat "${gl_failcells}" | wc -l ) -gt 0 ]]; then
+if [[ $(grep -L "Finished" logs/*.out | wc -l) -gt 0 ]]; then
    echo "   Getting ${gl_notruncells}..."
    for r in $(seq 1 ${nparts}); do
 		thisfile="logs/run${r}.out"
@@ -76,11 +76,13 @@ if [[ $(cat "${gl_failcells}" | wc -l ) -gt 0 ]]; then
       g0=$(grep "Commenc" logs/run${r}.out | tail -n 1 | grep -oE " at .*$" | grep -oE "[-0-9\.]+,[-0-9\.]+" | sed "s/(\|)//g" | sed "s/,/ /")
       grep -A 999999 "${g0/-/\\-}" ../run${r}/${gl} >> ${gl_notruncells}
    done
-   echo "   Removing failed cells..."
-   for r in ${failranks}; do
-      tmp=$(grep "Commenc" logs/run$((r+1)).out | tail -n 1 | grep -oE " at .*$" | grep -oE "[-0-9\.]+,[-0-9\.]+" | sed "s/(\|)//g" | sed "s/,/ /")
-      sed -i "/${tmp}/d" ${gl_notruncells}   
-   done
+	if [[ $(cat "${gl_failcells}" | wc -l ) -gt 0 ]]; then
+	   echo "   Removing failed cells..."
+	   for r in ${failranks}; do
+	      tmp=$(grep "Commenc" logs/run$((r+1)).out | tail -n 1 | grep -oE " at .*$" | grep -oE "[-0-9\.]+,[-0-9\.]+" | sed "s/(\|)//g" | sed "s/,/ /")
+	      sed -i "/${tmp}/d" ${gl_notruncells}   
+	   done
+	fi
 fi
 
 echo " "
