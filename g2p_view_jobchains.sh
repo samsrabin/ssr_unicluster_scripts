@@ -81,7 +81,7 @@ function get_symbol() {
 
 		# There are NO matching jobs
 	   if [[ "${matching_jobs}" == "" ]]; then
-	
+
 			# SIMULATION
 			if [[ "${thepattern:0:6}" != "jobfin" ]]; then
 				latest_job=$(grep "LPJ-GUESS run" latest_submitted_jobs.log | awk 'END {print $NF}')
@@ -285,7 +285,7 @@ for d in ${dirlist}; do
 		pot_list=$(ls "${potdir}" | cut -d' ' -f1-2)
 		for pot in ${pot_list}; do
 			homedir_rel="${d}/potential/${ssp}/${pot}"
-			check_jobs ${thischain_name}_${ssp}pot_${pot}
+			check_jobs ${thischain_name}_${pot}
 			if [[ ${latest_job} -gt ${real_latest_job} ]]; then
 				real_latest_job=${latest_job}
 			fi
