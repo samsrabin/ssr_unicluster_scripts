@@ -48,22 +48,12 @@ if [[ ! -e ${homedir} ]]; then
    mkdir -p "${homedir}"
 fi
 
-# Define log and error files
-export outfile=$PWD/job_finish.log
-export errfile=$PWD/job_finish.err
-if [[ -e $outfile ]]; then
-   rm $outfile
-fi
-if [[ -e $errfile ]]; then
-   rm $errfile
-fi
-
 export LANG=en_US.UTF-8
 export WORK=$WORK
 if [[ "$CLUSTER" == fh1 || "$SLURM_CLUSTER_NAME" == fh1 ]]; then
-   sbatch --partition ${part} -n ${nprocs} -t ${timemin} ${dependency} -o ${outfile} $N_jobname ${reservation} --mail-type=ALL --export=outfile ~/scripts/finishup_scc.sh $homedir
+   sbatch --partition ${part} -n ${nprocs} -t ${timemin} ${dependency} $N_jobname ${reservation} --mail-type=ALL ~/scripts/finishup_scc.sh $homedir
 elif [[ "$CLUSTER" == uc2 || "$SLURM_CLUSTER_NAME" == uc2 ]]; then
-   sbatch --partition ${part} -n ${nprocs} -t ${timemin} ${dependency} -o ${outfile} $N_jobname ${reservation} --ntasks-per-core=1 --mem=20000mb --mail-type=ALL --export=outfile ~/scripts/finishup_scc.sh $homedir
+   sbatch --partition ${part} -n ${nprocs} -t ${timemin} ${dependency} $N_jobname ${reservation} --ntasks-per-core=1 --mem=20000mb --mail-type=ALL ~/scripts/finishup_scc.sh $homedir
 else
    echo "ERROR: This cluster not recognized!"
    echo "   CLUSTER:            $CLUSTER"

@@ -1,4 +1,5 @@
 #!/bin/bash
+#SBATCH --output job_finish.%j.log
 set -e
 #Script for postprocessing of LPJ-GUESS output run on multiple cpus
 
