@@ -1,0 +1,42 @@
+#!/bin/bash
+
+pattern="${1}"
+if [[ "${pattern}" == "" ]]; then
+	echo "scancelsr: You must provide a search pattern"
+	exit 1
+fi
+
+jobs=$(squeue -o "%P %i %j %T %r" | grep "${pattern}")
+if [[ "${jobs}" == "" ]]; then
+	echo "No matching jobs"
+	exit 1
+fi
+
+jobnums="$(echo "${jobs}" | cut -d' ' -f2)"
+pending_jobs=""
+for j in ${jobnums}; do 
+	thisjob="$(echo "${jobs}" | grep " ${j} ")"
+	status=$(echo "${thisjob}" | cut -d' ' -f4)
+	if [[ "${status}" == "PENDING" ]]; then
+		pending_jobs="${pending_jobs} ${j}"
+	else
+		echo "Cancel this job?"
+		echo ${thisjob}
+		while true; do
+			read -p "yes/no/exit: " yn
+			case $yn in
+				[Yy]* ) scancel $j; break;;
+				[Nn]* ) continue;;
+				[EeXx]* ) exit;;
+				* ) echo "Please answer yes, no, or exit.";;
+			esac
+		done
+	fi
+done
+
+if [[ "${pending_jobs}" != "" ]]; then
+	echo Canceling pending jobs: ${pending_jobs}
+	scancel ${pending_jobs}
+fi
+
+exit 0
