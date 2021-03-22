@@ -96,9 +96,11 @@ if [[ ${do_restart} == "1" ]]; then
 	echo "Transferring state from work to scratch..."
 	if [[ ${restart_year} == "" || ! -d "${restart_dir}" ]]; then
 		if [[ ${restart_year} == "" ]]; then
-			echo "Couldn't parse restart_year; will transfer all state dirs"
+			echo "Couldn't parse restart_year"
+			exit 1
 		else
-			echo "Directory not found for parsed restart_dir (${restart_year}); will try transferring all state dirs"
+			echo "parsed restart_dir not found: ${restart_dir}"
+			exit 1
 		fi
 		try_transfer_all=1
 	else
