@@ -245,7 +245,7 @@ cores_per_node=40 #uc2 nodes, 40 cores with hyperthreading *2.
 tasks_per_core=1
 tasks_per_node=$((cores_per_node*tasks_per_core))
 mem_per_node=90000 # MB
-finishup_t_min=720
+finishup_t_min=60
 if [[ ${nprocess} -gt ${tasks_per_node} ]]; then
 	if [[ $((nprocess%tasks_per_node)) != 0 ]]; then
 		echo "Please set nprocess to a multiple of ${tasks_per_node}!"
