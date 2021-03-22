@@ -11,12 +11,12 @@ lastjob=$(echo "${stdoutfile}" | grep -oE "[0-9]+")
 thisdir=logs-${lastjob}
 echo ${thisdir}/
 mkdir -p ${thisdir}
-cp guess_x.*${lastjob} ${thisdir}/
-cp guess ${thisdir}/
-cp latest* ${thisdir}/
-cp submit.sh ${thisdir}/
-cp *ins ${thisdir}/
-cp ${gl} ${thisdir}/
+cp -a guess_x.*${lastjob} ${thisdir}/
+cp -a guess ${thisdir}/
+cp -a latest* ${thisdir}/
+cp -a submit.sh ${thisdir}/
+cp -a *ins ${thisdir}/
+cp -a ${gl} ${thisdir}/
 cd ${thisdir}
 
 gl_failcells=failcells.txt
@@ -26,7 +26,7 @@ for f in ${gl_failcells} ${gl_notruncells}; do
    [[ -f $f ]] && rm $f
    touch $f
 done
-cp ../${gl} ${gl_minusfailed}
+cp -a ../${gl} ${gl_minusfailed}
 
 # Get logs
 echo "   Getting logs..."
@@ -47,7 +47,7 @@ failranks=$(grep -i "invalid\|fail\|error" ${stdoutfile} | grep -v "Will fail if
 if [[ "${failranks}" != "" ]]; then
    echo "   Getting ${gl_failcells} and ${gl_minusfailed}..."
    for r in ${failranks}; do
-		thisfile=logs/run$((r+1)).out
+		thisfile=logs/run$(( r+1 )).out
 		if [[ ! -e "${thisfile}" ]]; then
 			echo "File ${thisfile} does not exist! Halting."
 			exit 1
