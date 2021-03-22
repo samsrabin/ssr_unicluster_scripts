@@ -231,7 +231,7 @@ for d in ${dirlist}; do
 	fi
 
 	# Get short name for this chain
-	thischain_name="$(g2p_chain_shortname.sh ${d})"
+	thischain_name="$(g2p_chain_shortname.sh ${d} ${testing})"
 
 	actdir="${d}/actual"
 	if [[ ! -d "${actdir}" ]]; then

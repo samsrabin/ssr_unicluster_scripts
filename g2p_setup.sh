@@ -143,7 +143,7 @@ while [[ ! -d actual ]]; do
 done
 
 # Get job name prefix
-prefix="$(g2p_chain_shortname.sh $(basename ${PWD}))"
+prefix="$(g2p_chain_shortname.sh $(basename ${PWD}) ${istest})"
 
 # Set up "actual" historical run (no dependency)
 dependency=""
