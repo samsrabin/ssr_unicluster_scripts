@@ -87,7 +87,7 @@ function get_symbol() {
 				latest_job=$(grep "LPJ-GUESS run" latest_submitted_jobs.log | awk 'END {print $NF}')
 
 				# If no run was started in this chain, then say so
-				if [[ ${latest_job} -lt ${real_latest_job} ]]; then
+				if [[ ${latest_job} -lt ${latest_actual_job} ]]; then
 					symbol="${symbol_norun}"
 
 				# Otherwise, check if simulation began
@@ -132,7 +132,7 @@ function get_symbol() {
 			else
 				latest_job=$(grep "job_finish" latest_submitted_jobs.log | awk 'END {print $NF}')
 				# If no run was started in this chain, then say so
-				if [[ ${latest_job} -lt ${real_latest_job} ]]; then
+				if [[ ${latest_job} -lt ${latest_actual_job} ]]; then
 					symbol="${symbol_norun}"
 
 				# Otherwise, check if simulation began
@@ -241,7 +241,7 @@ for d in ${dirlist}; do
 	ssp_list=$(ls -d "${actdir}"/ssp* | sed "s@${actdir}/@@g") 
 	s=0
 	latest_job=""
-	real_latest_job="-1"
+	latest_actual_job="-1"
 	for ssp in ${ssp_list}; do
 		s=$((s+1))
 		if [[ ${ssp} == $(echo ${ssp_list} | grep -oE '[^ ]+$') ]]; then
@@ -274,8 +274,8 @@ for d in ${dirlist}; do
 		homedir_rel="${d}/actual/${ssp}"
 		thisline="${thisline} ${ssp}"
 		check_jobs ${thischain_name}_${ssp}_
-		if [[ ${latest_job} -gt ${real_latest_job} ]]; then
-			real_latest_job=${latest_job}
+		if [[ ${latest_job} -gt ${latest_actual_job} ]]; then
+			latest_actual_job=${latest_job}
 		fi
 
 		# Check potential periods
@@ -283,9 +283,6 @@ for d in ${dirlist}; do
 		for pot in ${pot_list}; do
 			homedir_rel="${d}/potential/${ssp}/${pot}"
 			check_jobs ${thischain_name}_${pot}
-			if [[ ${latest_job} -gt ${real_latest_job} ]]; then
-				real_latest_job=${latest_job}
-			fi
 		done
 
 	done
