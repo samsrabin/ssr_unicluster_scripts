@@ -142,13 +142,13 @@ function get_symbol() {
 						was_it_canceled=$(was_canceled ${latest_job})
 						if [[ ${was_it_canceled} -lt 0 ]]; then
 							symbol="${symbol_unknown2}"
+							>&2 echo "${symbol} stdout file not found: ${workdir_short}/${file_stdout}"
 						elif [[ ${was_it_canceled} -eq 0 ]]; then
 							symbol="${symbol_unknown}"
+							>&2 echo "${symbol} stdout file not found: ${workdir_short}/${file_stdout}"
 						else
 							symbol="${symbol_canceled_manual}"
 						fi
-						>&2 echo "${symbol_unknown} stdout file not found: ${workdir_short}/${file_stdout}"
-						symbol="${symbol_unknown}"
 					else
 		
 						# Completed successfully?
