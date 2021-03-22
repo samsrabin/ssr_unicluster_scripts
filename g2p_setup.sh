@@ -1,21 +1,23 @@
 #!/bin/bash
 set -e
 
+reservation="-r landsymm-project"
 prefix="g2p_uk_a2d"
 realinsfile="main.ins"
 #testinsfile="main_test2.ins"; testnproc=1
 testinsfile="main_test2x2.ins"; testnproc=2
 inputmodule="cfx"
 nproc=160
-#arch="landsymm-dev-crops"
 arch="g2p"
-walltime_hist="72:00:00"
-walltime_fut="72:00:00"
-walltime_pot="3:00:00"
+walltime_hist="48:00:00"
+walltime_fut="24:00:00"
+walltime_pot="6:00:00"
 future_y1=2015
 future_yN=2089 # Because last year of emulator output is 2084
 Nyears_getready=5
 Nyears_pot=5
+
+firstpotyear=$((future_y1 - Nyears_getready - 2*Nyears_pot))
 
 #############################################################################################
 # Function-parsing code from https://gist.github.com/neatshell/5283811
@@ -102,7 +104,7 @@ if [[ ${thisSSP} != "" ]]; then
 	topdir_hist=$(echo $PWD | sed "s@/${thisSSP}@/hist@")
 	link_arguments=""
 	for y in $(get_param.sh ${topdir_hist}/${topinsfile} "save_years"); do
-		if [[ ${y} -ge $((restart_year - 2*Nyears_pot))  && ${y} -le ${lasthistyear} ]]; then
+		if [[ ${y} -ge ${firstpotyear}  && ${y} -le ${lasthistyear} ]]; then
 			link_arguments="${link_arguments} -L ${state_path_hist}/$y"
 		fi
 	done
@@ -126,7 +128,7 @@ function do_setup {
       state_path=$(get_state_path)
    fi
 	croplist=$(grep "pft" $(ls -tr crop_n_pftlist.*.ins  | tail -n 1) | sed -E 's/pft\s+"([^".]+)"\s*\(/\1/g' | grep -v "ExtraCrop")
-   g2p_setup_1run.sh ${topinsfile} "$(get_ins_files)" ${gridlist} ${inputmodule} ${nproc} ${arch} ${walltime} -p "${prefix}" -s ${state_path} ${submit} ${ppfudev} ${dependency}
+   g2p_setup_1run.sh ${topinsfile} "$(get_ins_files)" ${gridlist} ${inputmodule} ${nproc} ${arch} ${walltime} -p "${prefix}" -s ${state_path} ${submit} ${ppfudev} ${dependency} ${reservation}
 }
 
 mkdir -p potential
@@ -158,7 +160,6 @@ if [[ "${gridlist}" == "" ]]; then
 fi
 
 # Set up postprocessing
-firstpotyear=$((future_y1 - Nyears_getready - 2*Nyears_pot))
 firstactyear=$((firstpotyear + Nyears_getready))
 # Copy over template script
 postproc_template="$HOME/scripts/g2p_postproc.template.act.sh"
@@ -225,6 +226,7 @@ for thisSSP in $(ls -d ssp*); do
 	# Set up run
    state_path=""
    do_setup ${walltime_fut}
+
    cd ..
    echo " "
    echo " "

@@ -113,7 +113,7 @@ fi
 Nyears=$((Nyears_getready + Nyears_pot))
 
 # Get list of beginning years
-y1_list=$(seq $((future_y1 - Nyears - Nyears_pot)) $Nyears_pot $((future_yN - Nyears)))
+y1_list=$(seq ${firstpotyear} $Nyears_pot $((future_yN - Nyears)))
 
 ###################
 # Loop through periods
