@@ -8,9 +8,9 @@ testinsfile="main_test2x2.ins"; testnproc=2
 inputmodule="cfx"
 nproc=160
 arch="g2p"
-walltime_hist="48:00:00"
-walltime_fut="24:00:00"
-walltime_pot="12:00:00"
+walltime_hist="48:00:00" # Should take around 37 hours
+walltime_fut="24:00:00"  # Should take around 19 hours
+walltime_pot="12:00:00"  # Should take around 10 hours
 future_y1=2015
 future_yN=2089 # Because last year of emulator output is 2084
 Nyears_getready=5
@@ -184,6 +184,15 @@ elif [[ ! -e "${workdir}" ]]; then
    echo "\$WORK not found: $WORK"
    exit 1
 fi
+echo " "
+
+state_path=""
+do_setup ${walltime_hist}
+cd ..
+echo " "
+echo " "
+
+# Set up dirForPLUM
 rundir_top=$workdir/$(pwd | sed "s@/pfs/data5/home@/home@" | sed "s@${HOME}/@@")
 if [[ ${istest} -eq 1 ]]; then
 	thisbasename=$(basename $(realpath ../..))
@@ -194,16 +203,9 @@ if [[ ! -d ${rundir_top} ]]; then
 	exit 1
 fi
 dirForPLUM=$(realpath ${rundir_top}/../..)/outputs/outForPLUM-$(date "+%Y-%m-%d-%H%M%S")
-echo " "
 echo "Top-level output directory: $dirForPLUM"
 echo " "
 mkdir -p ${dirForPLUM}
-
-state_path=""
-do_setup ${walltime_hist}
-cd ..
-echo " "
-echo " "
 
 # All other runs will have dependency
 dependency="-d LATEST"
