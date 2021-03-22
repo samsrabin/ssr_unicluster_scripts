@@ -46,7 +46,15 @@ fi
 
 function was_canceled {
 	jobnum=$1
-	sacct_result="$(sacct -n -j $jobnum)"
+
+	# Check whether we've already sacct'd this run; if not, do so
+	sacct_file=sacct.${jobnum}
+	if [[ ! -e ${sacct_file} ]]; then
+		>&2 echo saving to sacct_file
+		sacct -n -j $jobnum > ${sacct_file}
+	fi
+
+	sacct_result="$(cat ${sacct_file})"
 	if [[ "${sacct_result}" == "" ]]; then
 		echo -1
 	else
@@ -216,7 +224,7 @@ cd /home/kit/imk-ifu/lr8247/g2p/runs/remap11
 tmpfile=.tmp.g2p_view_jobchains.$(date +%N)
 touch $tmpfile
 
-dirlist=$(ls | grep -v "calibration\|test")
+dirlist=$(ls | grep -v "calibration\|_test")
 pot_col_heads=""
 for d in ${dirlist}; do
 	islast_act=0
