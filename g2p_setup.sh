@@ -10,7 +10,7 @@ nproc=160
 arch="g2p"
 walltime_hist="48:00:00"
 walltime_fut="24:00:00"
-walltime_pot="6:00:00"
+walltime_pot="12:00:00"
 future_y1=2015
 future_yN=2089 # Because last year of emulator output is 2084
 Nyears_getready=5
@@ -74,6 +74,7 @@ if [[ ${istest} -eq 1 ]]; then
 	else
 		ppfudev="--dev --fu"
 	fi
+	reservation=""
 else
    topinsfile=${realinsfile}
 	if [[ $do_fu -eq 0 ]]; then
@@ -102,7 +103,7 @@ if [[ ${thisSSP} != "" ]]; then
 	state_path_hist=$(echo ${state_path_thisSSP} | sed "s@/${thisSSP}/@/hist/@")
 	topdir_hist=$(echo $PWD | sed "s@/${thisSSP}@/hist@")
 	link_arguments=""
-	for y in $(get_param.sh ${topdir_hist}/${topinsfile} "save_years"); do
+	for y in $(get_param.sh ${topinsfile} "save_years"); do
 		if [[ ${y} -ge ${firstpotyear}  && ${y} -le ${lasthistyear} ]]; then
 			link_arguments="${link_arguments} -L ${state_path_hist}/$y"
 		fi
@@ -126,7 +127,7 @@ function do_setup {
    if [[ "${state_path}" == "" ]]; then
       state_path=$(get_state_path)
    fi
-	croplist=$(grep "pft" $(ls -tr crop_n_pftlist.*.ins  | tail -n 1) | sed -E 's/pft\s+"([^".]+)"\s*\(/\1/g' | grep -v "ExtraCrop")
+	#croplist=$(grep "pft" $(ls -tr crop_n_pftlist.*.ins  | tail -n 1) | sed -E 's/pft\s+"([^".]+)"\s*\(/\1/g' | grep -v "ExtraCrop")
    g2p_setup_1run.sh ${topinsfile} "$(get_ins_files)" ${gridlist} ${inputmodule} ${nproc} ${arch} ${walltime} -p "${prefix}" -s ${state_path} ${submit} ${ppfudev} ${dependency} ${reservation}
 }
 
