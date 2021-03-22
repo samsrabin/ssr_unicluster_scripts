@@ -2,7 +2,6 @@
 set -e
 
 reservation="-r landsymm-project"
-prefix="g2p_uk_a2d"
 realinsfile="main.ins"
 #testinsfile="main_test2.ins"; testnproc=1
 testinsfile="main_test2x2.ins"; testnproc=2
@@ -142,6 +141,9 @@ while [[ ! -d actual ]]; do
 		exit 1
 	fi
 done
+
+# Get job name prefix
+prefix="$(g2p_chain_shortname.sh $(basename ${PWD}))"
 
 # Set up "actual" historical run (no dependency)
 dependency=""
