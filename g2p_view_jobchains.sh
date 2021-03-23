@@ -50,7 +50,6 @@ function was_canceled {
 	# Check whether we've already sacct'd this run; if not, do so
 	sacct_file=sacct.${jobnum}
 	if [[ ! -e ${sacct_file} ]]; then
-		>&2 echo saving to sacct_file
 		sacct -n -j $jobnum > ${sacct_file}
 	fi
 
