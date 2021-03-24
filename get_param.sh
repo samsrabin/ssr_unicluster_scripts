@@ -58,7 +58,6 @@ for (( idx=${#results[@]}-1 ; idx>=0 ; idx-- )) ; do
        fi
 		 get_param.sh "${importedfile}" "${thisparam}" > /dev/null
        thevalue=$(get_param.sh "${importedfile}" "${thisparam}")
-[[ "${thevalue}" == "" ]] && exit 1
     else
 		 # Remove any comments
 		 thevalue=$(echo $thisline | sed -E "s/\s*\!.*//")
