@@ -97,17 +97,30 @@ topdir=$PWD
 state_path_absolute=$(echo $topdir | sed "s@/pfs/data5@@" | sed "s@$HOME@$WORK@" | sed "s@/$topdir@@")/states
 if [[ ${thisSSP} != "" ]]; then
    state_path_thisSSP="${state_path_absolute}"
-	restart_year=$(get_param.sh ${topinsfile} restart_year)
-	lasthistyear=$(get_param.sh ${topinsfile} lasthistyear)
+   restart_year=$(get_param.sh ${topinsfile} restart_year)
+   if [[ "${restart_year}" == "get_param.sh_FAILED" ]]; then
+      echo "get_param.sh_FAILED"
+      exit 1
+   fi
+   lasthistyear=$(get_param.sh ${topinsfile} lasthistyear)
+   if [[ "${lasthistyear}" == "get_param.sh_FAILED" ]]; then
+      echo "get_param.sh_FAILED"
+      exit 1
+   fi
 
-	state_path_hist=$(echo ${state_path_thisSSP} | sed "s@/${thisSSP}/@/hist/@")
-	topdir_hist=$(echo $PWD | sed "s@/${thisSSP}@/hist@")
-	link_arguments=""
-	for y in $(get_param.sh ${topinsfile} "save_years"); do
-		if [[ ${y} -ge ${firstpotyear}  && ${y} -le ${lasthistyear} ]]; then
-			link_arguments="${link_arguments} -L ${state_path_hist}/$y"
-		fi
-	done
+   state_path_hist=$(echo ${state_path_thisSSP} | sed "s@/${thisSSP}/@/hist/@")
+   topdir_hist=$(echo $PWD | sed "s@/${thisSSP}@/hist@")
+   link_arguments=""
+   save_years=$(get_param.sh ${topdir_hist}/${topinsfile} "save_years")
+   if [[ "${save_years}" == "get_param.sh_FAILED" ]]; then
+      echo "get_param.sh_FAILED"
+      exit 1
+   fi
+   for y in $(get_param.sh ${topdir_hist}/${topinsfile} "save_years"); do
+      if [[ ${y} -ge ${firstpotyear}  && ${y} -le ${lasthistyear} ]]; then
+         link_arguments="${link_arguments} -L ${state_path_hist}/$y"
+      fi
+   done
    state_path_absolute="${state_path_thisSSP} ${link_arguments}"
 fi
 echo "${state_path_absolute}"
@@ -126,6 +139,7 @@ function do_setup {
    fi
    if [[ "${state_path}" == "" ]]; then
       state_path=$(get_state_path)
+		[[ "${state_path}" == "get_param.sh_FAILED" ]] && exit 1
    fi
 	#croplist=$(grep "pft" $(ls -tr crop_n_pftlist.*.ins  | tail -n 1) | sed -E 's/pft\s+"([^".]+)"\s*\(/\1/g' | grep -v "ExtraCrop")
    g2p_setup_1run.sh ${topinsfile} "$(get_ins_files)" ${gridlist} ${inputmodule} ${nproc} ${arch} ${walltime} -p "${prefix}" -s ${state_path} ${submit} ${ppfudev} ${dependency} ${reservation}
@@ -157,6 +171,7 @@ cd actual/hist
 
 # Get gridlist
 gridlist=$(get_param.sh ${topinsfile} "file_gridlist")
+[[ "${gridlist}" == "get_param.sh_FAILED" ]] && exit 1
 if [[ "${gridlist}" == "" ]]; then
    echo "Unable to parse gridlist from ${topinsfile} and its dependencies"
    exit 1
@@ -195,7 +210,7 @@ echo " "
 # Set up dirForPLUM
 rundir_top=$workdir/$(pwd | sed "s@/pfs/data5/home@/home@" | sed "s@${HOME}/@@")
 if [[ ${istest} -eq 1 ]]; then
-	thisbasename=$(basename $(realpath ../..))
+	thisbasename=$(g2p_get_basename.sh)
 	rundir_top=$(echo ${rundir_top} | sed "s@${thisbasename}@${thisbasename}_test@")
 fi
 if [[ ! -d ${rundir_top} ]]; then
@@ -231,6 +246,8 @@ for thisSSP in $(ls -d ssp*); do
 	# Set up run
    state_path=""
    do_setup ${walltime_fut}
+
+	exit 1
 
    cd ..
    echo " "

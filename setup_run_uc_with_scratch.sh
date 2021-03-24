@@ -278,7 +278,8 @@ done
 echo " "
 
 # Set up state directory
-state_path_relative=$(get_state_dir.sh "${insfile}" | sed 's@%Y@@' | sed "s@//@/@g")
+state_path_relative=$(get_param.sh "${insfile}" state_path | sed 's@%Y@@' | sed "s@//@/@g")
+[[ "${state_path_relative}" == "get_param.sh_FAILED" ]] && exit 1
 if [[ "${state_path_relative}" != "" ]]; then
 #	mkdir -p run1/${state_path_relative}
 	if [[ "${state_path_absolute}" == "" ]]; then

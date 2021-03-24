@@ -3,6 +3,7 @@ set -e
 
 insfile=$(grep -E "^\s*mpirun\s" submit.sh | grep -oE "\S+$")
 gl=$(get_param.sh ${insfile} "file_gridlist")
+[[ "${gl}" == "get_param.sh_FAILED" ]] && exit 1
 nparts=$(ls -d run*/ | grep -oE "[0-9]+" | sort -g | tail -n 1)
 
 stdoutfile=$(ls -tr guess_x.o* | tail -n 1)

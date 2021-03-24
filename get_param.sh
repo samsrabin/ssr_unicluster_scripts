@@ -53,9 +53,12 @@ for (( idx=${#results[@]}-1 ; idx>=0 ; idx-- )) ; do
        importedfile=$(echo $thisline | sed -E "s/\s*import\s*//" | sed -E "s/\!.*//" | sed -E "s/\s+$//" | sed 's/"//g')
        if [[ ! -f ${importedfile} ]]; then
           >&2 echo "get_param.sh: Error: ${insfile} appears to import ${importedfile}, but that doesn't exist"
+			 echo "get_param.sh_FAILED"
           exit 1
        fi
+		 get_param.sh "${importedfile}" "${thisparam}" > /dev/null
        thevalue=$(get_param.sh "${importedfile}" "${thisparam}")
+[[ "${thevalue}" == "" ]] && exit 1
     else
 		 # Remove any comments
 		 thevalue=$(echo $thisline | sed -E "s/\s*\!.*//")

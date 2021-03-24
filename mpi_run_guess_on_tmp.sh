@@ -81,6 +81,7 @@ fi
 # rsync state, if necessary
 scratch_state_dir="$(realpath ${scratch_run_dir}/${state_path_relative})"
 do_restart=$(get_param.sh ${main_insfile} restart)
+[[ "${do_restart}" == "get_param.sh_FAILED" ]] && exit 1
 try_transfer_all=0
 if [[ ${do_restart} == "1" ]]; then
 	if [[ "${state_path_absolute}" == xyz ]]; then
@@ -92,6 +93,7 @@ if [[ ${do_restart} == "1" ]]; then
 	fi
 	# Note that this means state_path in ins-files must be "state/%Y/"
 	restart_year=$(get_param.sh ${main_insfile} restart_year)
+	[[ "${restart_year}" == "get_param.sh_FAILED" ]] && exit 1
 	restart_dir=${state_path_absolute}/${restart_year}
 	echo "Transferring state from work to scratch..."
 	if [[ ${restart_year} == "" || ! -d "${restart_dir}" ]]; then
@@ -144,6 +146,7 @@ rsync -az --partial --inplace --exclude="state/" ${scratch_run_dir}/ ${work_run_
 
 # rsync state, if necessary
 do_savestate=$(get_param.sh ${scratch_run_dir}/${main_insfile} save_state)
+[[ "${do_savestate}" == "get_param.sh_FAILED" ]] && exit 1
 if [[ ${do_savestate} -eq 1 && "${state_path_absolute}" != xyz && -e ${state_path_absolute} ]]; then
 	set +e
 	echo "Transferring state from scratch to work..."

@@ -214,16 +214,7 @@ elif [[ ! -e "${workdir}" ]]; then
 fi
 rundir_top=$workdir/$(pwd | sed "s@/pfs/data5/home@/home@" | sed "s@${HOME}/@@")
 if [[ ${dev} -eq 1 ]]; then
-	if [[ ${whichrun} == "act" ]]; then
-		thisbasename=$(basename $(realpath ../..))
-	elif [[ ${whichrun} == "pot" ]]; then
-		thisbasename=$(basename $(realpath ../../..))
-	elif [[ ${whichrun} == "cal" ]]; then
-		thisbasename=$(basename $(realpath ..))
-	else
-		>&2 echo "Can't parse this path to tell whether it's an actual or potential run"
-		exit 1
-	fi
+	thisbasename=$(g2p_get_basename.sh)
 	rundir_top=$(echo ${rundir_top} | sed "s@${thisbasename}@${thisbasename}_test@")
 	state_path_absolute=$(echo ${state_path_absolute} | sed "s@${thisbasename}@${thisbasename}_test@")
 	if [[ "${linked_restart_dir_array}" != "" ]]; then
@@ -283,7 +274,7 @@ else
 	finishup_partition=${queue}
 fi
 if [[ ${finishup_partition} == "multiple" ]]; then
-	finishup_nprocs=$((tasks_per_node * 2))
+	finishup_nprocs=$((tasks_per_node + 1))
 fi
 
 echo "queue: ${queue}"
@@ -371,6 +362,7 @@ echo " "
 
 # Set up state directory
 state_path_relative=$(get_param.sh "${insfile}" state_path | sed 's@%Y@@' | sed "s@//@/@g")
+[[ "${state_path_relative}" == "get_param.sh_FAILED" ]] && exit 1
 if [[ "${state_path_relative}" != "" ]]; then
 #	mkdir -p run1/${state_path_relative}
 	echo "state_path_relative: ${state_path_relative}"

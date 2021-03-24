@@ -173,6 +173,7 @@ for y1 in ${y1_list}; do
 	
 	# Don't simulate natural land
 	file_lu=$(get_param.sh landcover.ins file_lu)
+	[[ "${file_lu}" == "" ]] && exit 1
 	sed -i "s@${file_lu}@${file_lu/someOfEachCrop/justCPB_1yr}@" landcover.ins
 
 	# Set do_potyield to 1 and remove file_lucrop, which is thus unnecessary.
