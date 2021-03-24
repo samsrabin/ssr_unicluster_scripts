@@ -30,9 +30,11 @@ else
 	file_err=$(echo $jobinfo | grep -oE "StdErr=\S+" | sed "s/StdErr=//g")
 fi
 
+echo "file_out: ${file_out}"
 if [[ "${file_out}" == "${file_err}" ]]; then
 	multitail -s 2 --follow-all --retry-all -n 100  ${options} -i "${file_out}"
 else
+	echo "file_err: ${file_err}"
 	multitail -s 2 --follow-all --retry-all -n 100  ${options} -i "${file_out}" -i "${file_err}"
 fi
 
