@@ -158,4 +158,6 @@ fi
 echo ${HOSTNAME} ls ${work_run_dir}
 ls ${work_run_dir}
 
+echo "All done!"
+
 exit 0
