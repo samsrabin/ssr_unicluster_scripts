@@ -166,7 +166,7 @@ elif [[ "${dependency_tmp}" != "" ]]; then
 	dependency="#SBATCH -d afterany:$dependency_tmp"
 fi
 
-if [[ "{${tasks_per_core}" -ne 1 && "${tasks_per_core}" -ne 2 ]]; then
+if [[ "${tasks_per_core}" -ne 1 && "${tasks_per_core}" -ne 2 ]]; then
     echo "tasks_per_core can be only 1 or 2; you said: ${tasks_per_core}"
     exit 1
 fi
@@ -214,7 +214,7 @@ rundir_top=$workdir/$(pwd | sed "s@/pfs/data5/home@/home@" | sed "s@${HOME}/@@")
 if [[ ${dev} -eq 1 ]]; then
     thisbasename=$(basename $PWD)
 	rundir_top=$(echo ${rundir_top} | sed "s@${thisbasename}@${thisbasename}_test@")
-	state_path_absolute=$(echo ${state_path_absolute} | sed "s@${thisbasename}@${thisbasename}_test@")
+	state_path_absolute=${state_path_absolute}_test
 	if [[ "${linked_restart_dir_array}" != "" ]]; then
 		for i in "${!linked_restart_dir_array[@]}"; do 
 			lrd=${linked_restart_dir_array[$i]}
@@ -541,6 +541,7 @@ chmod +x startguess.sh
 
 if [[ ${submit} -eq 1 ]]; then
 	echo "Submitting..."
+    date
 	pushd "${rundir_top}" 1>/dev/null 2>&1
 	source ~/scripts_peter/module.sh 1>/dev/null 2>&1
 	./startguess.sh
