@@ -9,10 +9,9 @@ inputmodule="cfx"
 nproc=160
 arch="g2p"
 walltime_hist="48:00:00" # Should take around 37 hours
-walltime_fut="12:00:00"  # Should take around 9.5 hours
+walltime_fut="24:00:00"  # Should take around 19 hours
 walltime_pot="12:00:00"  # Should take around 10 hours
 future_y1=2015
-firstPart2yr=2045 # The year that will be the first in the 2nd part of the SSP period
 future_yN=2089 # Because last year of emulator output is 2084
 Nyears_getready=5
 Nyears_pot=5
@@ -94,7 +93,10 @@ echo $insfiles
 
 # Set up function for getting absolute state path
 function get_state_path {
+topdir=$PWD
+state_path_absolute=$(echo $topdir | sed "s@/pfs/data5@@" | sed "s@$HOME@$WORK@" | sed "s@/$topdir@@")/states
 if [[ ${thisSSP} != "" ]]; then
+   state_path_thisSSP="${state_path_absolute}"
    restart_year=$(get_param.sh ${topinsfile} restart_year)
    if [[ "${restart_year}" == "get_param.sh_FAILED" ]]; then
       echo "get_param.sh_FAILED"
@@ -106,10 +108,17 @@ if [[ ${thisSSP} != "" ]]; then
       exit 1
    fi
 
+   state_path_hist=$(echo ${state_path_thisSSP} | sed "s@/${thisSSP}/@/hist/@")
+   topdir_hist=$(echo $PWD | sed "s@/${thisSSP}@/hist@")
    link_arguments=""
-   for y in ${save_years}; do
+   save_years=$(get_param.sh ${topdir_hist}/${topinsfile} "save_years")
+   if [[ "${save_years}" == "get_param.sh_FAILED" ]]; then
+      echo "get_param.sh_FAILED"
+      exit 1
+   fi
+   for y in $(get_param.sh ${topdir_hist}/${topinsfile} "save_years"); do
       if [[ ${y} -ge ${firstpotyear}  && ${y} -le ${lasthistyear} ]]; then
-         link_arguments="${link_arguments} -L ${state_path_prev}/$y"
+         link_arguments="${link_arguments} -L ${state_path_hist}/$y"
       fi
    done
    state_path_absolute="${state_path_thisSSP} ${link_arguments}"
@@ -193,7 +202,7 @@ fi
 echo " "
 
 state_path=""
-#do_setup ${walltime_hist}
+do_setup ${walltime_hist}
 cd ..
 echo " "
 echo " "
@@ -218,13 +227,11 @@ dependency="-d LATEST"
 
 # Set up SSP actual and potential runs
 for thisSSP in $(ls -d ssp*); do
-   theseYears="${future_y1}-$((firstPart2yr - 1))"
-   echo "###############################"
-   echo "### actual/${thisSSP} ${theseYears} ###"
-   echo "###############################"
+   echo "#####################"
+   echo "### actual/${thisSSP} ###"
+   echo "#####################"
    set " "
-   thisDir=${thisSSP}_${theseYears}
-   cd ${thisDir}
+   cd ${thisSSP}
 	# Copy over template script
    postproc_template="$HOME/scripts/g2p_postproc.template.act.sh"
    if [[ ! -f ${postproc_template} ]]; then
@@ -234,54 +241,10 @@ for thisSSP in $(ls -d ssp*); do
    cp ${postproc_template} postproc.sh
    # Replace years
    sed -i "s/OUTY1/${future_y1}/g" postproc.sh
-   sed -i "s/OUTYN/$((firstPart2yr - 1))/g" postproc.sh
+   sed -i "s/OUTYN/${future_yN}/g" postproc.sh
    sed -i "s/NYEARS_POT/${Nyears_pot}/g" postproc.sh
 	# Set up run
    state_path=""
-   state_path_absolute=$(echo $PWD | sed "s@/pfs/data5@@" | sed "s@$HOME@$WORK@" | sed "s@/$PWD@@")/states
-   state_path_thisSSP="${state_path_absolute}"
-   state_path_prev=$(echo ${state_path_thisSSP} | sed "s@/${thisDir}/@/hist/@")
-   topdir_prev=$(echo $PWD | sed "s@/${thisDir}@/hist@")
-   save_years=$(get_param.sh ${topdir_prev}/${topinsfile} "save_years")
-   if [[ "${save_years}" == "get_param.sh_FAILED" ]]; then
-      echo "get_param.sh_FAILED"
-      exit 1
-   fi
-   do_setup ${walltime_fut}
-
-   cd ..
-   theseYears="${firstPart2yr}-$((future_yN - Nyears_pot))"
-   echo "###############################"
-   echo "### actual/${thisSSP} ${theseYears} ###"
-   echo "###############################"
-   set " "
-   prevDir=${thisDir}
-   thisDir=${thisSSP}_${theseYears}
-   cd ${thisDir}
-    # Copy over template script
-   postproc_template="$HOME/scripts/g2p_postproc.template.act.sh"
-   if [[ ! -f ${postproc_template} ]]; then
-      echo "postproc_template file not found: ${postproc_template}"
-      exit 1
-   fi
-   cp ${postproc_template} postproc.sh
-   # Replace years
-   sed -i "s/OUTY1/${firstPart2yr}/g" postproc.sh
-   sed -i "s/OUTYN/${future_yN}/g" postproc.sh
-   sed -i "s/NYEARS_POT/${Nyears_pot}/g" postproc.sh
-    # Set up run
-   state_path=""
-   state_path=""
-   state_path_absolute=$(echo $PWD | sed "s@/pfs/data5@@" | sed "s@$HOME@$WORK@" | sed "s@/$PWD@@")/states
-   state_path_thisSSP="${state_path_absolute}"
-   state_path_prev=$(echo ${state_path_thisSSP} | sed "s@/${thisDir}/@/${prevDir}/@")
-   topdir_prev=$(echo $PWD | sed "s@/${thisDir}@/${prevDir}@")
-   save_years2=$(get_param.sh ${topdir_prev}/${topinsfile} "save_years")
-   if [[ "${save_years2}" == "get_param.sh_FAILED" ]]; then
-      echo "get_param.sh_FAILED"
-      exit 1
-   fi
-   save_years="${save_years} ${save_years2}"
    do_setup ${walltime_fut}
 
 	exit 1
