@@ -1,13 +1,16 @@
 #!/bin/bash
 set -e
 
+# Output the last ${initn} lines
+initn=100
+
 jobid=$1
 if [[ "${jobid}" == "" ]]; then
 	echo "You must provide a job ID"
 	exit 1
 fi
 
-options="${2}"
+options="$@"
 
 jobinfo=$({ scontrol show job $jobid 2>/dev/null || true; })
 if [[ "${jobinfo}" == "" ]]; then
@@ -32,10 +35,10 @@ fi
 
 echo "file_out: ${file_out}"
 if [[ "${file_out}" == "${file_err}" ]]; then
-	multitail -s 2 --follow-all --retry-all -n 100  ${options} -i "${file_out}"
+	multitail -s 2 --follow-all --retry-all -n ${initn} ${options} -i "${file_out}"
 else
 	echo "file_err: ${file_err}"
-	multitail -s 2 --follow-all --retry-all -n 100  ${options} -i "${file_out}" -i "${file_err}"
+	multitail -s 2 --follow-all --retry-all -n ${initn} ${options} -i "${file_out}" -i "${file_err}"
 fi
 
 exit 0
