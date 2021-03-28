@@ -10,6 +10,7 @@ if [[ "${jobid}" == "" ]]; then
 	exit 1
 fi
 
+shift
 options="$@"
 
 jobinfo=$({ scontrol show job $jobid 2>/dev/null || true; })
