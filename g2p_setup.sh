@@ -32,6 +32,7 @@ echo -e "usage: $script [-t]\n"
 istest=0
 arg_do_fu=0
 submit=""
+dirForPLUM=""
 
 # Args while-loop
 while [ "$1" != "" ];
@@ -43,9 +44,12 @@ do
       -t  | --test)
          istest=1
          ;;
-       --fu)
+      --fu)
          arg_do_fu=1
          ;;
+	  --dirForPLUM)  shift
+		 dirForPLUM="$1"
+		 ;;
       *)
          echo "$script: illegal option $1"
          usage
@@ -55,6 +59,10 @@ do
    shift
 done
 
+if [[ "${dirForPLUM}" != "" && ! -d "${dirForPLUM}" ]]; then
+    echo "dirForPLUM does not exist: ${dirForPLUM}"
+    exit 1
+fi
 do_fu=0
 if [[ $istest -eq 0 || $arg_do_fu -eq 1 ]]; then
 	do_fu=1
@@ -192,12 +200,6 @@ elif [[ ! -e "${workdir}" ]]; then
 fi
 echo " "
 
-state_path=""
-#do_setup ${walltime_hist}
-cd ..
-echo " "
-echo " "
-
 # Set up dirForPLUM
 rundir_top=$workdir/$(pwd | sed "s@/pfs/data5/home@/home@" | sed "s@${HOME}/@@")
 if [[ ${istest} -eq 1 ]]; then
@@ -208,10 +210,19 @@ if [[ ! -d ${rundir_top} ]]; then
 	echo "rundir_top not found: ${rundir_top}"
 	exit 1
 fi
-dirForPLUM=$(realpath ${rundir_top}/../..)/outputs/outForPLUM-$(date "+%Y-%m-%d-%H%M%S")
+if [[ "${dirForPLUM}" == "" ]]; then
+    dirForPLUM=$(realpath ${rundir_top}/../..)/outputs/outForPLUM-$(date "+%Y-%m-%d-%H%M%S")
+fi
+mkdir -p ${dirForPLUM}
 echo "Top-level output directory: $dirForPLUM"
 echo " "
-mkdir -p ${dirForPLUM}
+
+# Submit historical run
+state_path=""
+do_setup ${walltime_hist}
+cd ..
+echo " "
+echo " "
 
 # All other runs will have dependency
 dependency="-d LATEST"
@@ -283,8 +294,6 @@ for thisSSP in $(ls -d ssp*); do
    fi
    save_years="${save_years} ${save_years2}"
    do_setup ${walltime_fut}
-
-	exit 1
 
    cd ..
    echo " "
