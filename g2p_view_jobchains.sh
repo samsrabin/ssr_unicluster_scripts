@@ -66,7 +66,8 @@ function get_symbol_() { passback latest_job; }
 function get_symbol() {
 	# First, change to working directory
 	if [[ ! -d "${homedir_rel}" ]]; then
-		echo "homedir_rel not found: ${homedir_rel}"
+		>&2 echo "homedir_rel not found: ${homedir_rel}"
+        >&2 echo "pwd: $PWD"
 		exit 14
 	fi
 	if [[ $testing -eq 0 ]]; then 
@@ -101,7 +102,7 @@ function get_symbol() {
 				else
 					file_stdout="guess_x.o${latest_job}"
 					# If not, assume it was canceled before beginning.
-			      if [[ ! -e "${file_stdout}" ]]; then
+			        if [[ ! -e "${file_stdout}" ]]; then
 						was_it_canceled=$(was_canceled ${latest_job})
 						if [[ ${was_it_canceled} -lt 0 ]]; then
 							symbol="${symbol_unknown2}"
@@ -113,25 +114,27 @@ function get_symbol() {
 					# Otherwise...
 					else
 						# If all cells completed with "Finished" message, that's great!
-						nprocs=$(ls -d run* | wc -l)
-						if [[ ! -e "${file_stdout}" ]]; then
-							>&2 echo "${symbol_unknown} stdout file not found: ${workdir_short}/${file_stdout}"
-							symbol="${symbol_unknown}"
+                        nprocs=$({ head "${file_stdout}" | grep -oE "Total slots allocated [0-9]+" | grep -oE "[0-9]+" || true; })
+                        if [[ "${nprocs}" == "" ]]; then
+                            >&2 echo "Error getting nprocs"
+                            exit 17
+                        fi
+						nfinished=$(grep "Finished" ${file_stdout} | grep -v "Finished with" | wc -l )
+				        nunfinished=$((nprocs - nfinished))
+						if [[ $nprocs == $nfinished ]]; then
+							symbol="${symbol_ok}"
+			
+						# If not, was job canceled?
+						elif [[ $(tail -n 100 ${file_stdout} | grep "State: CANCELLED" | wc -l) -ne 0 ]]; then
+							symbol="${symbol_canceled_manual}"
+			
+						# Otherwise, assume run failed.
 						else
-							nfinished=$(grep "Finished" ${file_stdout} | wc -l )
-				         nunfinished=$((nprocs - nfinished))
-							if [[ $nprocs == $nfinished ]]; then
-								symbol="${symbol_ok}"
-			
-							# If not, was job canceled?
-							elif [[ $(tail -n 100 ${file_stdout} | grep "State: CANCELLED" | wc -l) -ne 0 ]]; then
-								symbol="${symbol_canceled_manual}"
-			
-							# Otherwise, assume run failed.
-							else
-								symbol="${symbol_failed}"
-							fi
-						fi # Does stdout file exist?
+                            >&2 echo $nprocs
+                            >&2 echo $nfinished
+							symbol="${symbol_failed}"
+						fi
+
 					fi # Was it canceled before beginning?
 				fi # Was a run started in this chain?
 	
@@ -218,12 +221,13 @@ function check_jobs {
 
 }
 
-cd /home/kit/imk-ifu/lr8247/g2p/runs/remap11
+cd /home/kit/imk-ifu/lr8247/g2p/runs/remap12
 
 tmpfile=.tmp.g2p_view_jobchains.$(date +%N)
 touch $tmpfile
 
 dirlist=$(ls | grep -v "calibration\|_test")
+act_col_heads=""
 pot_col_heads=""
 for d in ${dirlist}; do
 	islast_act=0
@@ -245,7 +249,7 @@ for d in ${dirlist}; do
 		echo "actdir not found: ${PWD}/${actdir})"
 		exit 13
 	fi
-	ssp_list=$(ls -d "${actdir}"/ssp* | sed "s@${actdir}/@@g") 
+	ssp_list=$(ls -d "${actdir}"/ssp[0-9][0-9][0-9] | sed "s@${actdir}/@@g") 
 	s=0
 	latest_job=""
 	latest_actual_job="-1"
@@ -277,13 +281,34 @@ for d in ${dirlist}; do
 			thisline=" :"
 		fi
 
-		# Check future-actual period
-		homedir_rel="${d}/actual/${ssp}"
-		thisline="${thisline} ${ssp}"
-		check_jobs ${thischain_name}_${ssp}_
-		if [[ ${latest_job} -gt ${latest_actual_job} ]]; then
-			latest_actual_job=${latest_job}
-		fi
+        # Get future-actual periods
+        futureactdirs=$(ls -d "${d}/actual/${ssp}_"*)
+        if [[ "${futureactdirs}" == "" ]]; then
+            echo "No directories found matching ${d}/actual/${ssp}_*"
+            exit 1
+        fi
+
+		# Check future-actual periods
+        x=0
+        get_act_col_heads=0
+        if [[ "${act_col_heads}" == "" ]]; then
+            get_act_col_heads=1
+        fi
+        for d_act in ${futureactdirs}; do
+            x=$((x + 1))
+            if [[ $get_act_col_heads -eq 1 ]]; then
+                act_col_heads="${act_col_heads}ACT${x},"
+            fi
+
+    		homedir_rel="${d_act}"
+            if [[ $x -eq 1 ]]; then
+                thisline="${thisline} ${ssp}"
+            fi
+    		check_jobs ${thischain_name}_${ssp}_
+    		if [[ ${latest_job} -gt ${latest_actual_job} ]]; then
+    			latest_actual_job=${latest_job}
+    		fi
+        done
 
 		# Check potential periods
 		pot_list=$(ls "${potdir}" | cut -d' ' -f1-2)
@@ -296,7 +321,7 @@ for d in ${dirlist}; do
 	echo ${thisline} >> $tmpfile
 done
 
-cat $tmpfile | column --table --table-columns RUNSET,HIST,SSP,ACT,${pot_col_heads} -s ": "
+cat $tmpfile | column --table --table-columns RUNSET,HIST,SSP,${act_col_heads}${pot_col_heads} -s ": "
 
 #rm $tmpfile
 
