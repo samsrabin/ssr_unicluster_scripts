@@ -166,8 +166,12 @@ elif [[ "${dependency_tmp}" != "" ]]; then
 	dependency="#SBATCH -d afterany:$dependency_tmp"
 fi
 
-if [[ "${tasks_per_core}" -ne 1 && "${tasks_per_core}" -ne 2 ]]; then
-    echo "tasks_per_core can be only 1 or 2; you said: ${tasks_per_core}"
+if [[ "${tasks_per_core}" -eq 1 ]]; then
+    bindto_mapby="core"
+elif [[ "${tasks_per_core}" -eq 2 ]]; then
+    bindto_mapby="hwthread"
+else
+    echo "tasks_per_core must be 1 or 2; you said: ${tasks_per_core}"
     exit 1
 fi
 
@@ -477,7 +481,7 @@ mpirun_options=""
 if [[ \$diagnostics -eq 1 ]]; then
 	if [[ \$(which mpirun | grep "openmpi" | wc -l) -eq 1 ]]; then
 		#mpirun_options="-display-map -tag-output"
-		mpirun_options="--bind-to core --map-by core -report-bindings -display-map -tag-output"
+		mpirun_options="--bind-to ${bindto_mapby} --map-by ${bindto_mapby} -report-bindings -display-map -tag-output"
 	elif [[ \$(which mpirun | grep "intel" | wc -l) -eq 1 ]]; then
 		mpirun_options="-print-rank-map -prepend-rank"
 	else
