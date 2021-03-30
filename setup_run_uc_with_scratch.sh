@@ -328,8 +328,13 @@ set -e
 if [[ $result == 0 ]]; then
 	echo "Removing existing run*/ directories..."
 	for d in $(ls -d run*/ | grep -E "^run[0-9]+/"); do
-		rm $d/*
-		rmdir $d 
+        if [[ -d "${d}" ]]; then
+            # Only try to remove contents if not empty
+            if [[ ! -z "$(ls -A "${d}")" ]]; then
+    		    rm $d/*
+            fi
+		    rmdir $d 
+        fi
 	done
 fi
 
