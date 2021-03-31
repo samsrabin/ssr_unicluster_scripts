@@ -111,6 +111,13 @@ function get_symbol() {
 						else
 							symbol="${symbol_canceled_manual}"
 						fi
+                    # Otherwise, check if we've already processed this stdout
+                    elif [[ -e ${file_stdout}.ok ]]; then
+                        symbol="${symbol_ok}"
+                    elif [[ -e ${file_stdout}.canceled_manual ]]; then
+                        symbol="${symbol_canceled_manual}"
+                    elif [[ -e ${file_stdout}.fail ]]; then
+                        symbol="${symbol_failed}"
 					# Otherwise...
 					else
 						# If all cells completed with "Finished" message, that's great!
@@ -123,16 +130,19 @@ function get_symbol() {
 				        nunfinished=$((nprocs - nfinished))
 						if [[ $nprocs == $nfinished ]]; then
 							symbol="${symbol_ok}"
+                            touch ${file_stdout}.ok
 			
 						# If not, was job canceled?
 						elif [[ $(tail -n 100 ${file_stdout} | grep "State: CANCELLED" | wc -l) -ne 0 ]]; then
 							symbol="${symbol_canceled_manual}"
+                            touch ${file_stdout}.canceled_manual
 			
 						# Otherwise, assume run failed.
 						else
                             >&2 echo $nprocs
                             >&2 echo $nfinished
 							symbol="${symbol_failed}"
+                            touch ${file_stdout}.fail
 						fi
 
 					fi # Was it canceled before beginning?
