@@ -312,7 +312,7 @@ for d in ${dirlist}; do
 
     		homedir_rel="${d_act}"
             if [[ $x -eq 1 ]]; then
-                thisline="${thisline} ${ssp}"
+                thisline="${thisline} ${ssp/ssp/}"
             fi
     		check_jobs ${thischain_name}_${ssp}_
     		if [[ ${latest_job} -gt ${latest_actual_job} ]]; then
