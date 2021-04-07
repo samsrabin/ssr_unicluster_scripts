@@ -144,8 +144,6 @@ function do_setup {
    g2p_setup_1run.sh ${topinsfile} "$(get_ins_files)" ${gridlist} ${inputmodule} ${nproc} ${arch} ${walltime} -p "${prefix}" -s ${state_path} ${submit} ${ppfudev} ${dependency} ${reservation}
 }
 
-mkdir -p potential
-
 #############################################################################################
 
 while [[ ! -d actual ]]; do
@@ -155,6 +153,8 @@ while [[ ! -d actual ]]; do
 		exit 1
 	fi
 done
+
+mkdir -p potential
 
 # Get job name prefix
 prefix="$(g2p_chain_shortname.sh $(basename ${PWD}) ${istest})"
