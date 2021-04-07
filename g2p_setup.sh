@@ -304,7 +304,8 @@ for thisSSP in $(ls -d ssp*); do
    echo "#########################"
    set " "
    cd ../potential
-	state_path=$(echo $state_path | sed -E "s/ -L.*//")
+   save_years=""
+   state_path=$(echo $state_path | sed -E "s/ -L.*//")
    . g2p_setup_potential_loop.sh ${thisSSP} ${future_y1} ${future_yN}
    cd ../actual
    echo " "
