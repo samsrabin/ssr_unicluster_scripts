@@ -214,7 +214,11 @@ elif [[ ! -e "${workdir}" ]]; then
 fi
 rundir_top=$workdir/$(pwd | sed "s@/pfs/data5/home@/home@" | sed "s@${HOME}/@@")
 if [[ ${dev} -eq 1 ]]; then
-    thisbasename=$(g2p_get_basename.sh)
+    if [[ $PWD == *calibration* ]]; then
+        thisbasename="calibration"
+    else
+        thisbasename=$(g2p_get_basename.sh)
+    fi
     rundir_top=$(echo ${rundir_top} | sed "s@${thisbasename}@${thisbasename}_test@")
     state_path_absolute=$(echo ${state_path_absolute} | sed "s@${thisbasename}@${thisbasename}_test@")
     if [[ "${linked_restart_dir_array}" != "" ]]; then
