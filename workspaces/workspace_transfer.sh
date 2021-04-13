@@ -31,5 +31,5 @@ rsync -ahm --info=progress2 --partial ${ws1_path}/ ${ws2_path}
 # And again, for good measure
 rsync -ahm --info=progress2 --partial ${ws1_path}/ ${ws2_path}
 
-
-exit 0
+# Exit with the exit code of the rsync
+exit $?

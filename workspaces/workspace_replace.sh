@@ -28,6 +28,14 @@ fi
 ws_allocate ${ws2} 9999999
 
 workspace_transfer.sh ${ws1} ${ws2}
+exitcode=$?
+
+if [[ $exitcode -eq 0 ]]; then
+    echo "Completed successfully. To release old workspace:"
+    echo "    ws_release ${ws1}"
+else
+    echo "workspace_transfer.sh exited with code $exitcode"
+fi
 
 
 exit 0
