@@ -32,16 +32,27 @@ cp -a ../${gl} ${gl_minusfailed}
 # Get logs
 echo "   Getting logs..."
 mkdir -p logs
+set +e
 for x in $(seq 0 $((nparts - 1))); do
    thisout="logs/run$((x+1)).out"
    thiserr="logs/run$((x+1)).err"
    if [[ ! -f "${thisout}" ]]; then
       grep "\[1,$x\]" ${stdoutfile} > "${thisout}"
+      lastexit=$?
+      if [[ $lastexit -ne 0 ]]; then
+          echo "grep \"\[1,$x\]\" ${stdoutfile} > \"${thisout}\" : exited with code $lastexit"
+          exit $lastexit
+      fi
    fi
    if [[ ! -f "${thiserr}" ]]; then
       grep "\[1,$x\]" ${stderrfile} > "${thiserr}"
+      if [[ $lastexit -ne 0 ]]; then
+          echo "grep \"\[1,$x\]\" ${stderrfile} > \"${thiserr}\" : exited with code $lastexit"
+          exit $lastexit
+      fi
    fi
 done
+set -e
 
 # Get list of failed cells
 failranks=$(grep -i "invalid\|fail\|error" ${stdoutfile} | grep -v "Will fail if" | grep -oE "\[[0-9]+,[0-9]+\]" | sed -e "s/\[[0-9]\+,//" | sed "s/\]//")
