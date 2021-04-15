@@ -4,10 +4,10 @@ set -e
 # Name of this ins-file
 insfile=$1
 if [[ ! -e "${insfile}" ]]; then
-   >&2 echo "get_param.sh: ${insfile} not found!"
+   >&2 echo "get_ins_dependencies.sh: ${insfile} not found!"
    exit 1
 elif [[ "${insfile}" == "" ]]; then
-   >&2 echo "get_param.sh: You must provide a top insfile"
+   >&2 echo "get_ins_dependencies.sh: You must provide a top insfile"
    exit 1
 fi
 
