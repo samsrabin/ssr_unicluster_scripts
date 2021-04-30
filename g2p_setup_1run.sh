@@ -7,8 +7,6 @@ if [[ "$#" -eq "0" ]]; then
     exit
 fi
 
-lpjg_topdir=$HOME/lpj-guess_git-svn_20190828
-
 #############################################################################################
 # Function-parsing code from https://gist.github.com/neatshell/5283811
 
@@ -39,6 +37,7 @@ echo -e "  --no_fu Do not start finishup job\n"
 echo -e "  --no_pp Do not start postprocessing job\n"
 echo -e "  --dev                           Use one of the dev queues. Add --pp to also start a postprocessing job.\n"
 echo -e "  --submit                      Go ahead and submit the job (and postprocessing, if applicable).\n"
+echo -e "  --lpjg_topdir The complete path to the directory containing the build dir.\n"
 echo -e "  -h,  --help                 Prints this help\n"
 example
 }
@@ -101,6 +100,7 @@ reservation=
 linked_restart_dir_array=()
 pp_y1=
 pp_yN=
+lpjg_topdir=$HOME/lpj-guess_git-svn_20190828
 
 # Args while-loop
 while [ "$1" != "" ];
@@ -120,6 +120,9 @@ do
             ;;
         -r  | --reservation )  shift
             reservation=$1
+            ;;
+        --lpjg_topdir)  shift
+            lpjg_topdir=$1
             ;;
         --pp_y1)  shift
             pp_y1=$1
@@ -183,7 +186,8 @@ fi
 # Parse absolute state path, if not provided
 if [[ "${state_path_absolute}" == "" ]]; then
     topdir=$(realpath ..)
-    state_path_absolute=$(realpath $(echo $topdir | sed "s@/pfs/data5@@" | sed "s@$HOME@$WORK@" | sed "s@/$topdir@@")/states)
+#    state_path_absolute=$(realpath $(echo $topdir | sed "s@/pfs/data5@@" | sed "s@$HOME@$WORK@" | sed "s@/$topdir@@")/states)
+    state_path_absolute=$(realpath $(echo $topdir | sed "s@/pfs/data5@@" | sed "s@$HOME@$WORK@" | sed "s@/$topdir@@"))/states
 fi
 
 # Are we in an actual, potential, or calibration run?
