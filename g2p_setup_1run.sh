@@ -318,6 +318,11 @@ if [[ -e $lpjg_dir/latest_commit.txt ]]; then
     rsync -a  $lpjg_dir/latest_commit.txt $rundir_top
 fi
 
+# SSR 2021-04-30
+if [[ -e $lpjg_dir/latest_cmake.txt ]]; then
+    rsync -a  $lpjg_dir/latest_cmake.txt $rundir_top
+fi
+
 cp $gridlist $rundir_top
 for ins in $insfile $extra_insfiles; do
     cp $ins $rundir_top
