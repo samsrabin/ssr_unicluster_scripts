@@ -1,10 +1,12 @@
 #!/bin/bash
 set -e
 
-reservation="-r landsymm-project"
+reservation=""
+#reservation="-r landsymm-project"
 realinsfile="main.ins"
-#testinsfile="main_test2.ins"; testnproc=1
-testinsfile="main_test2x2.ins"; testnproc=2
+testinsfile="main_test2.ins"; testnproc=1
+#testinsfile="main_test2x2.ins"; testnproc=2
+#testinsfile="main_test160x3.ins"; testnproc=160
 inputmodule="cfx"
 nproc=160
 arch="g2p"
@@ -120,7 +122,7 @@ if [[ ${thisSSP} != "" ]]; then
          link_arguments="${link_arguments} -L ${state_path_prev}/$y"
       fi
    done
-   state_path_absolute="${state_path_thisSSP} ${link_arguments}"
+   state_path_absolute="-s ${state_path_thisSSP} ${link_arguments}"
 fi
 echo "${state_path_absolute}"
 }
@@ -141,7 +143,7 @@ function do_setup {
 		[[ "${state_path}" == "get_param.sh_FAILED" ]] && exit 1
    fi
 	#croplist=$(grep "pft" $(ls -tr crop_n_pftlist.*.ins  | tail -n 1) | sed -E 's/pft\s+"([^".]+)"\s*\(/\1/g' | grep -v "ExtraCrop")
-   g2p_setup_1run.sh ${topinsfile} "$(get_ins_files)" ${gridlist} ${inputmodule} ${nproc} ${arch} ${walltime} -p "${prefix}" -s ${state_path} ${submit} ${ppfudev} ${dependency} ${reservation}
+   g2p_setup_1run.sh ${topinsfile} "$(get_ins_files)" ${gridlist} ${inputmodule} ${nproc} ${arch} ${walltime} -p "${prefix}" ${state_path} ${submit} ${ppfudev} ${dependency} ${reservation} --lpjg_topdir $HOME/trunk_fromPA_20161012
 }
 
 #############################################################################################
@@ -201,15 +203,13 @@ fi
 echo " "
 
 # Set up dirForPLUM
-rundir_top=$workdir/$(pwd | sed "s@/pfs/data5/home@/home@" | sed "s@${HOME}/@@")
-if [[ ${istest} -eq 1 ]]; then
-	thisbasename=$(g2p_get_basename.sh)
-	rundir_top=$(echo ${rundir_top} | sed "s@${thisbasename}@${thisbasename}_test@")
+thisbasename=$(g2p_get_basename.sh)
+rundir_top=$(get_rundir_top.sh ${istest})
+if [[ "${rundir_top}" == "" ]]; then
+    echo "Error finding rundir_top; exiting."
+    exit 1
 fi
-if [[ ! -d ${rundir_top} ]]; then
-	echo "rundir_top not found: ${rundir_top}"
-	exit 1
-fi
+mkdir -p "${rundir_top}"
 if [[ "${dirForPLUM}" == "" ]]; then
     dirForPLUM=$(realpath ${rundir_top}/../..)/outputs/outForPLUM-$(date "+%Y-%m-%d-%H%M%S")
 fi
@@ -247,9 +247,11 @@ for thisSSP in $(ls -d ssp*); do
    sed -i "s/OUTY1/${future_y1}/g" postproc.sh
    sed -i "s/OUTYN/$((firstPart2yr - 1))/g" postproc.sh
    sed -i "s/NYEARS_POT/${Nyears_pot}/g" postproc.sh
-	# Set up run
+   
+   # Set up run
    state_path=""
-   state_path_absolute=$(echo $PWD | sed "s@/pfs/data5@@" | sed "s@$HOME@$WORK@" | sed "s@/$PWD@@")/states
+   state_path_absolute=$(get_state_path_absolute.sh "${rundir_top}" "${state_path_absolute}")
+   
    state_path_thisSSP="${state_path_absolute}"
    state_path_prev=$(echo ${state_path_thisSSP} | sed "s@/${thisDir}/@/hist/@")
    topdir_prev=$(echo $PWD | sed "s@/${thisDir}@/hist@")
@@ -283,7 +285,7 @@ for thisSSP in $(ls -d ssp*); do
     # Set up run
    state_path=""
    state_path=""
-   state_path_absolute=$(echo $PWD | sed "s@/pfs/data5@@" | sed "s@$HOME@$WORK@" | sed "s@/$PWD@@")/states
+   state_path_absolute=$(get_state_path_absolute.sh "${rundir_top}" "${state_path_absolute}")
    state_path_thisSSP="${state_path_absolute}"
    state_path_prev=$(echo ${state_path_thisSSP} | sed "s@/${thisDir}/@/${prevDir}/@")
    topdir_prev=$(echo $PWD | sed "s@/${thisDir}@/${prevDir}@")

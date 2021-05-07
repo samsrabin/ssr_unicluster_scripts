@@ -183,12 +183,6 @@ elif [[ ${dev} -eq 1 ]]; then
     fi
 fi
 
-# Parse absolute state path, if not provided
-if [[ "${state_path_absolute}" == "" ]]; then
-    topdir=$(realpath ..)
-    state_path_absolute=$(echo $topdir | sed "s@/pfs/data5@@" | sed "s@$HOME@$WORK@" | sed "s@/$topdir@@")/states
-fi
-
 # Are we in an actual, potential, or calibration run?
 if [[ $PWD == *"/actual/"* ]]; then
     whichrun="act"
@@ -201,37 +195,35 @@ else
     exit 1
 fi
 
+# Get name of this runset
+if [[ $PWD == *calibration* ]]; then
+    runsetname="calibration"
+else
+    runsetname=$(g2p_get_basename.sh)
+fi
+
 # Get directories, modifying paths if testing
 runid=$(basename $PWD)
 jobname=${runid}_$(date "+%Y%m%d%H%M%S")
 if [[ ${prefix} != "" ]]; then
     jobname=${prefix}_${jobname}
 fi
-workdir=$WORK
-if [[ "${workdir}" == "" ]]; then
-    echo "\$WORK undefined"
-    exit 1
-elif [[ ! -e "${workdir}" ]]; then
-    echo "\$WORK not found: $WORK"
+rundir_top=$(get_rundir_top.sh ${dev})
+if [[ "${rundir_top}" == "" ]]; then
+    echo "Error finding rundir_top; exiting."
     exit 1
 fi
-rundir_top=$workdir/$(pwd | sed "s@/pfs/data5/home@/home@" | sed "s@${HOME}/@@")
+
 if [[ ${dev} -eq 1 ]]; then
-    if [[ $PWD == *calibration* ]]; then
-        thisbasename="calibration"
-    else
-        thisbasename=$(g2p_get_basename.sh)
-    fi
-    rundir_top=$(echo ${rundir_top} | sed "s@${thisbasename}@${thisbasename}_test@")
-    state_path_absolute=$(echo ${state_path_absolute} | sed "s@${thisbasename}@${thisbasename}_test@")
     if [[ "${linked_restart_dir_array}" != "" ]]; then
         for i in "${!linked_restart_dir_array[@]}"; do 
             lrd=${linked_restart_dir_array[$i]}
-            lrd=$(echo ${lrd} | sed "s@${thisbasename}@${thisbasename}_test@")
+            lrd=$(echo ${lrd} | sed "s@${runsetname}@${runsetname}_test@")
             linked_restart_dir_array[$i]=${lrd}
         done
     fi
 fi
+state_path_absolute=$(get_state_path_absolute.sh "${rundir_top}" "${state_path_absolute}")
 
 # End function-parsing code
 #############################################################################################
