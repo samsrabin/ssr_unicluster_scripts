@@ -203,13 +203,13 @@ for y1 in ${y1_list}; do
        exit 1
     fi
      sed -i "s/CROPLIST/${croplist}/g" postproc.sh
-    # Replace Nfertlist
-    nfertlist=$(echo $(grep "st " crop_n_stlist.*.ins | sed "s/C[34]//g" | grep -oE "[0-9]+\"" | sort | uniq | sed 's/"//') | sed 's/ /\" \"/g')
-    if [[ "${nfertlist}" == "" ]]; then
-       echo "Unable to parse nfertlist; failing"
-       exit 1
-    fi
-    sed -i "s/NFERTLIST/${nfertlist}/g" postproc.sh
+#    # Replace Nfertlist
+#    nfertlist=$(echo $(grep "st " crop_n_stlist.*.ins | sed "s/C[34]//g" | grep -oE "[0-9]+\"" | sort | uniq | sed 's/"//') | sed 's/ /\" \"/g')
+#    if [[ "${nfertlist}" == "" ]]; then
+#       echo "Unable to parse nfertlist; failing"
+#       exit 1
+#    fi
+#    sed -i "s/NFERTLIST/${nfertlist}/g" postproc.sh
     
     # Actually set up and even submit, if being called from within setup_all.sh
     if [[ ${actually_setup} -eq 1 ]]; then
