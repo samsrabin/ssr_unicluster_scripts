@@ -196,6 +196,11 @@ else
 fi
 
 # Get name of this runset
+runsetname=$(get_runset_name.sh)
+if [[ "${runsetname}" == "" ]]; then
+    echo "runsetname is blank"
+    exit 1
+fi
 if [[ $PWD == *calibration* ]]; then
     runsetname="calibration"
 else

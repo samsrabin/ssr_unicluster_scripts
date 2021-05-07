@@ -17,10 +17,10 @@ elif [[ ! -e "${WORK}" ]]; then
 fi
 
 # Get name of this runset
-if [[ $PWD == *calibration* ]]; then
-    runsetname="calibration"
-else
-    runsetname=$(g2p_get_basename.sh)
+runsetname=$(get_runset_name.sh)
+if [[ "${runsetname}" == "" ]]; then
+    echo "runsetname is blank"
+    exit 1
 fi
 
 rundir_top="$WORK/$(pwd | sed "s@/pfs/data5/home@/home@" | sed "s@${HOME}/@@")"
