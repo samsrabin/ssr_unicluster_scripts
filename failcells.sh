@@ -59,17 +59,20 @@ failranks=$(grep -i "invalid\|fail\|error" ${stdoutfile} | grep -v "Will fail if
 if [[ "${failranks}" != "" ]]; then
    echo "   Getting ${gl_failcells} and ${gl_minusfailed}..."
    for r in ${failranks}; do
-        thisfile=logs/run$(( r+1 )).out
-        if [[ ! -e "${thisfile}" ]]; then
-            echo "File ${thisfile} does not exist! Halting."
-            exit 1
-        fi
+      thisfile=logs/run$(( r+1 )).out
+      if [[ ! -e "${thisfile}" ]]; then
+          echo "File ${thisfile} does not exist! Halting."
+          exit 1
+      fi
       tmp=$(grep "Commenc" logs/run$((r+1)).out | tail -n 1 | grep -oE " at .*$" | grep -oE "[-0-9\.]+,[-0-9\.]+" | head -n 1 | sed "s/(\|)//g" | sed "s/,/ /")
-        # It's possible that failures happened because of something that happened before any gridcells began
-        if [[ "${tmp}" != "" ]]; then
-          echo $tmp >> ${gl_failcells}
-          sed -i "/${tmp}/d" ${gl_minusfailed}   
-        fi
+      if [[ "${tmp}" == "" ]]; then
+          tmp=$(grep "Problems with" logs/run$((r+1)).out | tail -n 1 | grep -oE "[-0-9\.]+,[-0-9\.]+" | tail -n 1 | sed "s/,/ /")
+      fi
+      # It's possible that failures happened because of something that happened before any gridcells began
+      if [[ "${tmp}" != "" ]]; then
+        echo $tmp >> ${gl_failcells}
+        sed -i "/${tmp}/d" ${gl_minusfailed}   
+      fi
    done
 fi
 
@@ -95,6 +98,9 @@ if [[ $(grep -L "Finished" logs/*.out | wc -l) -gt 0 ]]; then
        echo "   Removing failed cells..."
        for r in ${failranks}; do
           tmp=$(grep "Commenc" logs/run$((r+1)).out | tail -n 1 | grep -oE " at .*$" | grep -oE "[-0-9\.]+,[-0-9\.]+" | head -n 1 | sed "s/(\|)//g" | sed "s/,/ /")
+          if [[ "${tmp}" == "" ]]; then
+              tmp=$(grep "Problems with" logs/run$((r+1)).out | tail -n 1 | grep -oE "[-0-9\.]+,[-0-9\.]+" | tail -n 1 | sed "s/,/ /")
+          fi
           sed -i "/${tmp}/d" ${gl_notruncells}   
        done
     fi
