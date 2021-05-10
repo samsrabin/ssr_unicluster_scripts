@@ -315,7 +315,7 @@ for d in ${dirlist}; do
             if [[ $x -eq 1 ]]; then
                 thisline="${thisline} ${ssp/ssp/}"
             fi
-    		check_jobs ${thischain_name}_${ssp}_
+            check_jobs ${thischain_name}_$(basename ${d_act})_
     		if [[ ${latest_job} -gt ${latest_actual_job} ]]; then
     			latest_actual_job=${latest_job}
     		fi
