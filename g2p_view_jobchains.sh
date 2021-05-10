@@ -1,6 +1,7 @@
 #!/bin/bash
 set -e
 
+remap_code_ver="remap12_2016"
 testing=0
 symbol_norun="--"            # No run started for this period within this job chain.
 symbol_pend_depend="👀"      # Pending: waiting on dependency
@@ -231,7 +232,7 @@ function check_jobs {
 
 }
 
-cd /home/kit/imk-ifu/lr8247/g2p/runs/remap12
+cd "/home/kit/imk-ifu/lr8247/g2p/runs/${remap_code_ver}"
 
 tmpfile=.tmp.g2p_view_jobchains.$(date +%N)
 touch $tmpfile
