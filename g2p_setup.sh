@@ -10,9 +10,9 @@ testinsfile="main_test160x3.ins"; testnproc=160
 inputmodule="cfx"
 nproc=160
 arch="g2p"
-walltime_hist="48:00:00" # Should take around 37 hours
-walltime_fut="12:00:00"  # Should take around 9.5 hours
-walltime_pot="12:00:00"  # Should take around 10 hours
+walltime_hist="4:00:00" # Should take around 2 hours
+walltime_fut="4:00:00"  # Should take around 1.5 hours
+walltime_pot="2:00:00"  # Should take around 1 hour
 future_y1=2015
 firstPart2yr=2044 # The year that will be the first in the 2nd part of the SSP period
 future_yN=2089 # Because last year of emulator output is 2084
