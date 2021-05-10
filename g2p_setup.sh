@@ -6,7 +6,7 @@ reservation=""
 realinsfile="main.ins"
 testinsfile="main_test2.ins"; testnproc=1
 #testinsfile="main_test2x2.ins"; testnproc=2
-#testinsfile="main_test160x3.ins"; testnproc=160
+testinsfile="main_test160x3.ins"; testnproc=160
 inputmodule="cfx"
 nproc=160
 arch="g2p"
@@ -14,9 +14,9 @@ walltime_hist="48:00:00" # Should take around 37 hours
 walltime_fut="12:00:00"  # Should take around 9.5 hours
 walltime_pot="12:00:00"  # Should take around 10 hours
 future_y1=2015
-firstPart2yr=2045 # The year that will be the first in the 2nd part of the SSP period
+firstPart2yr=2044 # The year that will be the first in the 2nd part of the SSP period
 future_yN=2089 # Because last year of emulator output is 2084
-Nyears_getready=5
+Nyears_getready=1
 Nyears_pot=5
 
 firstpotyear=$((future_y1 - Nyears_getready - 2*Nyears_pot))
