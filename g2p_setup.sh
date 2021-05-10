@@ -18,6 +18,7 @@ firstPart2yr=2044 # The year that will be the first in the 2nd part of the SSP p
 future_yN=2089 # Because last year of emulator output is 2084
 Nyears_getready=1
 Nyears_pot=5
+sequential_pot=1
 
 firstpotyear=$((future_y1 - Nyears_getready - 2*Nyears_pot))
 
@@ -48,6 +49,12 @@ do
          ;;
       --fu)
          arg_do_fu=1
+         ;;
+      --seq-pot)
+         sequential_pot=1
+         ;;
+      --no-seq-pot)
+         sequential_pot=0
          ;;
 	  --dirForPLUM)  shift
 		 dirForPLUM="$1"
@@ -224,11 +231,13 @@ cd ..
 echo " "
 echo " "
 
-# All other runs will have dependency
-dependency="-d LATEST"
 
 # Set up SSP actual and potential runs
 for thisSSP in $(ls -d ssp*); do
+
+   # Actual runs always wait for previous hist or SSP run to complete
+   dependency="-d LATEST"
+
    theseYears="${future_y1}-$((firstPart2yr - 1))"
    echo "###############################"
    echo "### actual/${thisSSP} ${theseYears} ###"
@@ -305,6 +314,12 @@ for thisSSP in $(ls -d ssp*); do
    echo "### potential/${thisSSP} ###"
    echo "#########################"
    set " "
+
+   # Set dependency for all potential runs to latest actual run
+   if [[ ${sequential_pot} -eq 0 ]]; then
+       lastactrun=$(tail ~/submitted_jobs.log | grep "LPJ-GUESS" | tail -n 1 | grep -oE "[0-9]+")
+       dependency="-d ${lastactrun}"
+   fi
    cd ../potential
    save_years=""
    state_path=$(echo $state_path | sed -E "s/ -L.*//")
