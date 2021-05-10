@@ -117,11 +117,11 @@ if [[ ${thisSSP} != "" ]]; then
    fi
 
    link_arguments=""
-   for y in ${save_years}; do
-      if [[ ${y} -ge ${firstpotyear}  && ${y} -le ${lasthistyear} ]]; then
-         link_arguments="${link_arguments} -L ${state_path_prev}/$y"
-      fi
-   done
+#   for y in ${save_years}; do
+#      if [[ ${y} -ge ${firstpotyear}  && ${y} -le ${lasthistyear} ]]; then
+#         link_arguments="${link_arguments} -L ${state_path_prev}/$y"
+#      fi
+#   done
    state_path_absolute="-s ${state_path_thisSSP} ${link_arguments}"
 fi
 echo "${state_path_absolute}"
