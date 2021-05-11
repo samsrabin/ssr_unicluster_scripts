@@ -186,7 +186,7 @@ if [[ "${gridlist}" == "" ]]; then
 fi
 
 # Set up postprocessing
-firstactyear=$((firstpotyear + Nyears_getready))
+outy1=$((firstpotyear + Nyears_getready))
 # Copy over template script
 postproc_template="$HOME/scripts/g2p_postproc.template.act.sh"
 if [[ ! -f ${postproc_template} ]]; then
@@ -195,7 +195,7 @@ if [[ ! -f ${postproc_template} ]]; then
 fi
 cp ${postproc_template} postproc.sh
 # Replace years
-sed -i "s/OUTY1/${firstactyear}/g" postproc.sh
+sed -i "s/OUTY1/${outy1}/g" postproc.sh
 sed -i "s/OUTYN/$((future_y1 - 1))/g" postproc.sh
 sed -i "s/NYEARS_POT/${Nyears_pot}/g" postproc.sh
 # Set up top-level output directory
@@ -253,7 +253,10 @@ for thisSSP in $(ls -d ssp*); do
    fi
    cp ${postproc_template} postproc.sh
    # Replace years
-   sed -i "s/OUTY1/${future_y1}/g" postproc.sh
+   while [[ ${outy1} -lt ${future_y1} ]]; do
+       outy1=$((outy1 + Nyears_pot))
+   done
+   sed -i "s/OUTY1/${outy1}/g" postproc.sh
    sed -i "s/OUTYN/$((firstPart2yr - 1))/g" postproc.sh
    sed -i "s/NYEARS_POT/${Nyears_pot}/g" postproc.sh
    
@@ -288,10 +291,13 @@ for thisSSP in $(ls -d ssp*); do
    fi
    cp ${postproc_template} postproc.sh
    # Replace years
-   sed -i "s/OUTY1/${firstPart2yr}/g" postproc.sh
+   while [[ ${outy1} -lt ${firstPart2yr} ]]; do
+       outy1=$((outy1 + Nyears_pot))
+   done
+   sed -i "s/OUTY1/${outy1}/g" postproc.sh
    sed -i "s/OUTYN/${future_yN}/g" postproc.sh
    sed -i "s/NYEARS_POT/${Nyears_pot}/g" postproc.sh
-    # Set up run
+   # Set up run
    state_path=""
    state_path=""
    state_path_absolute=$(get_state_path_absolute.sh "${rundir_top}" "${state_path_absolute}")
