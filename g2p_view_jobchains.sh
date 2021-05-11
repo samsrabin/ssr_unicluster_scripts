@@ -30,12 +30,7 @@ _capture() { { out="$("${@:2}" 3<&-; "$2_" >&3)"; ret=$?; printf "%q=%q;" "$1" "
 capture() { eval "$(_capture "$@")"; }
 
 
-if [[ $testing -eq 0 ]]; then
-    jobs=$(squeue -o "%P %i %j %T %r")
-else
-    # Note: { grep ... || true; } ensures that no error occurs if grep finds no matches
-    jobs=$(squeue -o "%P %i %j %T %r" | { grep "dev_sin" || true; })
-fi
+jobs=$(squeue -o "%P %i %j %T %r")
 
 #function string_contains {
 #	result=0
