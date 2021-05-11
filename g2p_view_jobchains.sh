@@ -71,14 +71,18 @@ function get_symbol() {
         >&2 echo "pwd: $PWD"
         exit 14
     fi
+    homedir_rel_tmp=
     if [[ $testing -eq 0 ]]; then 
-        workdir=$(realpath "${homedir_rel}" | sed "s@/pfs/data5@@" | sed "s@$HOME@$WORK@")
+        homedir_rel_tmp="${homedir_rel}"
     else
-        workdir=$(realpath $(echo "${homedir_rel}" | sed "s@/@_test/@") | sed "s@/pfs/data5@@" | sed "s@$HOME@$WORK@")
+        homedir_rel_tmp=$(echo "${homedir_rel}" | sed "s@/@_test/@")
+    fi
+    if [[ -d ${homedir_rel_tmp} ]]; then
+        workdir=$(realpath "${homedir_rel_tmp}" | sed "s@/pfs/data5@@" | sed "s@$HOME@$WORK@")
     fi
 
     # workdir does NOT exist
-    if [[ ! -d "${workdir}" ]]; then
+    if [[ ! -d "${homedir_rel_tmp}" || ! -d "${workdir}" ]]; then
         symbol="${symbol_norun}"
 
         # workdir DOES exist
@@ -99,7 +103,7 @@ function get_symbol() {
                 if [[ ${latest_job} -lt ${latest_actual_job} ]]; then
                     symbol="${symbol_norun}"
 
-                    # Otherwise, check if simulation began
+                # Otherwise, check if simulation began
                 else
                     file_stdout="guess_x.o${latest_job}"
                     # If not, assume it was canceled before beginning.
@@ -112,14 +116,14 @@ function get_symbol() {
                         else
                             symbol="${symbol_canceled_manual}"
                         fi
-                        # Otherwise, check if we've already processed this stdout
+                    # Otherwise, check if we've already processed this stdout
                     elif [[ -e ${file_stdout}.ok ]]; then
                         symbol="${symbol_ok}"
                     elif [[ -e ${file_stdout}.canceled_manual ]]; then
                         symbol="${symbol_canceled_manual}"
                     elif [[ -e ${file_stdout}.fail ]]; then
                         symbol="${symbol_failed}"
-                        # Otherwise...
+                    # Otherwise...
                     else
                         # If all cells completed with "Finished" message, that's great!
                         nprocs=$({ head "${file_stdout}" | grep -oE "Total slots allocated [0-9]+" | grep -oE "[0-9]+" || true; })
@@ -133,12 +137,12 @@ function get_symbol() {
                             symbol="${symbol_ok}"
                             touch ${file_stdout}.ok
 
-                            # If not, was job canceled?
+                        # If not, was job canceled?
                         elif [[ $(tail -n 100 ${file_stdout} | grep "State: CANCELLED" | wc -l) -ne 0 ]]; then
                             symbol="${symbol_canceled_manual}"
                             touch ${file_stdout}.canceled_manual
 
-                            # Otherwise, assume run failed.
+                        # Otherwise, assume run failed.
                         else
                             >&2 echo $nprocs
                             >&2 echo $nfinished
@@ -149,7 +153,7 @@ function get_symbol() {
                     fi # Was it canceled before beginning?
                 fi # Was a run started in this chain?
 
-                # JOBFIN
+            # JOBFIN
             else
                 latest_job=$(grep "job_finish" latest_submitted_jobs.log | awk 'END {print $NF}')
                 # If no run was started in this chain, then say so
@@ -192,7 +196,7 @@ function get_symbol() {
                 fi # Was a run started in this chain?	
             fi # Is it a simulation or jobfin?
 
-            # There ARE matching jobs
+        # There ARE matching jobs
         else
             latest_job=$(echo ${matching_jobs} | cut -d' ' -f2)
             status=$(echo ${matching_jobs} | cut -d' ' -f4)
