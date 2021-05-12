@@ -368,8 +368,8 @@ for d in ${dirlist}; do
             check_jobs ${thischain_name}_${pot}
         done
 
+        echo ${thisline} >> $tmpfile
     done
-    echo ${thisline} >> $tmpfile
 done
 
 cat $tmpfile | column --table --table-columns RUNSET,HIST,SSP,${act_col_heads}${pot_col_heads} -s ": "
