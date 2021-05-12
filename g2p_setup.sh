@@ -112,24 +112,7 @@ echo $insfiles
 # Set up function for getting absolute state path
 function get_state_path {
 if [[ ${thisSSP} != "" ]]; then
-   restart_year=$(get_param.sh ${topinsfile} restart_year)
-   if [[ "${restart_year}" == "get_param.sh_FAILED" ]]; then
-      echo "get_param.sh_FAILED"
-      exit 1
-   fi
-   lasthistyear=$(get_param.sh ${topinsfile} lasthistyear)
-   if [[ "${lasthistyear}" == "get_param.sh_FAILED" ]]; then
-      echo "get_param.sh_FAILED"
-      exit 1
-   fi
-
-   link_arguments=""
-#   for y in ${save_years}; do
-#      if [[ ${y} -ge ${firstpotyear}  && ${y} -le ${lasthistyear} ]]; then
-#         link_arguments="${link_arguments} -L ${state_path_prev}/$y"
-#      fi
-#   done
-   state_path_absolute="-s ${state_path_thisSSP} ${link_arguments}"
+   state_path_absolute="-s ${state_path_thisSSP}"
 fi
 echo "${state_path_absolute}"
 }
@@ -226,6 +209,11 @@ echo " "
 
 # Submit historical run
 state_path=""
+hist_save_years="$(get_param.sh ${topinsfile} save_years)"
+if [[ "${hist_save_years}" == "" ]]; then
+    echo "Error getting save_years from hist run"
+    exit 1
+fi
 do_setup ${walltime_hist}
 cd ..
 echo " "
@@ -264,12 +252,21 @@ for thisSSP in ssp126 ssp370 ssp585; do
    sed -i "s/OUTYN/$((firstPart2yr - 1))/g" postproc.sh
    sed -i "s/NYEARS_POT/${Nyears_pot}/g" postproc.sh
    
-   # Set up run
+   
+   # Set up state directory for this SSP
    state_path=""
    state_path_absolute=$(get_state_path_absolute.sh "${rundir_top}" "${state_path_absolute}")
-   
-   state_path_thisSSP="${state_path_absolute}"
-   state_path_prev=$(echo ${state_path_thisSSP} | sed "s@/${thisDir}/@/hist/@")
+   state_path_thisSSP="${state_path_absolute}_${thisSSP}"
+   mkdir -p ${state_path_thisSSP}
+   pushd ${state_path_thisSSP} 1>/dev/null
+   for y in ${hist_save_years}; do
+       if [[ ! -d ${y}/ ]]; then
+           ln -s ../states/${y}
+       fi
+   done
+   popd 1>/dev/null
+
+   # Set up run
    topdir_prev=$(echo $PWD | sed "s@/${thisDir}@/hist@")
    save_years=$(get_param.sh ${topdir_prev}/${topinsfile} "save_years")
    if [[ "${save_years}" == "get_param.sh_FAILED" ]]; then
@@ -302,11 +299,6 @@ for thisSSP in ssp126 ssp370 ssp585; do
    sed -i "s/OUTYN/$((future_yN - Nyears_pot))/g" postproc.sh
    sed -i "s/NYEARS_POT/${Nyears_pot}/g" postproc.sh
    # Set up run
-   state_path=""
-   state_path=""
-   state_path_absolute=$(get_state_path_absolute.sh "${rundir_top}" "${state_path_absolute}")
-   state_path_thisSSP="${state_path_absolute}"
-   state_path_prev=$(echo ${state_path_thisSSP} | sed "s@/${thisDir}/@/${prevDir}/@")
    topdir_prev=$(echo $PWD | sed "s@/${thisDir}@/${prevDir}@")
    save_years2=$(get_param.sh ${topdir_prev}/${topinsfile} "save_years")
    if [[ "${save_years2}" == "get_param.sh_FAILED" ]]; then
@@ -319,7 +311,6 @@ for thisSSP in ssp126 ssp370 ssp585; do
    cd ..
    echo " "
    echo " "
-exit 1
 
    echo "#########################"
    echo "### potential/${thisSSP} ###"

@@ -149,7 +149,7 @@ for y1 in ${y1_list}; do
     mkdir -p ${thisdir}
     
     # Copy actual future run to this directory
-    cp -r ../actual/${thisSSP}/* ${thisdir}/
+    cp -r $(ls -d ../actual/${thisSSP}* | tail -n 1)/* ${thisdir}/
     
     pushd ${thisdir} 1>/dev/null
     
