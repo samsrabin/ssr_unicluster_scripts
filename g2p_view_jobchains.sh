@@ -320,7 +320,7 @@ for d in ${dirlist}; do
         fi
         if [[ "${pot_col_heads}" == "" ]]; then
             pot_col_heads="$(echo $(ls "${potdir}") | sed "s/ /,/g")"
-            pot_col_heads="$(echo ${pot_col_heads} | sed "s/,20/,/g" | sed "s/-20/-/g")"
+            pot_col_heads="$(echo ${pot_col_heads} | sed "s/^20/,/g" | sed "s/,20/,/g" | sed "s/-20/-/g")"
         fi
 
         # Check historical period, if necessary
