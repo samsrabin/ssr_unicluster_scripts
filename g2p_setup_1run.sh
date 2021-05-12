@@ -538,7 +538,7 @@ echo "LPJ-GUESS run: \$jobID" >> latest_submitted_jobs.log
 EOL
 if [[ ${do_finishup} -eq 1 ]]; then
     cat<<EOL >> startguess.sh
-jobID_finish=\$(job_finish.sh -a ${finishup_partition} -d afterany:\$jobID -t ${finishup_t_min} -p ${finishup_nprocs} -N ${jobname} ${reservation_txt_fu})
+jobID_finish=\$(job_finish.sh -a ${finishup_partition} -d afterany:\$jobID -t ${finishup_t_min} -p ${finishup_nprocs} -N ${jobname} ${reservation_txt_fu} | sed "s/Submitted batch job //")
 if [[ "\${jobID_finish}" == "" ]]; then
     exit 1
 fi
