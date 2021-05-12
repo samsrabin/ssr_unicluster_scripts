@@ -2,7 +2,6 @@
 set -e
 
 remap_code_ver="remap12_2016"
-testing=0
 symbol_norun="--"            # No run started for this period within this job chain.
 symbol_pend_depend="👀"      # Pending: waiting on dependency
 symbol_pend_other="⏳"       # Pending: other reason
@@ -13,6 +12,25 @@ symbol_canceled_auto="☹️ "    # Job canceled itself (postprocessing recogniz
 symbol_failed="❌"           # Job failed
 symbol_unknown="❓"          # Job didn't seem to fail or have been canceled
 symbol_unknown2="⁉️ "         # Job not found by sacct
+
+# Set default values for non-positional arguments
+testing=0
+
+# Args while-loop
+while [ "$1" != "" ];
+do
+   case $1 in
+      -t  | --test)
+         testing=1
+         ;;
+      *)
+         echo "$script: illegal option $1"
+         usage
+         exit 1 # error
+         ;;
+   esac
+   shift
+done
 
 pushd () {
     command pushd "$@" > /dev/null
