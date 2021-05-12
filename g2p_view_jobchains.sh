@@ -90,15 +90,13 @@ function get_symbol() {
     else
         homedir_rel_tmp=$(echo "${homedir_rel}" | sed "s@/@_test/@")
     fi
-    if [[ -d ${homedir_rel_tmp} ]]; then
-        workdir=$(realpath "${homedir_rel_tmp}" | sed "s@/pfs/data5@@" | sed "s@$HOME@$WORK@")
-    fi
+    workdir="$(pwd | sed "s@/pfs/data5@@" | sed "s@$HOME@$WORK@")/${homedir_rel_tmp}"
 
     # workdir does NOT exist
-    if [[ ! -d "${homedir_rel_tmp}" || ! -d "${workdir}" ]]; then
+    if [[ ! -d "${homedir_rel_tmp}" && ! -d "${workdir}" ]]; then
         symbol="${symbol_norun}"
 
-        # workdir DOES exist
+    # workdir DOES exist
     else
         pushd "${workdir}"
         workdir_short=$(echo $workdir | sed "s@${WORK}@\$WORK@")
@@ -185,8 +183,9 @@ function get_symbol() {
             # JOBFIN
             else
                 latest_job=$(grep "job_finish" latest_submitted_jobs.log | awk 'END {print $NF}')
+
                 # If no run was started in this chain, then say so
-                if [[ ${latest_job} -lt ${latest_actual_job} ]]; then
+                if [[ ${latest_job} == "" || ${latest_job} -lt ${latest_actual_job} ]]; then
                     fakefile=${latest_job}.fakelastactual_${latest_actual_job}
                     # Sometimes you rerun an actual job but you don't need to rerun the potentials.
                     if [[ -e $fakefile ]]; then
@@ -284,11 +283,12 @@ for d in ${dirlist}; do
     islast_act=0
 
     # If this directory doesn't even have a working directory set up, you can skip
-    thischain_workdir=$(echo $d | sed "s@/pfs/data5@@" | sed "s@$HOME@$WORK@")
+    thischain_workdir=$(realpath $d | sed "s@/pfs/data5@@" | sed "s@$HOME@$WORK@")
     if [[ ${testing} -eq 1 ]]; then
         thischain_workdir="${thischain_workdir}_test"
     fi
     if [[ ! -d ${thischain_workdir} ]]; then
+        echo "thischain_workdir ${thischain_workdir} not found; skipping"
         continue
     fi
 
@@ -300,7 +300,7 @@ for d in ${dirlist}; do
         echo "actdir not found: ${PWD}/${actdir})"
         exit 13
     fi
-    ssp_list=$(ls -d "${actdir}"/ssp[0-9][0-9][0-9] | sed "s@${actdir}/@@g") 
+    ssp_list="ssp126 ssp370 ssp585"
     s=0
     latest_job=""
     latest_actual_job="-1"
@@ -315,8 +315,8 @@ for d in ${dirlist}; do
         # Get potential column headers, if necessary
         potdir="${d}/potential/${ssp}/"
         if [[ ! -d "${potdir}" ]]; then
-            echo "potential-run directory not found: ${PWD}/${potdir}"
-            exit 11
+            #echo "Skipping ${potdir} (directory not found)"
+            continue
         fi
         if [[ "${pot_col_heads}" == "" ]]; then
             pot_col_heads="$(echo $(ls "${potdir}") | sed "s/ /,/g")"
