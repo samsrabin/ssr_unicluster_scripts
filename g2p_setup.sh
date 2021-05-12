@@ -279,6 +279,8 @@ for thisSSP in ssp126 ssp370 ssp585; do
       exit 1
    fi
    do_setup ${walltime_fut}
+   echo " "
+   echo " "
 
    cd ..
    theseYears="${firstPart2yr}-$((future_yN - Nyears_pot))"
