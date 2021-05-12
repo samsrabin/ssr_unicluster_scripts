@@ -219,5 +219,3 @@ for y1 in ${y1_list}; do
     popd 1>/dev/null
 
 done
-
-exit 0
