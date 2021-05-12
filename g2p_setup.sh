@@ -18,7 +18,12 @@ firstPart2yr=2044 # The year that will be the first in the 2nd part of the SSP p
 future_yN=2089 # Because last year of emulator output is 2084
 Nyears_getready=1
 Nyears_pot=5
-sequential_pot=1
+
+if [[ "${reservation}" == "" ]]; then
+    sequential_pot=0
+else
+    sequential_pot=1
+fi
 
 firstpotyear=$((future_y1 - Nyears_getready - 2*Nyears_pot))
 
