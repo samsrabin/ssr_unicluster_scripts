@@ -208,7 +208,11 @@ else
 fi
 
 # Get directories, modifying paths if testing
-runid=$(basename $PWD)
+if [[ "${whichrun}" == "pot" ]]; then
+    runid=$(echo $PWD | grep -oE "ssp[0-9]+/.*" | sed "s@/@_@")
+else
+    runid=$(basename $PWD)
+fi
 jobname=${runid}_$(date "+%Y%m%d%H%M%S")
 if [[ ${prefix} != "" ]]; then
     jobname=${prefix}_${jobname}

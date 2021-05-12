@@ -365,7 +365,7 @@ for d in ${dirlist}; do
         pot_list=$(ls "${potdir}" | cut -d' ' -f1-2)
         for pot in ${pot_list}; do
             homedir_rel="${d}/potential/${ssp}/${pot}"
-            check_jobs ${thischain_name}_${pot}
+            check_jobs ${thischain_name}_${ssp}_${pot}
         done
 
         echo ${thisline} >> $tmpfile
