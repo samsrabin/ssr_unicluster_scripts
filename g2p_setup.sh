@@ -295,7 +295,7 @@ for thisSSP in $(ls -d ssp*); do
        outy1=$((outy1 + Nyears_pot))
    done
    sed -i "s/OUTY1/${outy1}/g" postproc.sh
-   sed -i "s/OUTYN/${future_yN}/g" postproc.sh
+   sed -i "s/OUTYN/$((future_yN - Nyears_pot))/g" postproc.sh
    sed -i "s/NYEARS_POT/${Nyears_pot}/g" postproc.sh
    # Set up run
    state_path=""
@@ -315,6 +315,7 @@ for thisSSP in $(ls -d ssp*); do
    cd ..
    echo " "
    echo " "
+exit 1
 
    echo "#########################"
    echo "### potential/${thisSSP} ###"
