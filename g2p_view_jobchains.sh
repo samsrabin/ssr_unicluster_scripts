@@ -94,9 +94,21 @@ function get_symbol() {
             if [[ "${thepattern:0:6}" != "jobfin" ]]; then
                 latest_job=$(grep "LPJ-GUESS run" latest_submitted_jobs.log | awk 'END {print $NF}')
 
+                # Check if it was canceled
+                was_it_canceled=$(was_canceled ${latest_job})
+                if [[ ${was_it_canceled} -gt 0 ]]; then
+                    symbol="${symbol_canceled_manual}"
+
                 # If no run was started in this chain, then say so
-                if [[ ${latest_job} -lt ${latest_actual_job} ]]; then
-                    symbol="${symbol_norun}"
+                elif [[ ${latest_job} -lt ${latest_actual_job} ]]; then
+                    fakefile=${latest_job}.fakelastactual_${latest_actual_job}
+                    # Sometimes you rerun an actual job but you don't need to rerun the potentials.
+                    if [[ -e $fakefile ]]; then
+                        symbol="${symbol_ok}"
+                    #... but sometimes you just never ran the potential.
+                    else
+                        symbol="${symbol_norun}"
+                    fi
 
                 # Otherwise, check if simulation began
                 else
@@ -120,32 +132,36 @@ function get_symbol() {
                         symbol="${symbol_failed}"
                     # Otherwise...
                     else
-                        # If all cells completed with "Finished" message, that's great!
-                        nprocs=$({ head "${file_stdout}" | grep -oE "Total slots allocated [0-9]+" | grep -oE "[0-9]+" || true; })
-                        if [[ "${nprocs}" == "" ]]; then
-                            >&2 echo "Error getting nprocs"
-                            exit 17
-                        fi
-                        nfinished=$(grep "Finished" ${file_stdout} | grep -v "Finished with" | wc -l )
-                        nunfinished=$((nprocs - nfinished))
-                        if [[ $nprocs == $nfinished ]]; then
-                            symbol="${symbol_ok}"
-                            touch ${file_stdout}.ok
-
-                        # If not, was job canceled?
-                        elif [[ $(tail -n 100 ${file_stdout} | grep "State: CANCELLED" | wc -l) -ne 0 ]]; then
+                        # Was job canceled?
+                        if [[ $(tail -n 100 ${file_stdout} | grep "State: CANCELLED" | wc -l) -ne 0 ]]; then
                             symbol="${symbol_canceled_manual}"
                             touch ${file_stdout}.canceled_manual
 
-                        # Otherwise, assume run failed.
+                        # Otherwise...
                         else
-                            >&2 echo $nprocs
-                            >&2 echo $nfinished
-                            symbol="${symbol_failed}"
-                            touch ${file_stdout}.fail
-                        fi
+                            # If all cells completed with "Finished" message, that's great!
+                            nprocs=$({ head "${file_stdout}" | grep -oE "Total slots allocated [0-9]+" | grep -oE "[0-9]+" || true; })
+                            if [[ "${nprocs}" == "" ]]; then
+                                >&2 echo "Error getting nprocs from $(realpath ${file_stdout})"
+                                exit 17
+                            fi
+                            nfinished=$(grep "Finished" ${file_stdout} | grep -v "Finished with" | wc -l )
+                            nunfinished=$((nprocs - nfinished))
+                            if [[ $nprocs == $nfinished ]]; then
+                                symbol="${symbol_ok}"
+                                touch ${file_stdout}.ok
+    
+    
+                            # Otherwise, assume run failed.
+                            else
+                                >&2 echo $nprocs
+                                >&2 echo $nfinished
+                                symbol="${symbol_failed}"
+                                touch ${file_stdout}.fail
+                            fi
+                        fi # Was it canceled before beginning?
 
-                    fi # Was it canceled before beginning?
+                    fi # Was it canceled before opening stdout?
                 fi # Was a run started in this chain?
 
             # JOBFIN
@@ -153,7 +169,14 @@ function get_symbol() {
                 latest_job=$(grep "job_finish" latest_submitted_jobs.log | awk 'END {print $NF}')
                 # If no run was started in this chain, then say so
                 if [[ ${latest_job} -lt ${latest_actual_job} ]]; then
-                    symbol="${symbol_norun}"
+                    fakefile=${latest_job}.fakelastactual_${latest_actual_job}
+                    # Sometimes you rerun an actual job but you don't need to rerun the potentials.
+                    if [[ -e $fakefile ]]; then
+                        symbol="${symbol_ok}"
+                    #... but sometimes you just never ran the potential.
+                    else
+                        symbol="${symbol_norun}"
+                    fi
 
                     # Otherwise, check if simulation began
                 else
