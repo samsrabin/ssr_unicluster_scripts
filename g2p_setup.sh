@@ -233,17 +233,21 @@ echo " "
 
 
 # Set up SSP actual and potential runs
-for thisSSP in $(ls -d ssp*); do
+for thisSSP in ssp126 ssp370 ssp585; do
 
    # Actual runs always wait for previous hist or SSP run to complete
    dependency="-d LATEST"
 
    theseYears="${future_y1}-$((firstPart2yr - 1))"
+   thisDir=${thisSSP}_${theseYears}
+   if [[ ! -d ${thisDir} ]]; then
+       echo "Skipping ${thisSSP} because ${thisDir} does not exist"
+       continue
+   fi
    echo "###############################"
    echo "### actual/${thisSSP} ${theseYears} ###"
    echo "###############################"
    set " "
-   thisDir=${thisSSP}_${theseYears}
    cd ${thisDir}
 	# Copy over template script
    postproc_template="$HOME/scripts/g2p_postproc.template.act.sh"
