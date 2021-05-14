@@ -56,9 +56,11 @@ set -e
 
 # Get list of failed cells
 failranks=$(grep -i "invalid\|fail\|error" ${stdoutfile} | grep -v "Will fail if" | grep -oE "\[[0-9]+,[0-9]+\]" | sed -e "s/\[[0-9]\+,//" | sed "s/\]//")
+Nfail=0
 if [[ "${failranks}" != "" ]]; then
    echo "   Getting ${gl_failcells} and ${gl_minusfailed}..."
    for r in ${failranks}; do
+       Nfail=$((Nfail + 1))
       thisfile=logs/run$(( r+1 )).out
       if [[ ! -e "${thisfile}" ]]; then
           echo "File ${thisfile} does not exist! Halting."
@@ -77,7 +79,8 @@ if [[ "${failranks}" != "" ]]; then
 fi
 
 # Get not-run cells
-if [[ $(grep -L "Finished" logs/*.out | wc -l) -gt 0 ]]; then
+Nnotrun=$(grep -L "Finished" logs/*.out | wc -l)
+if [[ ${Nnotrun} -gt 0 ]]; then
    echo "   Getting ${gl_notruncells}..."
    for r in $(seq 1 ${nparts}); do
         thisfile="logs/run${r}.out"
@@ -110,12 +113,12 @@ fi
 if [[ $(wc -l ${gl_failcells} | cut -d" " -f1) -gt 0 ]]; then
     badcell="$(head -n 1 ${gl_failcells})"
     badrun=$(grep "${badcell}" ../run*/$(basename "${gl}") | grep -oE "run[0-9]+")
-    eg_fail="(e.g., ${badrun} ${badcell})"
+    eg_fail="(${Nfail} parts; e.g., ${badrun} ${badcell})"
 fi
 if [[ $(wc -l ${gl_notruncells} | cut -d" " -f1) -gt 0 ]]; then
     badcell="$(head -n 1 ${gl_notruncells})"
     badrun=$(grep "${badcell}" ../run*/$(basename "${gl}") | grep -oE "run[0-9]+")
-    eg_notrun="(e.g., ${badrun} ${badcell})"
+    eg_notrun="(${Nnotrun} parts; e.g., ${badrun} ${badcell})"
 fi
 
 echo " "
