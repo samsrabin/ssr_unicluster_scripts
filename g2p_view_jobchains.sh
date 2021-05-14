@@ -381,6 +381,6 @@ done
 
 cat $tmpfile | column --table --table-columns RUNSET,HIST,SSP,${act_col_heads}${pot_col_heads} -s ": "
 
-#rm $tmpfile
+rm $tmpfile
 
 exit 0
