@@ -106,11 +106,23 @@ if [[ $(grep -L "Finished" logs/*.out | wc -l) -gt 0 ]]; then
     fi
 fi
 
+# Get text strings of bad cells, if any
+if [[ $(wc -l ${gl_failcells} | cut -d" " -f1) -gt 0 ]]; then
+    badcell="$(head -n 1 ${gl_failcells})"
+    badrun=$(grep "${badcell}" ../run*/$(basename "${gl}") | grep -oE "run[0-9]+")
+    eg_fail="(e.g., ${badrun} ${badcell})"
+fi
+if [[ $(wc -l ${gl_notruncells} | cut -d" " -f1) -gt 0 ]]; then
+    badcell="$(head -n 1 ${gl_notruncells})"
+    badrun=$(grep "${badcell}" ../run*/$(basename "${gl}") | grep -oE "run[0-9]+")
+    eg_notrun="(e.g., ${badrun} ${badcell})"
+fi
+
 echo " "
 echo "Results:"
 wc -l ${gl} | sed "s/ /\t/"
-wc -l ${gl_failcells} | sed "s/ /\t/"
-wc -l ${gl_notruncells} | sed "s/ /\t/"
+echo "$(wc -l ${gl_failcells} | sed "s/ /\t/")" ${eg_fail}
+echo "$(wc -l ${gl_notruncells} | sed "s/ /\t/")" ${eg_notrun}
 wc -l ${gl_minusfailed} | sed "s/ /\t/"
 
 exit 0
