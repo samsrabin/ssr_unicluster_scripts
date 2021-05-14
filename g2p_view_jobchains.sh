@@ -153,6 +153,11 @@ function get_symbol() {
                             symbol="${symbol_canceled_manual}"
                             touch ${file_stdout}.canceled_manual
 
+                        # Did job fail?
+                        elif [[ $(tail -n 100 ${file_stdout} | grep "State: FAILED" | wc -l) -ne 0 ]]; then
+                            symbol="${symbol_failed}"
+                            touch ${file_stdout}.fail
+
                         # Otherwise...
                         else
                             # If all cells completed with "Finished" message, that's great!
@@ -170,8 +175,6 @@ function get_symbol() {
     
                             # Otherwise, assume run failed.
                             else
-                                >&2 echo $nprocs
-                                >&2 echo $nfinished
                                 symbol="${symbol_failed}"
                                 touch ${file_stdout}.fail
                             fi
