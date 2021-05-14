@@ -19,17 +19,17 @@ testing=0
 # Args while-loop
 while [ "$1" != "" ];
 do
-   case $1 in
-      -t  | --test)
-         testing=1
-         ;;
-      *)
-         echo "$script: illegal option $1"
-         usage
-         exit 1 # error
-         ;;
-   esac
-   shift
+    case $1 in
+        -t  | --test)
+            testing=1
+            ;;
+        *)
+            echo "$script: illegal option $1"
+            usage
+            exit 1 # error
+            ;;
+    esac
+    shift
 done
 
 pushd () {
@@ -96,7 +96,7 @@ function get_symbol() {
     if [[ ! -d "${homedir_rel_tmp}" && ! -d "${workdir}" ]]; then
         symbol="${symbol_norun}"
 
-    # workdir DOES exist
+        # workdir DOES exist
     else
         pushd "${workdir}"
         workdir_short=$(echo $workdir | sed "s@${WORK}@\$WORK@")
@@ -115,18 +115,18 @@ function get_symbol() {
                 if [[ ${was_it_canceled} -gt 0 ]]; then
                     symbol="${symbol_canceled_manual}"
 
-                # If no run was started in this chain, then say so
+                    # If no run was started in this chain, then say so
                 elif [[ ${latest_job} -lt ${latest_actual_job} ]]; then
                     fakefile=${latest_job}.fakelastactual_${latest_actual_job}
                     # Sometimes you rerun an actual job but you don't need to rerun the potentials.
                     if [[ -e $fakefile ]]; then
                         symbol="${symbol_ok}"
-                    #... but sometimes you just never ran the potential.
+                        #... but sometimes you just never ran the potential.
                     else
                         symbol="${symbol_norun}"
                     fi
 
-                # Otherwise, check if simulation began
+                    # Otherwise, check if simulation began
                 else
                     file_stdout="guess_x.o${latest_job}"
                     # If not, assume it was canceled before beginning.
@@ -139,26 +139,26 @@ function get_symbol() {
                         else
                             symbol="${symbol_canceled_manual}"
                         fi
-                    # Otherwise, check if we've already processed this stdout
+                        # Otherwise, check if we've already processed this stdout
                     elif [[ -e ${file_stdout}.ok ]]; then
                         symbol="${symbol_ok}"
                     elif [[ -e ${file_stdout}.canceled_manual ]]; then
                         symbol="${symbol_canceled_manual}"
                     elif [[ -e ${file_stdout}.fail ]]; then
                         symbol="${symbol_failed}"
-                    # Otherwise...
+                        # Otherwise...
                     else
                         # Was job canceled?
                         if [[ $(tail -n 100 ${file_stdout} | grep "State: CANCELLED" | wc -l) -ne 0 ]]; then
                             symbol="${symbol_canceled_manual}"
                             touch ${file_stdout}.canceled_manual
 
-                        # Did job fail?
+                            # Did job fail?
                         elif [[ $(tail -n 100 ${file_stdout} | grep "State: FAILED" | wc -l) -ne 0 ]]; then
                             symbol="${symbol_failed}"
                             touch ${file_stdout}.fail
 
-                        # Otherwise...
+                            # Otherwise...
                         else
                             # If all cells completed with "Finished" message, that's great!
                             nprocs=$({ head "${file_stdout}" | grep -oE "Total slots allocated [0-9]+" | grep -oE "[0-9]+" || true; })
@@ -171,9 +171,9 @@ function get_symbol() {
                             if [[ $nprocs == $nfinished ]]; then
                                 symbol="${symbol_ok}"
                                 touch ${file_stdout}.ok
-    
-    
-                            # Otherwise, assume run failed.
+
+
+                                # Otherwise, assume run failed.
                             else
                                 symbol="${symbol_failed}"
                                 touch ${file_stdout}.fail
@@ -183,7 +183,7 @@ function get_symbol() {
                     fi # Was it canceled before opening stdout?
                 fi # Was a run started in this chain?
 
-            # JOBFIN
+                # JOBFIN
             else
                 latest_job=$(grep "job_finish" latest_submitted_jobs.log | awk 'END {print $NF}')
 
@@ -193,7 +193,7 @@ function get_symbol() {
                     # Sometimes you rerun an actual job but you don't need to rerun the potentials.
                     if [[ -e $fakefile ]]; then
                         symbol="${symbol_ok}"
-                    #... but sometimes you just never ran the potential.
+                        #... but sometimes you just never ran the potential.
                     else
                         symbol="${symbol_norun}"
                     fi
@@ -234,7 +234,7 @@ function get_symbol() {
                 fi # Was a run started in this chain?	
             fi # Is it a simulation or jobfin?
 
-        # There ARE matching jobs
+            # There ARE matching jobs
         else
             latest_job=$(echo ${matching_jobs} | cut -d' ' -f2)
             status=$(echo ${matching_jobs} | cut -d' ' -f4)
