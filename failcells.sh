@@ -6,8 +6,8 @@ gl=$(get_param.sh ${insfile} "file_gridlist")
 [[ "${gl}" == "get_param.sh_FAILED" ]] && exit 1
 nparts=$(ls -d run*/ | grep -oE "[0-9]+" | sort -g | tail -n 1)
 
-stdoutfile=$(ls -tr guess_x.o* | tail -n 1)
-stderrfile=$(ls -tr guess_x.e* | tail -n 1)
+stdoutfile=$(ls -tr guess_x.o* | grep -E "\.o[0-9]+$" | tail -n 1)
+stderrfile=$(ls -tr guess_x.e* | grep -E "\.e[0-9]+$" | tail -n 1)
 lastjob=$(echo "${stdoutfile}" | grep -oE "[0-9]+")
 thisdir=logs-${lastjob}
 echo ${thisdir}/
