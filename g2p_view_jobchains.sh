@@ -279,7 +279,7 @@ cd "/home/kit/imk-ifu/lr8247/g2p/runs/${remap_code_ver}"
 tmpfile=.tmp.g2p_view_jobchains.$(date +%N)
 touch $tmpfile
 
-dirlist=$(ls | grep -v "calibration\|_test")
+dirlist=$(ls | grep -v "calibration\|_test\|\.sh")
 act_col_heads=""
 pot_col_heads=""
 for d in ${dirlist}; do
