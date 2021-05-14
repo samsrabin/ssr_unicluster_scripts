@@ -15,6 +15,7 @@ symbol_unknown2="⁉️ "         # Job not found by sacct
 
 # Set default values for non-positional arguments
 testing=0
+verbose=0
 
 # Args while-loop
 while [ "$1" != "" ];
@@ -22,6 +23,9 @@ do
     case $1 in
         -t  | --test)
             testing=1
+            ;;
+        -v  | --verbose)
+            verbose=1
             ;;
         *)
             echo "$script: illegal option $1"
@@ -291,7 +295,7 @@ for d in ${dirlist}; do
         thischain_workdir="${thischain_workdir}_test"
     fi
     if [[ ! -d ${thischain_workdir} ]]; then
-        echo "thischain_workdir ${thischain_workdir} not found; skipping"
+        [[ ${verbose} -eq 1 ]] && echo "thischain_workdir ${thischain_workdir} not found; skipping"
         continue
     fi
 
