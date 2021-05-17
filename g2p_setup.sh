@@ -268,7 +268,7 @@ for thisSSP in ssp126 ssp370 ssp585; do
    mkdir -p ${state_path_thisSSP}
    pushd ${state_path_thisSSP} 1>/dev/null
    for y in ${hist_save_years}; do
-       if [[ ! -d ${y}/ ]]; then
+       if [[ ! -L ${y} ]]; then
            ln -s ../states/${y}
        fi
    done
