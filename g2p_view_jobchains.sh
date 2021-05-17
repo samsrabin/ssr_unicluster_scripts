@@ -110,8 +110,12 @@ function get_symbol() {
         # There are NO matching jobs
         if [[ "${matching_jobs}" == "" ]]; then
 
+            # latest_submitted_jobs.log doesn't actually exist yet
+            if [[ ! -e latest_submitted_jobs.log ]]; then
+                symbol="${symbol_norun}"
+
             # SIMULATION
-            if [[ "${thepattern:0:6}" != "jobfin" ]]; then
+            elif [[ "${thepattern:0:6}" != "jobfin" ]]; then
                 latest_job=$(grep "LPJ-GUESS run" latest_submitted_jobs.log | awk 'END {print $NF}')
 
                 # Check if it was canceled
