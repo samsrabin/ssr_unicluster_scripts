@@ -41,6 +41,7 @@ istest=0
 arg_do_fu=0
 submit=""
 dirForPLUM=""
+dependency=""
 
 # Args while-loop
 while [ "$1" != "" ];
@@ -63,6 +64,9 @@ do
          ;;
 	  --dirForPLUM)  shift
 		 dirForPLUM="$1"
+		 ;;
+	  -d | --dependency)  shift
+		 dependency="-d $1"
 		 ;;
       *)
          echo "$script: illegal option $1"
@@ -156,8 +160,7 @@ mkdir -p potential
 # Get job name prefix
 prefix="$(g2p_chain_shortname.sh $(basename ${PWD}) ${istest})"
 
-# Set up "actual" historical run (no dependency)
-dependency=""
+# Set up "actual" historical run
 thisSSP=""
 echo "###################"
 echo "### actual/hist ###"
