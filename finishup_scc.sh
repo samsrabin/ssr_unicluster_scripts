@@ -36,7 +36,7 @@ else
 fi
 
 # How many runs?
-nruns=`ls -d run* | wc -l`
+nruns=`find . -regex ".*/run[0-9]+" | wc -l`
 echo $PWD "nruns $nruns"
 
 #Run a faster append_files.sh
