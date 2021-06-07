@@ -43,6 +43,7 @@ submit=""
 dirForPLUM=""
 dependency=""
 potential_only=0
+ssp_list="ssp126 ssp370 ssp585"
 
 # Args while-loop
 while [ "$1" != "" ];
@@ -68,6 +69,9 @@ do
             ;;
         --dirForPLUM)  shift
             dirForPLUM="$1"
+            ;;
+        --ssp-list)  shift
+            ssp_list="$1"
             ;;
         -d | --dependency)  shift
             dependency="-d $1"
@@ -238,7 +242,10 @@ cd ..
 
 
 # Set up SSP actual and potential runs
-for thisSSP in ssp126 ssp370 ssp585; do
+for thisSSP in ${ssp_list}; do
+    if [[ "${thisSSP:0:3}" != "ssp" ]]; then
+        thisSSP="ssp${thisSSP}"
+    fi
 
     # Actual runs always wait for previous hist or SSP run to complete
     dependency="-d LATEST"
