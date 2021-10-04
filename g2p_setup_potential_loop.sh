@@ -186,6 +186,10 @@ for y1 in ${y1_list}; do
     firstoutyear=$((yN - Nyears_pot + 1))
     sed -i -E "s@firstoutyear\s+[0-9]+@firstoutyear ${firstoutyear}@" main.ins
 
+    # Establish during stand creation Jan. 1 rather than at end of year, 
+    # to try and reduce sim years required
+    sed -i "s/establish_during_stand_creation 0/establish_during_stand_creation 1/g" main.ins
+
     # Copy over template script
     postproc_template="$HOME/scripts/g2p_postproc.template.pot.sh"
     if [[ ! -f ${postproc_template} ]]; then
