@@ -341,15 +341,20 @@ result=$?
 set -e
 if [[ $result == 0 ]]; then
     echo "Removing existing run*/ directories..."
+    empty_dir="empty_dir_$(date +%N)/"
+    mkdir $empty_dir
     for d in $(ls -d run*/ | grep -E "^run[0-9]+/"); do
         if [[ -d "${d}" ]]; then
-            # Only try to remove contents if not empty
-            if [[ ! -z "$(ls -A "${d}")" ]]; then
-                rm $d/*
-            fi
-            rmdir $d
+#            # Only try to remove contents if not empty
+#            if [[ ! -z "$(ls -A "${d}")" ]]; then
+#                rm $d/*
+#            fi
+#            rmdir $d
+            rsync -a --delete $empty_dir "${d}"/
+            rmdir "${d}"
         fi
     done
+    rmdir $empty_dir
 fi
 
 # Create and fill run* directories
