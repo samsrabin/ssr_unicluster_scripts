@@ -43,7 +43,7 @@ submit=""
 dirForPLUM=""
 dependency=""
 potential_only=0
-ssp_list="ssp126 ssp370 ssp585"
+ssp_list="hist ssp126 ssp370 ssp585"
 
 # Args while-loop
 while [ "$1" != "" ];
@@ -227,19 +227,30 @@ mkdir -p ${dirForPLUM}
 echo "Top-level output directory: $dirForPLUM"
 echo " "
 
-# Submit historical run
-state_path=""
-hist_save_years="$(get_param.sh ${topinsfile} save_years)"
-if [[ "${hist_save_years}" == "" ]]; then
-    echo "Error getting save_years from hist run"
-    exit 1
+# Submit historical run (or not)
+if [[ $(echo ${ssp_list} | cut -f1 -d" ") == "hist" ]]; then
+    do_hist=1
+    state_path=""
+    hist_save_years="$(get_param.sh ${topinsfile} save_years)"
+    if [[ "${hist_save_years}" == "" ]]; then
+        echo "Error getting save_years from hist run"
+        exit 1
+    fi
+    if [[ ${potential_only} -eq 0 ]]; then
+        do_setup ${walltime_hist}
+        echo " "
+        echo " "
+    fi
+else
+    do_hist=0
 fi
-if [[ ${potential_only} -eq 0 ]]; then
-    do_setup ${walltime_hist}
-    echo " "
-    echo " "
-fi
+
 cd ..
+
+# If first period was hist, remove it
+if [[ ${do_hist} -eq 1 ]]; then
+    ssp_list="$(echo ${ssp_list} | sed "s/^[^ ]* //")"
+fi
 
 
 # Set up SSP actual and potential runs
