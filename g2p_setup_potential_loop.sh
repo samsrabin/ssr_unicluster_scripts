@@ -198,8 +198,10 @@ for y1 in ${y1_list}; do
     fi
     cp ${postproc_template} postproc.sh
     # Replace years
+    sed -i "s/THISSSP/${thisSSP}/g" postproc.sh
     sed -i "s/OUTY1/${firstoutyear}/g" postproc.sh
     sed -i "s/OUTYN/${yN}/g" postproc.sh
+    sed -i "s@DIRFORPLUM@${dirForPLUM}@g" postproc.sh
     # Replace croplist
     croplist=$(echo $(grep "pft" $(ls -tr crop_n_pftlist.*.ins  | tail -n 1) | sed -E 's/pft\s+"([^".]+)"\s*\(/\1/g' | grep -v "ExtraCrop") | sed 's/ /\" \"/g')
     if [[ "${croplist}" == "" ]]; then
@@ -219,7 +221,7 @@ for y1 in ${y1_list}; do
     if [[ ${actually_setup} -eq 1 ]]; then
         do_setup ${walltime_pot} ${firstoutyear} ${yN}
     fi
-
+    
     popd 1>/dev/null
 
 done

@@ -5,23 +5,24 @@ PATH=$PATH:~/software/guess_utilities_1.3/bin
 
 echo $PWD > this_directory.txt
 
-mkdir -p postproc/OUTY1-OUTYN
+outDir_thisSSPpd=postproc/THISSSP_OUTY1-OUTYN
+mkdir -p ${outDir_thisSSPpd}
 echo "   tslicing anpp..."
-tslice anpp.out -o postproc/OUTY1-OUTYN/anpp.out -f OUTY1 -t OUTYN -tab -fast
+tslice anpp.out -o ${outDir_thisSSPpd}/anpp.out -f OUTY1 -t OUTYN -tab -fast
 echo "   tslicing gsirrigation..."
-tslice gsirrigation_st.out -o postproc/OUTY1-OUTYN/gsirrigation.out -f OUTY1 -t OUTYN -tab -fast
+tslice gsirrigation_st.out -o ${outDir_thisSSPpd}/gsirrigation.out -f OUTY1 -t OUTYN -tab -fast
 echo "   tslicing yield..."
-tslice yield_st.out -o postproc/OUTY1-OUTYN/yield.out -f OUTY1 -t OUTYN -tab -fast
+tslice yield_st.out -o ${outDir_thisSSPpd}/yield.out -f OUTY1 -t OUTYN -tab -fast
 echo "   tslicing gsirrigation_plantyear..."
-tslice gsirrigation_plantyear_st.out -o postproc/OUTY1-OUTYN/gsirrigation_plantyear.out -f OUTY1 -t OUTYN -tab -fast
+tslice gsirrigation_plantyear_st.out -o ${outDir_thisSSPpd}/gsirrigation_plantyear.out -f OUTY1 -t OUTYN -tab -fast
 echo "   tslicing yield_plantyear..."
-tslice yield_plantyear_st.out -o postproc/OUTY1-OUTYN/yield_plantyear.out -f OUTY1 -t OUTYN -tab -fast
+tslice yield_plantyear_st.out -o ${outDir_thisSSPpd}/yield_plantyear.out -f OUTY1 -t OUTYN -tab -fast
 echo "   gzipping..."
-gzip postproc/OUTY1-OUTYN/anpp.out
-gzip postproc/OUTY1-OUTYN/gsirrigation.out
-gzip postproc/OUTY1-OUTYN/yield.out
-gzip postproc/OUTY1-OUTYN/gsirrigation_plantyear.out
-gzip postproc/OUTY1-OUTYN/yield_plantyear.out
+gzip ${outDir_thisSSPpd}/anpp.out
+gzip ${outDir_thisSSPpd}/gsirrigation.out
+gzip ${outDir_thisSSPpd}/yield.out
+gzip ${outDir_thisSSPpd}/gsirrigation_plantyear.out
+gzip ${outDir_thisSSPpd}/yield_plantyear.out
 
 # Save run outputs to directory for PLUM
 thisDir="${PWD}"
@@ -33,17 +34,16 @@ while [[ ! -d outputs/ ]]; do
 	fi
 done
 cd outputs/
-dirForPLUM=${PWD}/$(ls -d outForPLUM-* | tail -n 1)
-rsync -ahm "${thisDir}/postproc/OUTY1-OUTYN" ${dirForPLUM}/
+rsync -ahm "${thisDir}/${outDir_thisSSPpd}" DIRFORPLUM/
 cd "${thisDir}"
 
 # Save run info to directory for PLUM
-tarfile=${dirForPLUM}/OUTY1-OUTYN/runinfo_pot.tar
+tarfile=DIRFORPLUM/THISSSP_OUTY1-OUTYN/runinfo_pot.tar
 tar -cf ${tarfile} *ins
 tar -rf ${tarfile} *txt
 tar -rf ${tarfile} *log
 
-#touch postproc/OUTY1-OUTYN/done
+#touch ${outDir_thisSSPpd}/done
 ####declare -a CFTs=("CerealsC3" "CerealsC4" "Rice" "Oilcrops" "Pulses" "StarchyRoots")
 #declare -a CFTs=("CROPLIST")
 ####declare -a Nferts=("0" "0200" "1000")

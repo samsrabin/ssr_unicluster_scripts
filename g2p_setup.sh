@@ -200,6 +200,7 @@ cp ${postproc_template} postproc.sh
 sed -i "s/OUTY1/${outy1}/g" postproc.sh
 sed -i "s/OUTYN/$((future_y1 - 1))/g" postproc.sh
 sed -i "s/NYEARS_POT/${Nyears_pot}/g" postproc.sh
+sed -i "s/THISSSP/hist/g" postproc.sh
 # Set up top-level output directory
 workdir=$WORK
 if [[ "${workdir}" == "" ]]; then
@@ -277,6 +278,7 @@ for thisSSP in ${ssp_list}; do
     sed -i "s/OUTY1/${outy1}/g" postproc.sh
     sed -i "s/OUTYN/$((firstPart2yr - 1))/g" postproc.sh
     sed -i "s/NYEARS_POT/${Nyears_pot}/g" postproc.sh
+    sed -i "s/THISSSP/${thisSSP}/g" postproc.sh
 
 
     # Set up state directory for this SSP
@@ -330,6 +332,7 @@ for thisSSP in ${ssp_list}; do
     sed -i "s/OUTY1/${outy1}/g" postproc.sh
     sed -i "s/OUTYN/$((future_yN - Nyears_pot))/g" postproc.sh
     sed -i "s/NYEARS_POT/${Nyears_pot}/g" postproc.sh
+    sed -i "s/THISSSP/${thisSSP}/g" postproc.sh
     # Set up run
     topdir_prev=$(echo $PWD | sed "s@/${thisDir}@/${prevDir}@")
     save_years2=$(get_param.sh ${topdir_prev}/${topinsfile} "save_years")

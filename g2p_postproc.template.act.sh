@@ -21,17 +21,18 @@ pp_y1=OUTY1
 while [[ ${pp_y1} -lt OUTYN ]]; do
 	pp_yN=$((pp_y1 + NYEARS_POT - 1))
 
-	mkdir -p postproc/${pp_y1}-${pp_yN}
+	outDir_thisSSPpd=postproc/THISSSP_${pp_y1}-${pp_yN}
+	mkdir -p ${outDir_thisSSPpd}
 	echo "   tslicing ${pp_y1}-${pp_yN} tot_runoff..."
-	tslice tot_runoff.out -o postproc/${pp_y1}-${pp_yN}/tot_runoff.out -f ${pp_y1} -t ${pp_yN} -tab -fast
+	tslice tot_runoff.out -o ${outDir_thisSSPpd}/tot_runoff.out -f ${pp_y1} -t ${pp_yN} -tab -fast
 	echo "   gzipping..."
-	gzip postproc/${pp_y1}-${pp_yN}/tot_runoff.out
-	touch postproc/${pp_y1}-${pp_yN}/done
+	gzip ${outDir_thisSSPpd}/tot_runoff.out
+	touch ${outDir_thisSSPpd}/done
 
-	rsync -ahm postproc/${pp_y1}-${pp_yN} ${dirForPLUM}/
+	rsync -ahm ${outDir_thisSSPpd} ${dirForPLUM}/
 
 	# Save run info to directory for PLUM
-	tarfile=${dirForPLUM}/${pp_y1}-${pp_yN}/runinfo_act.tar
+	tarfile=${dirForPLUM}/THISSSP_${pp_y1}-${pp_yN}/runinfo_act.tar
 	tar -cf ${tarfile} *ins
 	tar -rf ${tarfile} *txt
 	tar -rf ${tarfile} *log
