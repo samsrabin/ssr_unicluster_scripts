@@ -169,9 +169,16 @@ mkdir -p potential
 # Get job name prefix
 prefix="$(g2p_chain_shortname.sh $(basename ${PWD}) ${istest})"
 
+# Are we actually submitting historical period?
+if [[ $(echo ${ssp_list} | cut -f1 -d" ") == "hist" && ${potential_only} -eq 0 ]]; then
+    do_hist=1
+else
+    do_hist=0
+fi
+
 # Set up "actual" historical run
 thisSSP=""
-if [[ ${potential_only} -eq 0 ]]; then
+if [[ ${do_hist} -eq 1 ]]; then
     echo "###################"
     echo "### actual/hist ###"
     echo "###################"
@@ -228,9 +235,8 @@ echo "Top-level output directory: $dirForPLUM"
 echo " "
 
 # Submit historical run (or not)
-if [[ $(echo ${ssp_list} | cut -f1 -d" ") == "hist" ]]; then
-    do_hist=1
-    state_path=""
+state_path=""
+if [[ ${do_hist} -eq 1 ]]; then
     hist_save_years="$(get_param.sh ${topinsfile} save_years)"
     if [[ "${hist_save_years}" == "" ]]; then
         echo "Error getting save_years from hist run"
@@ -241,8 +247,6 @@ if [[ $(echo ${ssp_list} | cut -f1 -d" ") == "hist" ]]; then
         echo " "
         echo " "
     fi
-else
-    do_hist=0
 fi
 
 cd ..
