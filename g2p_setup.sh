@@ -42,6 +42,7 @@ arg_do_fu=0
 submit=""
 dirForPLUM=""
 dependency=""
+actual_only=0
 potential_only=0
 ssp_list="hist ssp126 ssp370 ssp585"
 
@@ -49,6 +50,9 @@ ssp_list="hist ssp126 ssp370 ssp585"
 while [ "$1" != "" ];
 do
     case $1 in
+        -a  | --actual-only)
+            actual_only=1
+            ;;
         -p  | --potential-only)
             potential_only=1
             ;;
@@ -364,27 +368,31 @@ for thisSSP in ${ssp_list}; do
 
     cd ..
 
-    echo "#########################"
-    echo "### potential/${thisSSP} ###"
-    echo "#########################"
-    set " "
-
-    # Set dependency for all potential runs to latest actual run
-    if [[ ${sequential_pot} -eq 0 ]]; then
-        if [[ ${potential_only} -eq 1 ]]; then
-            dependency="${dependency_pot}"
-        else
-            lastactrun=$(tail ~/submitted_jobs.log | grep "LPJ-GUESS" | tail -n 1 | grep -oE "[0-9]+")
-            dependency="-d ${lastactrun}"
+    if [[ ${actual_only} -eq 0 ]]; then
+        echo "#########################"
+        echo "### potential/${thisSSP} ###"
+        echo "#########################"
+        set " "
+    
+        # Set dependency for all potential runs to latest actual run
+        if [[ ${sequential_pot} -eq 0 ]]; then
+            if [[ ${potential_only} -eq 1 ]]; then
+                dependency="${dependency_pot}"
+            else
+                lastactrun=$(tail ~/submitted_jobs.log | grep "LPJ-GUESS" | tail -n 1 | grep -oE "[0-9]+")
+                dependency="-d ${lastactrun}"
+            fi
         fi
+        cd ../potential
+        save_years=""
+        state_path=$(echo $state_path | sed -E "s/ -L.*//")
+        . g2p_setup_potential_loop.sh ${thisSSP} ${future_y1} ${future_yN}
+        echo " "
+        echo " "
+    else
+        save_years=""
     fi
-    cd ../potential
-    save_years=""
-    state_path=$(echo $state_path | sed -E "s/ -L.*//")
-    . g2p_setup_potential_loop.sh ${thisSSP} ${future_y1} ${future_yN}
     cd ../actual
-    echo " "
-    echo " "
 done
 
 
