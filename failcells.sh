@@ -112,12 +112,16 @@ fi
 # Get text strings of bad cells, if any
 if [[ $(wc -l ${gl_failcells} | cut -d" " -f1) -gt 0 ]]; then
     badcell="$(head -n 1 ${gl_failcells})"
+    badcell=${badcell/-/\\-}
     badrun=$(grep "${badcell}" ../run*/$(basename "${gl}") | grep -oE "run[0-9]+")
+    badcell=${badcell/\\/}
     eg_fail="(${Nfail} parts; e.g., ${badrun} ${badcell})"
 fi
 if [[ $(wc -l ${gl_notruncells} | cut -d" " -f1) -gt 0 ]]; then
     badcell="$(head -n 1 ${gl_notruncells})"
+    badcell=${badcell/-/\\-}
     badrun=$(grep "${badcell}" ../run*/$(basename "${gl}") | grep -oE "run[0-9]+")
+    badcell=${badcell/\\/}
     eg_notrun="(${Nnotrun} parts; e.g., ${badrun} ${badcell})"
 fi
 
