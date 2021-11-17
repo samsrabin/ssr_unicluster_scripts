@@ -16,11 +16,16 @@ symbol_unknown2="⁉️ "         # Job not found by sacct
 # Set default values for non-positional arguments
 testing=0
 verbose=0
+gcmlist="gfdl ipsl mpi mri ukesm"
 
 # Args while-loop
 while [ "$1" != "" ];
 do
     case $1 in
+        -g  | --gcmlist)
+            shift
+            gcmlist="$1"
+            ;;
         -t  | --test)
             testing=1
             ;;
@@ -287,99 +292,101 @@ cd "/home/kit/imk-ifu/lr8247/g2p/runs/${remap_code_ver}"
 tmpfile=.tmp.g2p_view_jobchains.$(date +%N)
 touch $tmpfile
 
-dirlist=$(ls | grep -v "calibration\|_test\|\.sh")
 act_col_heads=""
 pot_col_heads=""
-for d in ${dirlist}; do
-    islast_act=0
-
-    # If this directory doesn't even have a working directory set up, you can skip
-    thischain_workdir=$(realpath $d | sed "s@/pfs/data5@@" | sed "s@$HOME@$WORK@")
-    if [[ ${testing} -eq 1 ]]; then
-        thischain_workdir="${thischain_workdir}_test"
-    fi
-    if [[ ! -d ${thischain_workdir} ]]; then
-        [[ ${verbose} -eq 1 ]] && echo "thischain_workdir ${thischain_workdir} not found; skipping"
-        continue
-    fi
-
-    # Get short name for this chain
-    thischain_name="$(g2p_chain_shortname.sh ${d} ${testing})"
-
-    actdir="${d}/actual"
-    if [[ ! -d "${actdir}" ]]; then
-        echo "actdir not found: ${PWD}/${actdir})"
-        exit 13
-    fi
-    ssp_list="ssp126 ssp370 ssp585"
-    s=0
-    latest_job=""
-    latest_actual_job="-1"
-    for ssp in ${ssp_list}; do
-        s=$((s+1))
-        if [[ ${ssp} == $(echo ${ssp_list} | grep -oE '[^ ]+$') ]]; then
-            islast_act=1
-        else
-            islast_act=0
+for g in ${gcmlist}; do
+    dirlist=$(ls -d ${g}* | grep -v "calibration\|_test\|\.sh")
+    for d in ${dirlist}; do
+        islast_act=0
+    
+        # If this directory doesn't even have a working directory set up, you can skip
+        thischain_workdir=$(realpath $d | sed "s@/pfs/data5@@" | sed "s@$HOME@$WORK@")
+        if [[ ${testing} -eq 1 ]]; then
+            thischain_workdir="${thischain_workdir}_test"
         fi
-
-        # Get potential column headers, if necessary
-        potdir="${d}/potential/${ssp}/"
-        if [[ ! -d "${potdir}" ]]; then
-            #echo "Skipping ${potdir} (directory not found)"
+        if [[ ! -d ${thischain_workdir} ]]; then
+            [[ ${verbose} -eq 1 ]] && echo "thischain_workdir ${thischain_workdir} not found; skipping"
             continue
         fi
-        if [[ "${pot_col_heads}" == "" ]]; then
-            pot_col_heads="$(echo $(ls "${potdir}") | sed "s/ /,/g")"
-            pot_col_heads="$(echo ${pot_col_heads} | sed "s/^20/,/g" | sed "s/,20/,/g" | sed "s/-20/-/g")"
+    
+        # Get short name for this chain
+        thischain_name="$(g2p_chain_shortname.sh ${d} ${testing})"
+    
+        actdir="${d}/actual"
+        if [[ ! -d "${actdir}" ]]; then
+            echo "actdir not found: ${PWD}/${actdir})"
+            exit 13
         fi
-
-        # Check historical period, if necessary
-        if [[ $s -eq 1 ]]; then
-            homedir_rel="${d}/actual/hist"
-            thisline="${thischain_name} "
-            check_jobs ${thischain_name}_hist
-        else
-            thisline=" :"
-        fi
-
-        # Get future-actual periods
-        futureactdirs=$(ls -d "${d}/actual/${ssp}_"*)
-        if [[ "${futureactdirs}" == "" ]]; then
-            echo "No directories found matching ${d}/actual/${ssp}_*"
-            exit 1
-        fi
-
-        # Check future-actual periods
-        x=0
-        get_act_col_heads=0
-        if [[ "${act_col_heads}" == "" ]]; then
-            get_act_col_heads=1
-        fi
-        for d_act in ${futureactdirs}; do
-            x=$((x + 1))
-            if [[ $get_act_col_heads -eq 1 ]]; then
-                act_col_heads="${act_col_heads}ACT${x},"
+        ssp_list="ssp126 ssp370 ssp585"
+        s=0
+        latest_job=""
+        latest_actual_job="-1"
+        for ssp in ${ssp_list}; do
+            s=$((s+1))
+            if [[ ${ssp} == $(echo ${ssp_list} | grep -oE '[^ ]+$') ]]; then
+                islast_act=1
+            else
+                islast_act=0
             fi
-
-            homedir_rel="${d_act}"
-            if [[ $x -eq 1 ]]; then
-                thisline="${thisline} ${ssp/ssp/}"
+    
+            # Get potential column headers, if necessary
+            potdir="${d}/potential/${ssp}/"
+            if [[ ! -d "${potdir}" ]]; then
+                #echo "Skipping ${potdir} (directory not found)"
+                continue
             fi
-            check_jobs ${thischain_name}_$(basename ${d_act})_
-            if [[ ${latest_job} -gt ${latest_actual_job} ]]; then
-                latest_actual_job=${latest_job}
+            if [[ "${pot_col_heads}" == "" ]]; then
+                pot_col_heads="$(echo $(ls "${potdir}") | sed "s/ /,/g")"
+                pot_col_heads="$(echo ${pot_col_heads} | sed "s/^20/,/g" | sed "s/,20/,/g" | sed "s/-20/-/g")"
             fi
+    
+            # Check historical period, if necessary
+            if [[ $s -eq 1 ]]; then
+                homedir_rel="${d}/actual/hist"
+                thisline="${thischain_name} "
+                check_jobs ${thischain_name}_hist
+            else
+                thisline=" :"
+            fi
+    
+            # Get future-actual periods
+            futureactdirs=$(ls -d "${d}/actual/${ssp}_"*)
+            if [[ "${futureactdirs}" == "" ]]; then
+                echo "No directories found matching ${d}/actual/${ssp}_*"
+                exit 1
+            fi
+    
+            # Check future-actual periods
+            x=0
+            get_act_col_heads=0
+            if [[ "${act_col_heads}" == "" ]]; then
+                get_act_col_heads=1
+            fi
+            for d_act in ${futureactdirs}; do
+                x=$((x + 1))
+                if [[ $get_act_col_heads -eq 1 ]]; then
+                    act_col_heads="${act_col_heads}ACT${x},"
+                fi
+    
+                homedir_rel="${d_act}"
+                if [[ $x -eq 1 ]]; then
+                    thisline="${thisline} ${ssp/ssp/}"
+                fi
+                check_jobs ${thischain_name}_$(basename ${d_act})_
+                if [[ ${latest_job} -gt ${latest_actual_job} ]]; then
+                    latest_actual_job=${latest_job}
+                fi
+            done
+    
+            # Check potential periods
+            pot_list=$(ls "${potdir}" | cut -d' ' -f1-2)
+            for pot in ${pot_list}; do
+                homedir_rel="${d}/potential/${ssp}/${pot}"
+                check_jobs ${thischain_name}_${ssp}_${pot}
+            done
+    
+            echo ${thisline} >> $tmpfile
         done
-
-        # Check potential periods
-        pot_list=$(ls "${potdir}" | cut -d' ' -f1-2)
-        for pot in ${pot_list}; do
-            homedir_rel="${d}/potential/${ssp}/${pot}"
-            check_jobs ${thischain_name}_${ssp}_${pot}
-        done
-
-        echo ${thisline} >> $tmpfile
     done
 done
 
