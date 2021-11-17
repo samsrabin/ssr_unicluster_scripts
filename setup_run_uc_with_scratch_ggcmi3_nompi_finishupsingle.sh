@@ -442,20 +442,20 @@ chmod +x startguess.sh
 if [[ ${submit} -eq 1 ]]; then
 	echo "Submitting..."
    pushd "${rundir_top}" 1>/dev/null 2>&1
-   source ~/scripts_peter/module.sh 1>/dev/null 2>&1
+   source ~/scripts_peter/module_gnu.sh 1>/dev/null 2>&1
    ./startguess.sh
    popd 1>/dev/null 2>&1
 else
 	echo "To submit:"
 	echo "cd $rundir_top"
-	echo "source ~/scripts_peter/module.sh 1>/dev/null 2>&1"
+	echo "source ~/scripts_peter/module_gnu.sh 1>/dev/null 2>&1"
 	echo "./startguess.sh"
 	
 #	if [[ ${dev} -eq 1 ]]; then
 		echo " "
 		echo "To submit interactively:"
 		echo "cd $rundir_top"
-		echo "source ~/scripts_peter/module.sh 1>/dev/null 2>&1"
+		echo "source ~/scripts_peter/module_gnu.sh 1>/dev/null 2>&1"
 		echo "salloc --partition $queue -N $nnodes -n $nprocess --ntasks-per-core ${tasks_per_core} -t $walltime ${reservation_txt} submit.sh" 
 #	fi
 fi

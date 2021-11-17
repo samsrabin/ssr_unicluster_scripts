@@ -473,7 +473,7 @@ ${reservation_txt_sbatch}
 
 set -e
 
-#/home/kit/imk-ifu/lr8247/scripts_peter/module.sh
+#/home/kit/imk-ifu/lr8247/scripts_peter/module_gnu.sh
 module unload \$(module -t list 2>&1 | grep "tools\|app\|io\|compiler\|mpi\|lib\|math\|devel\|numlib\|cae\|chem\|system")
 module load compiler/gnu mpi/openmpi
 module list
@@ -551,20 +551,20 @@ if [[ ${submit} -eq 1 ]]; then
 	echo "Submitting..."
     date
 	pushd "${rundir_top}" 1>/dev/null 2>&1
-	source ~/scripts_peter/module.sh 1>/dev/null 2>&1
+	source ~/scripts_peter/module_gnu.sh 1>/dev/null 2>&1
 	./startguess.sh
 	popd 1>/dev/null 2>&1
 else
 	echo "To submit:"
 	echo "cd $rundir_top"
-	echo "source ~/scripts_peter/module.sh 1>/dev/null 2>&1"
+	echo "source ~/scripts_peter/module_gnu.sh 1>/dev/null 2>&1"
 	echo "./startguess.sh"
 	
 	if [[ ${dev} -eq 1 ]]; then
 		echo " "
 		echo "To submit interactively:"
 		echo "cd $rundir_top"
-		echo "source ~/scripts_peter/module.sh 1>/dev/null 2>&1"
+		echo "source ~/scripts_peter/module_gnu.sh 1>/dev/null 2>&1"
 		echo "salloc --partition $queue -N $nnodes -n $nprocess --ntasks-per-core ${tasks_per_core} -t $walltime ${reservation_txt} submit.sh" 
 	fi
 fi
