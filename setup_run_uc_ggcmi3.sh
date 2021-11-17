@@ -324,7 +324,7 @@ module unload \$(module -t list 2>&1 | grep "tools\|app\|io\|compiler\|mpi\|lib\
 module load compiler/gnu mpi/impi
 module list
 #this requires a locally compiled netcdf with hdf5
-export LD_LIBRARY_PATH=\$SOFTWARE/hdf5-1.12.0/lib:\$SOFTWARE/lib:\$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=\$SOFTWARE/hdf5-1.12.1/lib:\$SOFTWARE/lib:\$LD_LIBRARY_PATH
 
 cd $rundir_top 
 date +%F\ %H:%M:%S > $rundir_top/RUN_INPROGRESS
