@@ -382,6 +382,7 @@ module load compiler/gnu mpi/impi
 module list
 #this requires a locally compiled netcdf with hdf5
 export LD_LIBRARY_PATH=\$SOFTWARE/hdf5-1.12.1/lib:\$SOFTWARE/lib:\$LD_LIBRARY_PATH
+export HDF5_DISABLE_VERSION_CHECK=1
 
 #module load compiler/intel lib/netcdf/4.7.3-intel-19.1 mpi/impi
 

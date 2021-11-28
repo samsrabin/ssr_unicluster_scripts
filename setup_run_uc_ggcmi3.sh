@@ -325,6 +325,7 @@ module load compiler/gnu mpi/impi
 module list
 #this requires a locally compiled netcdf with hdf5
 export LD_LIBRARY_PATH=\$SOFTWARE/hdf5-1.12.1/lib:\$SOFTWARE/lib:\$LD_LIBRARY_PATH
+export HDF5_DISABLE_VERSION_CHECK=1
 
 cd $rundir_top 
 date +%F\ %H:%M:%S > $rundir_top/RUN_INPROGRESS
