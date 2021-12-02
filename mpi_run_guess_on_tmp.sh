@@ -132,6 +132,11 @@ rsync -az --partial --exclude="state" ${work_run_dir}/ ${scratch_run_dir}/
 # cd into the top-level scratch_work_dir ("guess -parallel" later changes into the actual runNN directory)
 cd ${scratch_work_dir}
 
+# Added by SSR 2021-12-02 10:59 MST, trying to fix bus errors
+echo cp -a "${guess_binary}" .
+cp -a "${guess_binary}" .
+guess_binary="./$(basename "${guess_binary}")"
+
 # Run guess; wait for completion before continuing
 echo cmd: ${guess_binary} ${guess_options}
 ${guess_binary} ${guess_options}
