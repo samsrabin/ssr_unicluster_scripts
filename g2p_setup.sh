@@ -257,7 +257,7 @@ cd ..
 
 # If first period was hist, remove it
 if [[ ${do_hist} -eq 1 ]]; then
-    ssp_list="$(echo ${ssp_list} | sed "s/^[^ ]* //")"
+    ssp_list="${ssp_list/hist /}"
 fi
 
 
