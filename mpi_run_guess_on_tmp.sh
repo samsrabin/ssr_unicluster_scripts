@@ -39,6 +39,9 @@ guess_options=$*
 # Get the main ins-file
 main_insfile=$(echo ${guess_options} | awk 'NF>1{print $NF}')
 
+# List loaded modules
+module list
+
 # Get rank of this process
 unset local_nrank
 #for uc2 if run with module mpi/impi mpirun
