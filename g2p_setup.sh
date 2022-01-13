@@ -10,7 +10,6 @@ testinsfile="main_test1_fast.ins"; testnproc=1
 #testinsfile="main_test160x3.ins"; testnproc=160
 inputmodule="cfx"
 nproc=160
-arch="g2p"
 walltime_hist="6:00:00" # Should take around 4 hours
 walltime_fut="6:00:00"  # Should take around 4 hours
 walltime_pot="2:00:00"  # Should take around 1 hour
@@ -38,6 +37,7 @@ function usage {
 }
 
 # Set default values for non-positional arguments
+arch="g2p"
 istest=0
 arg_do_fu=0
 submit=""
@@ -62,6 +62,9 @@ do
             ;;
         -t  | --test)
             istest=1
+            ;;
+        --arch) shift
+            arch="$1"
             ;;
         --fu)
             arg_do_fu=1
