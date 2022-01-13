@@ -4,7 +4,8 @@ set -e
 reservation=""
 #reservation="-r landsymm-project"
 realinsfile="main.ins"
-testinsfile="main_test2.ins"; testnproc=1
+#testinsfile="main_test2.ins"; testnproc=1
+testinsfile="main_test1_fast.ins"; testnproc=1
 #testinsfile="main_test2x2.ins"; testnproc=2
 #testinsfile="main_test160x3.ins"; testnproc=160
 inputmodule="cfx"
