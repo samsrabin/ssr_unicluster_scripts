@@ -3,8 +3,12 @@
 #SBATCH --time=30:00
 #SBATCH -n 1
 
-# Whatever arguments are given to this script will be passed to guess.
+# USAGE (from parallel sub-run directory):
+#   sbatch ~/scripts/sbatch_valgrind.sh -input cfx main.ins
 
-valgrind --track-origins=yes --error-limit=no --log-file=valgrind.log ../guess -input $@
+$HOME/scripts_peter/module_gnu.sh
+
+#valgrind -s --track-origins=yes --error-limit=no --leak-check=full --log-file=valgrind.log ../guess $@
+valgrind -s --track-origins=yes --error-limit=no --log-file=valgrind.log ../guess $@
 
 exit 0
