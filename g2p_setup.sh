@@ -9,7 +9,6 @@ testinsfile="main_test1_fast.ins"; testnproc=1
 #testinsfile="main_test2x2.ins"; testnproc=2
 #testinsfile="main_test160x3.ins"; testnproc=160
 inputmodule="cfx"
-nproc=160
 walltime_hist="6:00:00" # Should take around 4 hours
 walltime_fut="6:00:00"  # Should take around 4 hours
 walltime_pot="2:00:00"  # Should take around 1 hour
@@ -45,6 +44,7 @@ dirForPLUM=""
 dependency=""
 actual_only=0
 potential_only=0
+nproc=160
 ssp_list="hist ssp126 ssp370 ssp585"
 
 # Args while-loop
@@ -53,6 +53,9 @@ do
     case $1 in
         -a  | --actual-only)
             actual_only=1
+            ;;
+        -n  | --nproc) shift
+            nproc="$1"
             ;;
         -p  | --potential-only)
             potential_only=1
