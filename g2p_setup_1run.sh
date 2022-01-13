@@ -246,11 +246,11 @@ tasks_per_node=$((cores_per_node*tasks_per_core))
 mem_per_node=90000 # MB
 finishup_t_min=60
 if [[ ${nprocess} -gt ${tasks_per_node} ]]; then
+    # Round up if nprocess isn't a multiple of tasks_per_node
+    nnodes=$(((nprocess+tasks_per_node-1)/tasks_per_node))
     if [[ $((nprocess%tasks_per_node)) != 0 ]]; then
-        echo "Please set nprocess to a multiple of ${tasks_per_node}!"
-        exit 1
+        echo "nprocess (${nprocess}) not a multiple of ${tasks_per_node}; still requesting ${nnodes} exclusive nodes."
     fi
-    nnodes=$((nprocess/tasks_per_node))
     if [[ ${dev} -eq 1 ]]; then
         queue=dev_multiple
         walltime=30:00
