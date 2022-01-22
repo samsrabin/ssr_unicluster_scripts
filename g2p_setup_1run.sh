@@ -101,6 +101,11 @@ linked_restart_dir_array=()
 pp_y1=
 pp_yN=
 lpjg_topdir=$HOME/lpj-guess_git-svn_20190828
+# Handle possible neither/both specs here
+mem_per_node_default=90000 # MB
+mem_per_node=-1 # MB
+mem_per_cpu_default=1000 # MB
+mem_per_cpu=-1 # MB
 
 # Args while-loop
 while [ "$1" != "" ];
@@ -129,6 +134,12 @@ do
             ;;
         --pp_yN)  shift
             pp_yN=$1
+            ;;
+        --mem-per-node)  shift
+            mem_per_node=$1
+            ;;
+        --mem-per-cpu)  shift
+            mem_per_cpu=$1
             ;;
         --dev)  dev=1
             ;;
@@ -163,6 +174,9 @@ elif [[ "${dependency_tmp}" != "" ]]; then
     echo "Depending on job ${dependency_tmp}"
     dependency="#SBATCH -d afterany:$dependency_tmp"
 fi
+
+# Process memory specification
+. "${HOME}/scripts/process_slurm_mem_spec.sh"
 
 # Do finishup or no?
 if [[ ${arg_no_fu} == "1" && ${arg_yes_fu} == "1" ]]; then
@@ -243,7 +257,6 @@ cores_per_node=40 #uc2 nodes, 40 cores with hyperthreading *2.
 #tasks_per_core=2 # Ends up running out of memory...
 tasks_per_core=1
 tasks_per_node=$((cores_per_node*tasks_per_core))
-mem_per_node=90000 # MB
 finishup_t_min=60
 if [[ ${nprocess} -gt ${tasks_per_node} ]]; then
     # Round up if nprocess isn't a multiple of tasks_per_node
@@ -482,7 +495,7 @@ cat<<EOL > submit.sh
 #SBATCH -n $nprocess
 #SBATCH --ntasks-per-core ${tasks_per_core}
 #SBATCH --ntasks-per-node ${tasks_per_node}
-#SBATCH --mem ${mem_per_node}
+#SBATCH ${mem_spec}
 #SBATCH -t $walltime
 #SBATCH -J $jobname
 #SBATCH --output guess_x.o%j

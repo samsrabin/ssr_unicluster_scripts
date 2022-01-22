@@ -46,6 +46,11 @@ actual_only=0
 potential_only=0
 nproc=160
 ssp_list="hist ssp126 ssp370 ssp585"
+# Handle possible neither/both specs here
+mem_per_node_default=90000 # MB
+mem_per_node=-1 # MB
+mem_per_cpu_default=1000 # MB
+mem_per_cpu=-1 # MB
 
 # Args while-loop
 while [ "$1" != "" ];
@@ -84,6 +89,12 @@ do
         --ssp-list)  shift
             ssp_list="$1"
             ;;
+        --mem-per-node)  shift
+            mem_per_node=$1
+            ;;
+        --mem-per-cpu)  shift
+            mem_per_cpu=$1
+            ;;
         -d | --dependency)  shift
             dependency="-d $1"
             dependency_pot="-d $1"
@@ -96,6 +107,9 @@ do
     esac
     shift
 done
+
+# Process memory specification
+. "${HOME}/scripts/process_slurm_mem_spec.sh"
 
 if [[ "${dirForPLUM}" != "" && ! -d "${dirForPLUM}" ]]; then
     echo "dirForPLUM does not exist: ${dirForPLUM}"
@@ -162,7 +176,7 @@ function do_setup {
         [[ "${state_path}" == "get_param.sh_FAILED" ]] && exit 1
     fi
     #croplist=$(grep "pft" $(ls -tr crop_n_pftlist.*.ins  | tail -n 1) | sed -E 's/pft\s+"([^".]+)"\s*\(/\1/g' | grep -v "ExtraCrop")
-    g2p_setup_1run.sh ${topinsfile} "$(get_ins_files)" ${gridlist} ${inputmodule} ${nproc} ${arch} ${walltime} -p "${prefix}" ${state_path} ${submit} ${ppfudev} ${dependency} ${reservation} --lpjg_topdir $HOME/trunk_fromPA_20161012
+    g2p_setup_1run.sh ${topinsfile} "$(get_ins_files)" ${gridlist} ${inputmodule} ${nproc} ${arch} ${walltime} -p "${prefix}" ${state_path} ${submit} ${ppfudev} ${dependency} ${reservation} --lpjg_topdir $HOME/trunk_fromPA_20161012 ${mem_spec}
 }
 
 #############################################################################################
