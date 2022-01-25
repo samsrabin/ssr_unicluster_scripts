@@ -506,10 +506,16 @@ ${reservation_txt_sbatch}
 
 set -e
 
-/home/kit/imk-ifu/lr8247/scripts_peter/module_gnu.sh
-#module unload \$(module -t list 2>&1 | grep "tools\|app\|io\|compiler\|mpi\|lib\|math\|devel\|numlib\|cae\|chem\|system")
-#module load compiler/gnu mpi/openmpi
-#module list
+##module unload \$(module -t list 2>&1 | grep "tools\|app\|io\|compiler\|mpi\|lib\|math\|devel\|numlib\|cae\|chem\|system")
+##module load compiler/gnu mpi/openmpi
+##module list
+#/home/kit/imk-ifu/lr8247/scripts_peter/module_gnu.sh
+source /home/kit/imk-ifu/lr8247/scripts_peter/module_gnu.sh
+
+# THIS NEEDS 2>&1
+echo "modules after calling module_gnu.sh:"
+module list
+
 #this requires a locally compiled netcdf with hdf5
 export LD_LIBRARY_PATH=\$SOFTWARE/hdf5-1.12.1/lib:\$SOFTWARE/lib:\$LD_LIBRARY_PATH
 export HDF5_DISABLE_VERSION_CHECK=1
