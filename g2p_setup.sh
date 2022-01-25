@@ -265,17 +265,18 @@ echo " "
 
 # Submit historical run (or not)
 state_path=""
-if [[ ${do_hist} -eq 1 ]]; then
-    hist_save_years="$(get_param.sh ${topinsfile} save_years)"
-    if [[ "${hist_save_years}" == "" ]]; then
-        echo "Error getting save_years from hist run"
-        exit 1
-    fi
-    if [[ ${potential_only} -eq 0 ]]; then
-        do_setup ${walltime_hist}
-        echo " "
-        echo " "
-    fi
+if [[ ${do_hist} -eq 1 && ${potential_only} -eq 0 ]]; then
+    hist_save_years=""
+    do_setup ${walltime_hist}
+    echo " "
+    echo " "
+fi
+
+# Get list of years being state-saved from historical run
+hist_save_years="$(get_param.sh ${topinsfile} save_years)"
+if [[ "${hist_save_years}" == "" ]]; then
+    echo "Error getting save_years from hist run"
+    exit 1
 fi
 
 cd ..
@@ -326,6 +327,10 @@ for thisSSP in ${ssp_list}; do
 
 
     # Set up state directory for this SSP
+    # IF YOU WIND UP WITH PROBLEMS HERE, CONSIDER USING THIS FUNCTIONALITY
+    # BUILT IN TO g2p_setup_1run.sh INSTEAD!
+    # I.e., -L flag
+    # Would need to ensure that it's ONLY used for first part of future runs.
     state_path=""
     state_path_absolute=$(get_state_path_absolute.sh "${rundir_top}" "${state_path_absolute}")
     state_path_thisSSP="${state_path_absolute}_${thisSSP}"
