@@ -525,13 +525,19 @@ mpirun_options=""
 if [[ \$diagnostics -eq 1 ]]; then
     if [[ \$(which mpirun | grep "openmpi" | wc -l) -eq 1 ]]; then
         #mpirun_options="-display-map -tag-output"
-        mpirun_options="--bind-to core --map-by core -report-bindings -display-map -tag-output"
+        #mpirun_options="--bind-to core --map-by core -report-bindings -display-map -tag-output"
+        mpirun_options="--bind-to socket --map-by socket -report-bindings -display-map -tag-output"
     elif [[ \$(which mpirun | grep "intel" | wc -l) -eq 1 ]]; then
         mpirun_options="-print-rank-map -prepend-rank"
     else
         echo "mpirun \$(which mpirun) not recognized; will set no options for stdout/stderr printing"
     fi
 fi
+
+echo " "
+echo "mpirun_options:"
+echo $mpirun_options
+echo " "
 
 cd $rundir_top 
 date +%F\ %H:%M:%S > $rundir_top/RUN_INPROGRESS
