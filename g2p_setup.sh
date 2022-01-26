@@ -337,9 +337,10 @@ for thisSSP in ${ssp_list}; do
     mkdir -p ${state_path_thisSSP}
     pushd ${state_path_thisSSP} 1>/dev/null
     for y in ${hist_save_years}; do
-        if [[ ! -L ${y} ]]; then
-            ln -s ../states/${y}
+        if [[ -L ${y} ]]; then
+            rm -f ${y}
         fi
+        ln -s ../states/${y}
     done
     popd 1>/dev/null
 
