@@ -102,6 +102,12 @@ linked_restart_dir_array=()
 pp_y1=
 pp_yN=
 tasks_per_core=1
+# Handle possible neither/both specs here
+mem_per_node_default=90000 # MB
+mem_per_node=-1 # MB
+mem_per_cpu_default=500 # MB
+mem_per_cpu=-1 # MB
+
 
 # Args while-loop
 while [ "$1" != "" ];
@@ -125,6 +131,12 @@ do
 		--tasks-per-core)  shift
 			tasks_per_core=$1
 			;;
+        --mem-per-node)  shift
+            mem_per_node=$1
+            ;;
+        --mem-per-cpu)  shift
+            mem_per_cpu=$1
+            ;;
 		--pp_y1)  shift
 			pp_y1=$1
 			;;
@@ -154,6 +166,9 @@ done
 
 # Pass here your mandatory args for check
 margs_check $insfile "$extra_insfiles" $gridlist $input_module $nprocess $arch $walltime
+
+# Process memory specification
+. "${HOME}/scripts/process_slurm_mem_spec.sh"
 
 # Parse dependency
 if [[ "${dependency_tmp}" == "LATEST" ]]; then
@@ -233,7 +248,6 @@ fi
 # For running on UniCluster
 cores_per_node=40 #uc2 nodes, 40 cores with hyperthreading *2. 
 tasks_per_node=$((cores_per_node*tasks_per_core))
-mem_per_node=90000 # MB
 finishup_t_min=60
 if [[ ${nprocess} -gt ${tasks_per_node} ]]; then
 	if [[ $((nprocess%tasks_per_node)) != 0 ]]; then
@@ -462,7 +476,7 @@ cat<<EOL > submit.sh
 #SBATCH -n $nprocess
 #SBATCH --ntasks-per-core ${tasks_per_core}
 #SBATCH --ntasks-per-node ${tasks_per_node}
-#SBATCH --mem ${mem_per_node}
+#SBATCH ${mem_spec}
 #SBATCH -t $walltime
 #SBATCH -J $jobname
 #SBATCH --output guess_x.o%j
