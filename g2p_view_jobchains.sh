@@ -80,7 +80,12 @@ function was_canceled {
     if [[ "${sacct_result}" == "" ]]; then
         echo -1
     else
-        echo "${sacct_result}" | grep "CANCEL" | wc -l
+        # NODE_FAIL will give a CANCELLED in the sacct file
+        if [[ $(echo "${sacct_result}" | grep "NODE_FAIL" | wc -l) -eq 1 ]]; then
+            echo 0
+        else
+            echo "${sacct_result}" | grep "CANCEL" | wc -l
+        fi
     fi
 }
 
@@ -167,7 +172,7 @@ function get_symbol() {
                             touch ${file_stdout}.canceled_manual
 
                             # Did job fail?
-                        elif [[ $(tail -n 100 ${file_stdout} | grep "State: FAILED" | wc -l) -ne 0 ]]; then
+                        elif [[ $(tail -n 100 ${file_stdout} | grep "State: FAILED\|State: NODE_FAIL" | wc -l) -ne 0 ]]; then
                             symbol="${symbol_failed}"
                             touch ${file_stdout}.fail
 
