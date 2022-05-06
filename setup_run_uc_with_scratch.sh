@@ -493,12 +493,15 @@ ${reservation_txt_sbatch}
 
 set -e
 
-# Should basically contain what's in 
-# ${module_gnu}
+EOL
 
-module unload \$(module -t list 2>&1 | grep "tools\|app\|io\|compiler\|mpi\|lib\|math\|devel\|numlib\|cae\|chem\|system")
-module load compiler/gnu mpi/openmpi
-module list
+# 2022-05-05 18:09 PDT: Previously, I had these written directly (uncommented) into submit.sh. But now I'm noticing that they don't match what is in my module_gnu.sh, so I'm replacing them with that script directly. BUT! I haven't tested this with an actual netCDF-forced run! So if it stops working, change it back.
+###module unload \$(module -t list 2>&1 | grep "tools\|app\|io\|compiler\|mpi\|lib\|math\|devel\|numlib\|cae\|chem\|system")
+###module load compiler/gnu mpi/openmpi
+###module list
+cat "${module_gnu}" >> submit.sh 
+
+cat<<EOL >> submit.sh
 #this requires a locally compiled netcdf with hdf5
 export LD_LIBRARY_PATH=\$SOFTWARE/hdf5-1.12.1/lib:\$SOFTWARE/lib:\$LD_LIBRARY_PATH
 export HDF5_DISABLE_VERSION_CHECK=1
