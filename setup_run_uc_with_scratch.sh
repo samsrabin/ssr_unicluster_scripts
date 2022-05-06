@@ -31,6 +31,7 @@ function help {
 usage
 echo -e "OPTIONAL:"
 echo -e "  -d --dependency JOBNUM  Start this job after completion of Slurm job JOBNUM\n"
+echo -e "  --lpjg_topdir PATH Path to LPJ-GUESS directory that build folder (i.e., ARCH) should be found in"
 echo -e "  -L --linked_restart_dir PATH Path to restart directory (.../state/YEAR) that will be linked in this state_path_absolute"
 echo -e "  -p --prefix VAL  Add VAL to beginning of Slurm job names\n"
 echo -e "  -s --state_path_absolute VAL Absolute path to state directory, if path in ins-files can't be trusted\n"
@@ -116,6 +117,9 @@ do
 	case $1 in
 		-d  | --dependency)  shift
 			dependency_tmp=$1
+			;;
+		--lpjg_topdir )  shift
+			lpjg_topdir=$1
 			;;
 		-L  | --linked_restart_dir)  shift
 			linked_restart_dir_array+=($1)
