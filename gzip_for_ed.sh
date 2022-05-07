@@ -42,6 +42,8 @@ echo "" > tmp_list_outDirs_pot.txt
 while [ $year1 -le $YEARN_IN ]; do
    year6=$((year1 + 5))
    year10=$((year1 + 9))
+
+   # Potential
    thisdir=1.2.pot.$year1-$year10
    if [ "$actual_year1" == "" ]; then
       if [ ! -d "$thisdir" ]; then
@@ -59,6 +61,9 @@ while [ $year1 -le $YEARN_IN ]; do
    echo $thisout | sed "s/${thisdir}\///" >> tmp_list_outDirs_pot.txt
    echo $thisout/postproc/$year6-$year10
    cp -r $thisout/postproc/$year6-$year10 $outdir/
+   echo $(pwd)/$thisout >> $outdir/included_directories.txt
+
+   # Actual
    thisdir=1.2.act.$year6-$year10
    thisout=$(ls -d $thisdir/out* | tail -n 1)
    echo $thisout | sed "s/${thisdir}\///" >> tmp_list_outDirs_act.txt
@@ -70,6 +75,8 @@ while [ $year1 -le $YEARN_IN ]; do
       skip_runoff=1
    fi
    echo $(pwd)/$thisout >> $outdir/included_directories.txt
+
+   # Set up for next iteration
    year1=$((year1 + 5))
 done
 
