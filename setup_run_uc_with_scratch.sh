@@ -7,6 +7,7 @@ if [[ "$#" -eq "0" ]]; then
 	exit
 fi
 
+# Daniel: Change
 lpjg_topdir="$HOME/lpj-guess_git-svn_20190828"
 module_gnu="/home/kit/imk-ifu/lr8247/scripts_peter/module_gnu.sh"
 
@@ -41,6 +42,7 @@ echo -e "  --fu Start finishup job. Default when --dev is not specified. To disa
 echo -e "  --no_fu Do not start finishup job\n"
 echo -e "  --dev 						  Use one of the dev queues. Add --fu to also start a finishup job.\n"
 echo -e "  --submit					  Go ahead and submit the job (and postprocessing, if applicable).\n"
+echo -e "  --append-test-to-parent-instead   When using --dev, append _test to the PARENT of the work directory instead of the work directory itself.\n"
 echo -e "  -h,  --help				 Prints this help\n"
 example
 }
@@ -104,6 +106,7 @@ linked_restart_dir_array=()
 pp_y1=
 pp_yN=
 tasks_per_core=1
+append_test_to_parent_instead=0
 # Handle possible neither/both specs here
 mem_per_node_default=90000 # MB
 mem_per_node=-1 # MB
@@ -155,6 +158,8 @@ do
 		--no_fu)  arg_no_fu=1
 			;;
 		--submit)  submit=1
+			;;
+		--append-test-to-parent-instead | --append_test_to_parent_instead)  append_test_to_parent_instead=1
 			;;
 		-h	| --help )		  help
 			exit
@@ -236,8 +241,13 @@ elif [[ ! -e "${workdir}" ]]; then
 	exit 1
 fi
 rundir_top=$workdir/$(pwd | sed "s@/pfs/data5/home@/home@" | sed "s@${HOME}/@@")
+set -x
 if [[ ${dev} -eq 1 ]]; then
-    thisbasename=$(basename $PWD)
+    if [[ ${append_test_to_parent_instead} -eq 1 ]]; then
+        thisbasename=$(basename $(realpath "$PWD"/..))
+    else
+        thisbasename=$(basename "$PWD")
+    fi
 	rundir_top=$(echo ${rundir_top} | sed "s@${thisbasename}@${thisbasename}_test@")
 	state_path_absolute=${state_path_absolute}_test
 	if [[ "${linked_restart_dir_array}" != "" ]]; then
@@ -248,6 +258,7 @@ if [[ ${dev} -eq 1 ]]; then
 		done
 	fi
 fi
+set +x
 
 # End function-parsing code
 #############################################################################################
@@ -506,17 +517,21 @@ cat<<EOL >> submit.sh
 export LD_LIBRARY_PATH=\$SOFTWARE/hdf5-1.12.1/lib:\$SOFTWARE/lib:\$LD_LIBRARY_PATH
 export HDF5_DISABLE_VERSION_CHECK=1
 
+if [[ $(which mpirun | grep "openmpi" | wc -l) -eq 1 ]]; then
+    mpirun_options="--bind-to core --map-by core"
+else
+    mpirun_options=""
+fi
 diagnostics=1
-mpirun_options=""
 if [[ \$diagnostics -eq 1 ]]; then
-	if [[ \$(which mpirun | grep "openmpi" | wc -l) -eq 1 ]]; then
-		#mpirun_options="-display-map -tag-output"
-		mpirun_options="--bind-to ${bindto_mapby} --map-by ${bindto_mapby} -report-bindings -display-map -tag-output"
-	elif [[ \$(which mpirun | grep "intel" | wc -l) -eq 1 ]]; then
-		mpirun_options="-print-rank-map -prepend-rank"
-	else
-		echo "mpirun \$(which mpirun) not recognized; will set no options for stdout/stderr printing"
-	fi
+    if [[ \$(which mpirun | grep "openmpi" | wc -l) -eq 1 ]]; then
+        #mpirun_options="-display-map -tag-output"
+        mpirun_options="${mpirun_options} -report-bindings -display-map -tag-output"
+    elif [[ \$(which mpirun | grep "intel" | wc -l) -eq 1 ]]; then
+        mpirun_options="${mpirun_options} -print-rank-map -prepend-rank"
+    else
+        echo "mpirun \$(which mpirun) not recognized; will set no options for stdout/stderr printing"
+    fi
 fi
 
 cd $rundir_top 

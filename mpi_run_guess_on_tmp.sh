@@ -66,7 +66,12 @@ echo "local_nrank $local_nrank"
 # Get directories (we use the RANK+1 within LPJ-guess_binary)
 local_nrun=$((local_nrank+1))
 scratch_work_dir=${TMP}/scratch_${local_nrun}
-work_dir=${SLURM_SUBMIT_DIR}
+if [[ "${WORK_DIR}" != "" ]]; then
+    work_dir="${WORK_DIR}"
+fi
+if [[ "${work_dir}" == "" ]]; then
+    work_dir=${SLURM_SUBMIT_DIR}
+fi
 scratch_run_dir=${scratch_work_dir}/run${local_nrun}
 work_run_dir=${work_dir}/run${local_nrun}
 echo work_dir $work_dir
