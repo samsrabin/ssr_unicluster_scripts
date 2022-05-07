@@ -206,11 +206,10 @@ while [ $year1 -le $actual_yearN ]; do
 
    year1=$((year1 + 5))
 done
+rm ${topdir}/tmp_list_outDirs_*.txt
 cd ..
 
 echo gathering into ${outdir}.tar ...
 tar -cf ${outdir}.tar $outdir
-
-rm tmp_list_outDirs_*.txt
 
 echo Done!
