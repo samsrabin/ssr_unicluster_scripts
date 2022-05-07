@@ -34,7 +34,6 @@ touch $outdir/included_directories.txt
 skip_runoff=0
 
 echo Copying...
-#for year1 in {2001..2091..5}; do
 year1=$YEAR1_IN
 actual_year1=""
 actual_yearN=$YEARN_IN
@@ -57,16 +56,13 @@ while [ $year1 -le $YEARN_IN ]; do
       break
    fi
    thisout=$(ls -d $thisdir/out* | tail -n 1)
-   #echo $thisout >> tmp_list_outDirs_pot.txt
    echo $thisout | sed "s/${thisdir}\///" >> tmp_list_outDirs_pot.txt
    echo $thisout/postproc/$year6-$year10
    cp -r $thisout/postproc/$year6-$year10 $outdir/
    thisdir=1.2.act.$year6-$year10
    thisout=$(ls -d $thisdir/out* | tail -n 1)
-   #echo $thisout >> tmp_list_outDirs_act.txt
    echo $thisout | sed "s/${thisdir}\///" >> tmp_list_outDirs_act.txt
    echo $thisout/postproc/$year6-$year10
-###   cp $thisout/postproc/$year6-$year10/tot_runoff.out.gz $outdir/$year6-$year10
    if [[ -e $thisout/postproc/$year6-$year10/tot_runoff.out.gz ]]; then
       cp $thisout/postproc/$year6-$year10/tot_runoff.out.gz $outdir/$year6-$year10
    else
