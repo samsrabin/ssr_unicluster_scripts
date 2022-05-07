@@ -89,7 +89,7 @@ if [ $(diff -w -B tmp_list_outDirs_pot.txt tmp_list_outDirs_pot_sorted.txt | wc 
           [Yy]* ) break;;
           [Nn]* ) exit;;
           [Dd]* ) rm tmp*.txt; rm -rf $outdir; rm tmp_list_outDirs_*.txt; exit;;
-          * ) echo "Please answer yes, no, or delete.";;
+          * ) echo ${small_file_reprompt};;
       esac
    done
 fi
@@ -103,7 +103,7 @@ if [ $(diff tmp_list_outDirs_act.txt tmp_list_outDirs_act_sorted.txt | wc -l) -g
           [Yy]* ) break;;
           [Nn]* ) exit;;
           [Dd]* ) rm tmp*.txt; rm -rf $outdir; rm tmp_list_outDirs_*.txt; exit;;
-          * ) echo "Please answer yes, no, or delete.";;
+          * ) echo ${small_file_reprompt};;
       esac
    done
 fi
@@ -111,6 +111,9 @@ fi
 # Check outputs
 cd $outdir
 year1=$((actual_year1+5))
+small_files_ok=0
+small_file_prompt="Yy=yes, Nn=no, Aa='yes to this and any subsequent small files', Dd='no and delete outdir'"
+small_file_reprompt="Please answer yes, no, all, or delete."
 while [ $year1 -le $actual_yearN ]; do
    thisyear_dir=$year1-$((year1+4))
    if [ ! -d $thisyear_dir ]; then
@@ -121,14 +124,15 @@ while [ $year1 -le $actual_yearN ]; do
    # Check ANPP
    FILENAME=$thisyear_dir/anpp.out.gz
    FILESIZE=$(stat -c%s "$FILENAME")
-   if [ "$FILESIZE" -lt 4000000 ]; then
+   if [ "$FILESIZE" -lt 4000000 ] && [ $small_files_ok -eq 0 ]; then
       while true; do
-          read -p "Size of ${FILENAME} is only ${FILESIZE}. Is that OK? Yy=yes, Nn=no, Dd='no and delete outdir' " yn
+          read -p "Size of ${FILENAME} is only ${FILESIZE}. Is that OK? ${small_file_prompt} " yn
           case $yn in
               [Yy]* ) break;;
               [Nn]* ) exit;;
+              [Aa]* ) small_files_ok=1; break;;
               [Dd]* ) rm -rf $outdir; rm ../tmp_list_outDirs_*.txt; exit;;
-              * ) echo "Please answer yes, no, or delete.";;
+              * ) echo ${small_file_reprompt};;
           esac
       done
    fi
@@ -136,14 +140,15 @@ while [ $year1 -le $actual_yearN ]; do
    # Check gsirrigation
    FILENAME=$thisyear_dir/gsirrigation.out.gz
    FILESIZE=$(stat -c%s "$FILENAME")
-   if [ "$FILESIZE" -lt 3500000 ]; then
+   if [ "$FILESIZE" -lt 3500000 ] && [ $small_files_ok -eq 0 ]; then
       while true; do
-          read -p "Size of ${FILENAME} is only ${FILESIZE}. Is that OK? Yy=yes, Nn=no, Dd='no and delete outdir' " yn
+          read -p "Size of ${FILENAME} is only ${FILESIZE}. Is that OK? ${small_file_prompt} " yn
           case $yn in
               [Yy]* ) break;;
               [Nn]* ) exit;;
+              [Aa]* ) small_files_ok=1; break;;
               [Dd]* ) rm -rf $outdir; rm ../tmp_list_outDirs_*.txt; exit;;
-              * ) echo "Please answer yes, no, or delete.";;
+              * ) echo ${small_file_reprompt};;
           esac
       done
    fi
@@ -152,14 +157,15 @@ while [ $year1 -le $actual_yearN ]; do
    if [[ $skip_runoff -eq 0 ]]; then
       FILENAME=$thisyear_dir/tot_runoff.out.gz
       FILESIZE=$(stat -c%s "$FILENAME")
-      if [ "$FILESIZE" -lt 700000 ]; then
+      if [ "$FILESIZE" -lt 700000 ] && [ $small_files_ok -eq 0 ]; then
          while true; do
-             read -p "Size of ${FILENAME} is only ${FILESIZE}. Is that OK? Yy=yes, Nn=no, Dd='no and delete outdir' " yn
+             read -p "Size of ${FILENAME} is only ${FILESIZE}. Is that OK? ${small_file_prompt} " yn
              case $yn in
                  [Yy]* ) break;;
                  [Nn]* ) exit;;
+                 [Aa]* ) small_files_ok=1; break;;
                  [Dd]* ) rm -rf $outdir; rm ../tmp_list_outDirs_*.txt; exit;;
-                 * ) echo "Please answer yes, no, or delete.";;
+                 * ) echo ${small_file_reprompt};;
              esac
          done
       fi
@@ -168,14 +174,15 @@ while [ $year1 -le $actual_yearN ]; do
    # Check yield
    FILENAME=$thisyear_dir/yield.out.gz
    FILESIZE=$(stat -c%s "$FILENAME")
-   if [ "$FILESIZE" -lt 3000000 ]; then
+   if [ "$FILESIZE" -lt 3000000 ] && [ $small_files_ok -eq 0 ]; then
       while true; do
-          read -p "Size of ${FILENAME} is only ${FILESIZE}. Is that OK? Yy=yes, Nn=no, Dd='no and delete outdir' " yn
+          read -p "Size of ${FILENAME} is only ${FILESIZE}. Is that OK? ${small_file_prompt} " yn
           case $yn in
               [Yy]* ) break;;
               [Nn]* ) exit;;
+              [Aa]* ) small_files_ok=1; break;;
               [Dd]* ) rm -rf $outdir; rm ../tmp_list_outDirs_*.txt; exit;;
-              * ) echo "Please answer yes, no, or delete.";;
+              * ) echo ${small_file_reprompt};;
           esac
       done
    fi
@@ -184,14 +191,15 @@ while [ $year1 -le $actual_yearN ]; do
    FILENAME=$thisyear_dir/yieldPH.out.gz
    rm $FILENAME
 ###   FILESIZE=$(stat -c%s "$FILENAME")
-###   if [ "$FILESIZE" -lt 3000000 ]; then
+###   if [ "$FILESIZE" -lt 3000000 ] && [ $small_files_ok -eq 0 ]; then
 ###      while true; do
-###          read -p "Size of ${FILENAME} is only ${FILESIZE}. Is that OK? Yy=yes, Nn=no, Dd='no and delete outdir' " yn
+###          read -p "Size of ${FILENAME} is only ${FILESIZE}. Is that OK? ${small_file_prompt} " yn
 ###          case $yn in
 ###              [Yy]* ) break;;
 ###              [Nn]* ) exit;;
+###              [Aa]* ) small_files_ok=1; break;;
 ###              [Dd]* ) rm -rf $outdir; rm ../tmp_list_outDirs_*.txt; exit;;
-###              * ) echo "Please answer yes, no, or delete.";;
+###              * ) echo ${small_file_reprompt};;
 ###          esac
 ###      done
 ###   fi
@@ -200,7 +208,7 @@ while [ $year1 -le $actual_yearN ]; do
 done
 cd ..
 
-echo tarring...
+echo gathering into ${outdir}.tar ...
 tar -cf ${outdir}.tar $outdir
 
 rm tmp_list_outDirs_*.txt
