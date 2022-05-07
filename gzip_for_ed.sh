@@ -61,7 +61,13 @@ while [ $year1 -le $YEARN_IN ]; do
    echo $thisout | sed "s/${thisdir}\///" >> tmp_list_outDirs_pot.txt
    echo $thisout/postproc/$year6-$year10
    cp -r $thisout/postproc/$year6-$year10 $outdir/
+
+   # Save run info
    echo $(pwd)/$thisout >> $outdir/included_directories.txt
+   runinfo=$outdir/$year6-$year10/runInfo_pot
+   mkdir -p "${runinfo}"
+   cp -a $thisout/*txt "${runinfo}/"
+   cp -a $thisout/*ins "${runinfo}/"
 
    # Actual
    thisdir=1.2.act.$year6-$year10
@@ -74,7 +80,13 @@ while [ $year1 -le $YEARN_IN ]; do
       echo $thisout/postproc/$year6-$year10/tot_runoff.out.gz not found! Skipping tot_runoff.
       skip_runoff=1
    fi
+
+   # Save run info
    echo $(pwd)/$thisout >> $outdir/included_directories.txt
+   runinfo=$outdir/$year6-$year10/runInfo_act
+   mkdir -p "${runinfo}"
+   cp -a $thisout/*txt "${runinfo}/"
+   cp -a $thisout/*ins "${runinfo}/"
 
    # Set up for next iteration
    year1=$((year1 + 5))
