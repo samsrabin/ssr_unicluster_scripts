@@ -241,7 +241,6 @@ elif [[ ! -e "${workdir}" ]]; then
 	exit 1
 fi
 rundir_top=$workdir/$(pwd | sed "s@/pfs/data5/home@/home@" | sed "s@${HOME}/@@")
-set -x
 if [[ ${dev} -eq 1 ]]; then
     if [[ ${append_test_to_parent_instead} -eq 1 ]]; then
         thisbasename=$(basename $(realpath "$PWD"/..))
@@ -258,7 +257,6 @@ if [[ ${dev} -eq 1 ]]; then
 		done
 	fi
 fi
-set +x
 
 # End function-parsing code
 #############################################################################################
