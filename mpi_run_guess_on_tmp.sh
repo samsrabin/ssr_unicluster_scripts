@@ -2,6 +2,19 @@
 set -e
 set -x
 
+if [[ "${WORK_DIR}" != "" ]]; then
+    work_dir="${WORK_DIR}"
+fi
+if [[ "${work_dir}" == "" ]]; then
+    work_dir=${SLURM_SUBMIT_DIR}
+fi
+
+# save log file
+start_msg="Job ${SLURM_JOB_ID} started $(date)"
+echo "${start_msg}" >> "${WORK_DIR}/latest_submitted_jobs.log"
+echo "${start_msg}" >> "${WORK_DIR}/submitted_jobs.log"
+echo "${start_msg}" >> "~/submitted_jobs.log"
+
 #synchronize the output generate by a mpi job back to the submit run dir
 if [[ $# -eq 0 ]]; then
 	echo "usage: $(basename $0) abs.guess options...  "
@@ -66,12 +79,6 @@ echo "local_nrank $local_nrank"
 # Get directories (we use the RANK+1 within LPJ-guess_binary)
 local_nrun=$((local_nrank+1))
 scratch_work_dir=${TMP}/scratch_${local_nrun}
-if [[ "${WORK_DIR}" != "" ]]; then
-    work_dir="${WORK_DIR}"
-fi
-if [[ "${work_dir}" == "" ]]; then
-    work_dir=${SLURM_SUBMIT_DIR}
-fi
 scratch_run_dir=${scratch_work_dir}/run${local_nrun}
 work_run_dir=${work_dir}/run${local_nrun}
 echo work_dir $work_dir
@@ -170,6 +177,12 @@ fi
 
 echo ${HOSTNAME} ls ${work_run_dir}
 ls ${work_run_dir}
+
+# save log file
+end_msg="Job ${SLURM_JOB_ID} ended $(date)"
+echo "${end_msg}" >> "${WORK_DIR}/latest_submitted_jobs.log"
+echo "${end_msg}" >> "${WORK_DIR}/submitted_jobs.log"
+echo "${end_msg}" >> "~/submitted_jobs.log"
 
 echo "All done!"
 

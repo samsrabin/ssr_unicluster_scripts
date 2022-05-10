@@ -3,9 +3,16 @@
 set -e
 #Script for postprocessing of LPJ-GUESS output run on multiple cpus
 
-date
+datenow="$(date)"
+echo ${datenow}
 
 LANG=en_US.UTF-8
+
+# save log file
+start_msg="Job ${SLURM_JOB_ID} started ${datenow}"
+echo "${start_msg}" >> "${WORK_DIR}/latest_submitted_jobs.log"
+echo "${start_msg}" >> "${WORK_DIR}/submitted_jobs.log"
+echo "${start_msg}" >> "~/submitted_jobs.log"
 
 # Make sure you're okay to do this
 if [[ -e RUN_INPROGRESS ]]; then
@@ -189,7 +196,15 @@ echo     Warnings  ${warned} >> ~/lpj-model-runs.txt
 echo     Errors    ${errors} >> ~/lpj-model-runs.txt
 
 echo "All done!"
-date
+datenow="$(date)"
+echo ${datenow}
+
+# save log file
+cd ..
+end_msg="Job ${SLURM_JOB_ID} ended ${datenow}"
+echo "${end_msg}" >> "${WORK_DIR}/latest_submitted_jobs.log"
+echo "${end_msg}" >> "${WORK_DIR}/submitted_jobs.log"
+echo "${end_msg}" >> "~/submitted_jobs.log"
 
 #cd ..
 #cp $OUTFILE $outdir/

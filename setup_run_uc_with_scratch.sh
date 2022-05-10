@@ -590,6 +590,7 @@ EOL
 fi
 cat<<EOL >> startguess.sh
 cat latest_submitted_jobs.log >> ~/submitted_jobs.log
+cat latest_submitted_jobs.log >> submitted_jobs.log
 exit 0
 EOL
 chmod +x startguess.sh
