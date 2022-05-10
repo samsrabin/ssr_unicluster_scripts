@@ -334,9 +334,11 @@ echo "rundir_top = ${rundir_top}"
 
 rsync -a  $lpjg_dir/$binary $rundir_top
 
-# SSR 2017-05-30
 if [[ -e $lpjg_dir/latest_commit.txt ]]; then
 	rsync -a  $lpjg_dir/latest_commit.txt $rundir_top
+fi
+if [[ -e $lpjg_dir/latest_cmake.txt ]]; then
+	rsync -a  $lpjg_dir/latest_cmake.txt $rundir_top
 fi
 
 cp $gridlist $rundir_top
@@ -389,6 +391,9 @@ for ((b=1; b <= $nprocess ; b++)); do
   fi
   if [[ -e latest_commit.txt ]]; then
 	  cp latest_commit.txt run$c
+  fi
+  if [[ -e latest_cmake.txt ]]; then
+	  cp latest_cmake.txt run$c
   fi
 
 done
