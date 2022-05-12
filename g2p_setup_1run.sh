@@ -210,7 +210,7 @@ else
 fi
 
 # Get name of this runset
-runsetname=$(get_runset_name.sh)
+runsetname=$(g2p_get_runset_name.sh)
 if [[ "${runsetname}" == "" ]]; then
     echo "runsetname is blank"
     exit 1
@@ -231,7 +231,7 @@ jobname=${runid}_$(date "+%Y%m%d%H%M%S")
 if [[ ${prefix} != "" ]]; then
     jobname=${prefix}_${jobname}
 fi
-rundir_top=$(get_rundir_top.sh ${dev})
+rundir_top=$(g2p_get_rundir_top.sh ${dev})
 if [[ "${rundir_top}" == "" ]]; then
     echo "Error finding rundir_top; exiting."
     exit 1
@@ -246,7 +246,7 @@ if [[ ${dev} -eq 1 ]]; then
         done
     fi
 fi
-state_path_absolute=$(get_state_path_absolute.sh "${rundir_top}" "${state_path_absolute}")
+state_path_absolute=$(g2p_get_state_path_absolute.sh "${rundir_top}" "${state_path_absolute}")
 
 # End function-parsing code
 #############################################################################################

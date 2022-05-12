@@ -250,7 +250,7 @@ echo " "
 
 # Set up dirForPLUM
 thisbasename=$(g2p_get_basename.sh)
-rundir_top=$(get_rundir_top.sh ${istest})
+rundir_top=$(g2p_get_rundir_top.sh ${istest})
 if [[ "${rundir_top}" == "" ]]; then
     echo "Error finding rundir_top; exiting."
     exit 1

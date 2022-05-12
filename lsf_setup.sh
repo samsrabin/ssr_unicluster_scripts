@@ -29,14 +29,14 @@ firstpotyear=$((future_y1 - Nyears_getready - 2*Nyears_pot))
 #############################################################################################
 # Function-parsing code from https://gist.github.com/neatshell/5283811
 
-script="g2p_setup.sh"
+script="lsf_setup.sh"
 function usage {
     echo " "
     echo -e "usage: $script [-t]\n"
 }
 
 # Set default values for non-positional arguments
-arch="g2p"
+arch="landsymm-dev-forestry"
 istest=0
 arg_do_fu=0
 submit=""
@@ -45,7 +45,7 @@ dependency=""
 actual_only=0
 potential_only=0
 nproc=160
-ssp_list="hist ssp126 ssp370 ssp585"
+ssp_list="ssp126 ssp370 ssp585"
 # Handle possible neither/both specs here
 mem_per_node_default=90000 # MB
 mem_per_node=-1 # MB
@@ -176,7 +176,7 @@ function do_setup {
         [[ "${state_path}" == "get_param.sh_FAILED" ]] && exit 1
     fi
     #croplist=$(grep "pft" $(ls -tr crop_n_pftlist.*.ins  | tail -n 1) | sed -E 's/pft\s+"([^".]+)"\s*\(/\1/g' | grep -v "ExtraCrop")
-    g2p_setup_1run.sh ${topinsfile} "$(get_ins_files)" ${gridlist} ${inputmodule} ${nproc} ${arch} ${walltime} -p "${prefix}" ${state_path} ${submit} ${ppfudev} ${dependency} ${reservation} --lpjg_topdir $HOME/trunk_fromPA_20161012 ${mem_spec}
+    lsf_setup_1run.sh ${topinsfile} "$(get_ins_files)" ${gridlist} ${inputmodule} ${nproc} ${arch} ${walltime} -p "${prefix}" ${state_path} ${submit} ${ppfudev} ${dependency} ${reservation} --lpjg_topdir $HOME/lpj-guess_git-svn_20190828 ${mem_spec}
 }
 
 #############################################################################################
@@ -185,18 +185,16 @@ echo " "
 date
 echo " "
 
-while [[ ! -d actual ]]; do
+while [[ ! -d template ]]; do
     cd ../
     if [[ "$PWD" == "/" ]]; then
-        echo "g2p_setup.sh must be called from a (subdirectory of a) directory that has an actual/ directory"
+        echo "lsf_setup.sh must be called from a (subdirectory of a) directory that has a template/ directory"
         exit 1
     fi
 done
 
-mkdir -p potential
-
 # Get job name prefix
-prefix="$(g2p_chain_shortname.sh $(basename ${PWD}) ${istest})"
+prefix="$(lsf_chain_shortname.sh $(basename ${PWD}) ${istest})"
 
 # Are we actually submitting historical period?
 if [[ $(echo ${ssp_list} | cut -f1 -d" ") == "hist" && ${potential_only} -eq 0 ]]; then
@@ -226,7 +224,7 @@ fi
 # Set up postprocessing
 outy1=$((firstpotyear + Nyears_getready))
 # Copy over template script
-postproc_template="$HOME/scripts/g2p_postproc.template.act.sh"
+postproc_template="$HOME/scripts/lsf_postproc.template.sh"
 if [[ ! -f ${postproc_template} ]]; then
     echo "postproc_template file not found: ${postproc_template}"
     exit 1
@@ -249,8 +247,8 @@ fi
 echo " "
 
 # Set up dirForPLUM
-thisbasename=$(g2p_get_basename.sh)
-rundir_top=$(get_rundir_top.sh ${istest})
+thisbasename=$(lsf_get_basename.sh)
+rundir_top=$(lsf_get_rundir_top.sh ${istest})
 if [[ "${rundir_top}" == "" ]]; then
     echo "Error finding rundir_top; exiting."
     exit 1
@@ -332,7 +330,7 @@ for thisSSP in ${ssp_list}; do
     # I.e., -L flag
     # Would need to ensure that it's ONLY used for first part of future runs.
     state_path=""
-    state_path_absolute=$(get_state_path_absolute.sh "${rundir_top}" "${state_path_absolute}")
+    state_path_absolute=$(lsf_get_state_path_absolute.sh "${rundir_top}" "${state_path_absolute}")
     state_path_thisSSP="${state_path_absolute}_${thisSSP}"
     mkdir -p ${state_path_thisSSP}
     pushd ${state_path_thisSSP} 1>/dev/null

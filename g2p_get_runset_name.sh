@@ -7,7 +7,7 @@ else
 fi
 
 if [[ "${runsetname}" == "" ]]; then
-    >&2 echo "get_runset_name.sh: runsetname is blank"
+    >&2 echo "g2p_get_runset_name.sh: runsetname is blank"
     exit 1
 fi
 
