@@ -306,31 +306,6 @@ if [[ "${gridlist}" == "" ]]; then
     exit 1
 fi
 
-## Set up postprocessing
-#outy1=$((firstpotyear + Nyears_getready))
-## Copy over template script
-#postproc_template="$HOME/scripts/lsf_postproc.template.sh"
-#if [[ ! -f ${postproc_template} ]]; then
-#    echo "postproc_template file not found: ${postproc_template}"
-#    exit 1
-#fi
-#cp ${postproc_template} postproc.sh
-## Replace years
-#sed -i "s/OUTY1/${outy1}/g" postproc.sh
-#sed -i "s/OUTYN/$((future_y1 - 1))/g" postproc.sh
-#sed -i "s/NYEARS_POT/${Nyears_pot}/g" postproc.sh
-#sed -i "s/THISSSP/hist/g" postproc.sh
-## Set up top-level output directory
-#workdir=$WORK
-#if [[ "${workdir}" == "" ]]; then
-#    echo "\$WORK undefined"
-#    exit 1
-#elif [[ ! -e "${workdir}" ]]; then
-#    echo "\$WORK not found: $WORK"
-#    exit 1
-#fi
-#echo " "
-#
 ## Set up dirForPLUM
 #thisbasename=$(lsf_get_basename.sh)
 #rundir_top=$(lsf_get_rundir_top.sh ${istest})
@@ -415,22 +390,6 @@ for thisSSP in ${ssp_list}; do
     fi
     set " "
     cd ${thisDir}
-    # Copy over template script
-    postproc_template="$HOME/scripts/lsf_postproc.template.sh"
-    if [[ ! -f ${postproc_template} ]]; then
-        echo "postproc_template file not found: ${postproc_template}"
-        exit 1
-    fi
-    cp ${postproc_template} postproc.sh
-    # Replace years
-    while [[ ${outy1} -lt ${future_y1} ]]; do
-        outy1=$((outy1 + Nyears_pot))
-    done
-    sed -i "s/OUTY1/${outy1}/g" postproc.sh
-    sed -i "s/OUTYN/$((firstPart2yr - 1))/g" postproc.sh
-    sed -i "s/NYEARS_POT/${Nyears_pot}/g" postproc.sh
-    sed -i "s/THISSSP/${thisSSP}/g" postproc.sh
-
 
     # Set up state directory for this SSP
     # IF YOU WIND UP WITH PROBLEMS HERE, CONSIDER USING THIS FUNCTIONALITY
@@ -478,21 +437,7 @@ for thisSSP in ${ssp_list}; do
         prevDir=${thisDir}
         thisDir=${thisSSP}_${theseYears}
         cd ${thisDir}
-        # Copy over template script
-        postproc_template="$HOME/scripts/lsf_postproc.template.sh"
-        if [[ ! -f ${postproc_template} ]]; then
-            echo "postproc_template file not found: ${postproc_template}"
-            exit 1
-        fi
-        cp ${postproc_template} postproc.sh
-        # Replace years
-        while [[ ${outy1} -lt ${firstPart2yr} ]]; do
-            outy1=$((outy1 + Nyears_pot))
-        done
-        sed -i "s/OUTY1/${outy1}/g" postproc.sh
-        sed -i "s/OUTYN/$((future_yN - Nyears_pot))/g" postproc.sh
-        sed -i "s/NYEARS_POT/${Nyears_pot}/g" postproc.sh
-        sed -i "s/THISSSP/${thisSSP}/g" postproc.sh
+
         # Set up run
         topdir_prev=$(echo $PWD | sed "s@/${thisDir}@/${prevDir}@")
         save_years2=$(get_param.sh ${topdir_prev}/${topinsfile} "save_years")
