@@ -11,9 +11,9 @@ fi
 
 # save log file
 start_msg="Job ${SLURM_JOB_ID} started $(date)"
-echo "${start_msg}" >> "${WORK_DIR}/latest_submitted_jobs.log"
-echo "${start_msg}" >> "${WORK_DIR}/submitted_jobs.log"
-echo "${start_msg}" >> "~/submitted_jobs.log"
+echo "${start_msg}" >> "${work_dir}/latest_submitted_jobs.log"
+echo "${start_msg}" >> "${work_dir}/submitted_jobs.log"
+echo "${start_msg}" >> "${HOME}/submitted_jobs.log"
 
 #synchronize the output generate by a mpi job back to the submit run dir
 if [[ $# -eq 0 ]]; then
@@ -180,9 +180,9 @@ ls ${work_run_dir}
 
 # save log file
 end_msg="Job ${SLURM_JOB_ID} ended $(date)"
-echo "${end_msg}" >> "${WORK_DIR}/latest_submitted_jobs.log"
-echo "${end_msg}" >> "${WORK_DIR}/submitted_jobs.log"
-echo "${end_msg}" >> "~/submitted_jobs.log"
+echo "${end_msg}" >> "${work_dir}/latest_submitted_jobs.log"
+echo "${end_msg}" >> "${work_dir}/submitted_jobs.log"
+echo "${end_msg}" >> "${HOME}/submitted_jobs.log"
 
 echo "All done!"
 
