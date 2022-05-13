@@ -287,11 +287,11 @@ if [[ ${do_hist} -eq 1 ]]; then
     cp -a template "${dir_acthist}"
     pushdq "${dir_acthist}"
     sed -i "s/UUUU/${last_year_act_hist}/" main.ins    # lasthistyear
-    sed -i "s/VVVV/0/" main.ins    # restart_year
+    sed -iE "s/^\s*restart_year/\!restart_year/g" main.ins
     sed -i "s/WWWW/\"${list_pot_y1}\"/" main.ins    # save_years
-    sed -i "s/XXXX/${last_LUyear_past}/" main.ins    # XXXXpast_YYYYall_LU.txt
-    sed -i "s/YYYY/${last_LUyear_all}/" main.ins    # XXXXpast_YYYYall_LU.txt
-    sed -i "s/ZZZZ/0/" landcover.ins    # first_plut_year
+    sed -i "s/XXXX/${last_LUyear_past}/" landcover.ins    # XXXXpast_YYYYall_LU.txt
+    sed -i "s/YYYY/${last_LUyear_all}/" landcover.ins    # XXXXpast_YYYYall_LU.txt
+    sed -iE "s/^\s*first_plut_year/\!first_plut_year/g" landcover.ins
 
     popdq
 fi
