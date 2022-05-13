@@ -298,13 +298,6 @@ fi
 set " "
 pushdq "${dir_acthist}"
 
-
-
-echo "INCOMPLETE. EXITING."
-exit 1
-
-
-
 # Get gridlist
 gridlist=$(get_param.sh ${topinsfile} "file_gridlist")
 [[ "${gridlist}" == "get_param.sh_FAILED" ]] && exit 1
@@ -361,6 +354,16 @@ if [[ ${do_hist} -eq 1 && ${potential_only} -eq 0 ]]; then
     echo " "
     echo " "
 fi
+
+
+
+
+
+echo "INCOMPLETE. EXITING."
+exit 1
+
+
+
 
 # Get list of years being state-saved from historical run
 hist_save_years="$(get_param.sh ${topinsfile} save_years)"
