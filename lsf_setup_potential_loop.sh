@@ -9,7 +9,7 @@ set -e
 #############################################################################################
 # Function-parsing code from https://gist.github.com/neatshell/5283811
 
-script="g2p_setup_potential_loop.sh"
+script="lsf_setup_potential_loop.sh"
 #Declare the number of mandatory args
 margs=3
 
@@ -57,20 +57,20 @@ fi
 # SSR: Process positional arguments
 # Which SSP?
 if [[ "$1" == "" ]]; then
-    echo "g2p_setup_potential_loop.sh: You must provide thisSSP, future_y1, and future_yN"
+    echo "lsf_setup_potential_loop.sh: You must provide thisSSP, future_y1, and future_yN"
     exit 1
 fi
 thisSSP=$1
 shift
 # Years of the future period
 if [[ "$1" == "" ]]; then
-    echo "g2p_setup_potential_loop.sh: You must provide thisSSP, future_y1, and future_yN"
+    echo "lsf_setup_potential_loop.sh: You must provide thisSSP, future_y1, and future_yN"
     exit 1
 fi
 future_y1=$1
 shift
 if [[ "$1" == "" ]]; then
-    echo "g2p_setup_potential_loop.sh: You must provide thisSSP, future_y1, and future_yN"
+    echo "lsf_setup_potential_loop.sh: You must provide thisSSP, future_y1, and future_yN"
     exit 1
 fi
 future_yN=$1
@@ -105,6 +105,7 @@ if [[ ${Nyears_pot} == "" ]]; then
     Nyears_pot=5
 fi
 
+
 ###################
 # Setup
 ###################
@@ -113,7 +114,8 @@ fi
 Nyears=$((Nyears_getready + Nyears_pot))
 
 # Get list of beginning years
-y1_list=$(seq ${firstpotyear} $Nyears_pot $((future_yN - Nyears)))
+y1_list="${list_pot_y1_hist} ${list_pot_y1_future}"
+
 
 ###################
 # Loop through periods
@@ -133,9 +135,24 @@ else
 fi
 for y1 in ${y1_list}; do
 
-    # Get dirname
+    # Does this run include the ssp period?
     yN=$((y1 + Nyears - 1))
-    thisdir=${thisSSP}/${y1}-${yN}
+    if [[ ${yN} -gt ${future_yN} ]]; then
+        yN=${future_yN}
+    fi
+    if [[ ${yN} -gt  ${hist_yN} ]]; then
+        incl_future=1
+    else
+        incl_future=0
+    fi
+
+    # Get dirname
+    first_plut_year=$((y1+Nyears_getready))
+    thisdir=${first_plut_year}pot_${y1}-${yN}
+    if [[ ${incl_future} -eq 1 ]]; then
+        thisdir=${thisdir}_${thisSSP}
+    fi
+
     if [[ ${actually_setup} -eq 0 ]]; then
         echo "${thisdir}..."
     else
@@ -144,84 +161,64 @@ for y1 in ${y1_list}; do
         echo "${thisdir}..."
         echo " "
     fi
-    
-    # Make directory, if needed
+
+    # Copy and fill template runDir
+    cp -a ../template "${thisdir}"
+    pushdq "${thisdir}"
+    sed -i "s/UUUU/${yN}/" main.ins    # lasthistyear
+    # restarting
+    sed -i "s/^\!restart_year VVVV/restart_year ${y1}/g" main.ins
+    sed -i "s/VVVV/${y1}/" main.ins    # restart_year
+    sed -i "s/firstoutyear 1850/firstoutyear ${y1}/" main.ins    # firstoutyear
+    sed -i "s/restart 0/restart 1/g" main.ins
+    # saving state
+    sed -i "s/WWWW/\"${future_y1}\"/" main.ins    # save_years
+    if [[ ${y1} -ge ${future_y1} ]]; then
+        sed -i "s/save_state 1/save_state 0/g" main.ins
+    fi
+    # land use file
+    sed -i "s/XXXX/${last_LUyear_past}/" landcover.ins    # XXXXpast_YYYYall_LU.txt
+    sed -i "s/YYYY/${last_LUyear_all}/" landcover.ins    # XXXXpast_YYYYall_LU.txt
+    # outputs
+    sed -i "s/do_plut 0/do_plut 1/g" landcover.ins
+    sed -i "s/ZZZZ/${first_plut_year}/" landcover.ins    # first_plut_year
+    popdq
     mkdir -p ${thisdir}
-    
-    # Copy actual future run to this directory
-    cp -r $(ls -d ../actual/${thisSSP}* | tail -n 1)/* ${thisdir}/
-    
+
     pushd ${thisdir} 1>/dev/null
     
-    # Disable state saving
-    sed -i "s/save_state 1/save_state 0/g" main.ins
-    
-    # Set first year of this run
-    restart_year_txt=$(grep -oE "restart_year\s+[0-9]+" main.ins)
-    sed -i "s/${restart_year_txt}/restart_year ${y1}/g" main.ins
-    
-    # Set lasthistyear to year AFTER last year we care about, because
-    # file_plantyear_st only saves year Y at the end of year Y+1
-    lasthistyear_txt=$(grep -oE "lasthistyear\s+[0-9]+" main.ins)
-    sed -i "s/${lasthistyear_txt}/lasthistyear $((yN + 1))/g" main.ins
-    
-    # Tell LPJ-GUESS to use do_potyield (and rename this ins-file section)
-    sed -i "s/! SSR: future/! SSR: potential yields\ndo_potyield 1/g" main.ins
-    
-    # Make LPJ-GUESS use PFT-specific N fertilization instead of input file
-    sed -i "s/^param \"file_Nfert\".*/\param \"file_Nfert\" (str \"\")/g" crop.ins
-    
-    # Don't simulate natural land
-    file_lu=$(get_param.sh landcover.ins file_lu)
-    [[ "${file_lu}" == "" ]] && exit 1
-    sed -i "s@${file_lu}@${file_lu/someOfEachCrop/justCPB_1yr}@" landcover.ins
-
-    # Set do_potyield to 1 and remove file_lucrop, which is thus unnecessary.
-    sed -i -E 's@param "file_lucrop".*$@param "file_lucrop" (str "")\ndo_potyield 1@g' landcover.ins
-
-    # Don't use N deposition
-    sed -i -E "s@param\s+(\"file_mN[HO][xy]\S\S\Sdep\")\s+\(str\s+(\".+\")\)@param \1 \(str \"\"\)@g" main.ins
-
-    # Only save the years needed
-    firstoutyear=$((yN - Nyears_pot + 1))
-    sed -i -E "s@firstoutyear\s+[0-9]+@firstoutyear ${firstoutyear}@" main.ins
-
-    # Establish during stand creation Jan. 1 rather than at end of year, 
-    # to try and reduce sim years required
-    sed -i "s/establish_during_stand_creation 0/establish_during_stand_creation 1/g" main.ins
-
-    # Copy over template script
-    postproc_template="$HOME/scripts/g2p_postproc.template.pot.sh"
-    if [[ ! -f ${postproc_template} ]]; then
-       echo "postproc_template file not found: ${postproc_template}"
-       exit 1
-    fi
-    cp ${postproc_template} postproc.sh
-    # Replace years
-    sed -i "s/THISSSP/${thisSSP}/g" postproc.sh
-    sed -i "s/OUTY1/${firstoutyear}/g" postproc.sh
-    sed -i "s/OUTYN/${yN}/g" postproc.sh
-    sed -i "s@DIRFORPLUM@${dirForPLUM}@g" postproc.sh
-    # Replace croplist
-    croplist=$(echo $(grep "pft" $(ls -tr crop_n_pftlist.*.ins  | tail -n 1) | sed -E 's/pft\s+"([^".]+)"\s*\(/\1/g' | grep -v "ExtraCrop") | sed 's/ /\" \"/g')
-    if [[ "${croplist}" == "" ]]; then
-       echo "Unable to parse croplist; failing"
-       exit 1
-    fi
-     sed -i "s/CROPLIST/${croplist}/g" postproc.sh
-#    # Replace Nfertlist
-#    nfertlist=$(echo $(grep "st " crop_n_stlist.*.ins | sed "s/C[34]//g" | grep -oE "[0-9]+\"" | sort | uniq | sed 's/"//') | sed 's/ /\" \"/g')
-#    if [[ "${nfertlist}" == "" ]]; then
-#       echo "Unable to parse nfertlist; failing"
+#    # Copy over template script
+#    postproc_template="$HOME/scripts/lsf_postproc.template.sh"
+#    if [[ ! -f ${postproc_template} ]]; then
+#       echo "postproc_template file not found: ${postproc_template}"
 #       exit 1
 #    fi
-#    sed -i "s/NFERTLIST/${nfertlist}/g" postproc.sh
+#    cp ${postproc_template} postproc.sh
+#    # Replace years
+#    sed -i "s/THISSSP/${thisSSP}/g" postproc.sh
+#    sed -i "s/OUTY1/${firstoutyear}/g" postproc.sh
+#    sed -i "s/OUTYN/${yN}/g" postproc.sh
+#    sed -i "s@DIRFORPLUM@${dirForPLUM}@g" postproc.sh
+#    # Replace croplist
+#    croplist=$(echo $(grep "pft" $(ls -tr crop_n_pftlist.*.ins  | tail -n 1) | sed -E 's/pft\s+"([^".]+)"\s*\(/\1/g' | grep -v "ExtraCrop") | sed 's/ /\" \"/g')
+#    if [[ "${croplist}" == "" ]]; then
+#       echo "Unable to parse croplist; failing"
+#       exit 1
+#    fi
+#     sed -i "s/CROPLIST/${croplist}/g" postproc.sh
+##    # Replace Nfertlist
+##    nfertlist=$(echo $(grep "st " crop_n_stlist.*.ins | sed "s/C[34]//g" | grep -oE "[0-9]+\"" | sort | uniq | sed 's/"//') | sed 's/ /\" \"/g')
+##    if [[ "${nfertlist}" == "" ]]; then
+##       echo "Unable to parse nfertlist; failing"
+##       exit 1
+##    fi
+##    sed -i "s/NFERTLIST/${nfertlist}/g" postproc.sh
     
     # Actually set up and even submit, if being called from within setup_all.sh
     if [[ ${actually_setup} -eq 1 ]]; then
         do_setup ${walltime_pot} ${firstoutyear} ${yN}
     fi
-    
+
     popd 1>/dev/null
 
 done

@@ -15,7 +15,7 @@ walltime_pot="2:00:00"  # Should take around 1 hour
 future_y1=2015
 firstPart2yr=9999 # The year that will be the first in the 2nd part of the SSP period
 future_yN=2100 # Because last year of emulator output is 2084
-Nyears_getready=3
+Nyears_getready=2
 
 if [[ "${reservation}" == "" ]]; then
     sequential_pot=0
@@ -165,7 +165,7 @@ if [[ ${firstPart2yr} -gt ${future_yN} ]]; then
 fi
 
 # Get info for last XXXXpast_YYYYall_LU.txt
-first_LUyear_past=$((pot_y1 - Nyears_getready + 1))
+first_LUyear_past=$((pot_y1 - Nyears_getready))
 last_LUyear_past=${first_LUyear_past}
 last_LUyear_all=$((last_LUyear_past + 1))
 y1=$((pot_y1 + pot_step))
@@ -198,11 +198,12 @@ while [[ ${y1} -le ${pot_yN} ]] && [[ ${y1} -lt ${future_y1} ]]; do
     fi
     y1=$((y1 + pot_step))
 done
+save_years_hist="${list_pot_y1_hist}"
 if [[ ${pot_yN} -gt ${future_y1} ]]; then
-    if [[ "${list_pot_y1_hist}" == "" ]]; then
-        list_pot_y1_hist="${future_y1}"
+    if [[ "${save_years_hist}" == "" ]]; then
+        save_years_hist="${future_y1}"
     else
-        list_pot_y1_hist="${list_pot_y1_hist} ${future_y1}"
+        save_years_hist="${list_pot_y1_hist} ${future_y1}"
     fi
 fi
 
@@ -216,10 +217,8 @@ while [[ ${y1} -le ${pot_yN} ]] && [[ ${y1} -lt ${future_yN} ]]; do
     y1=$((y1 + pot_step))
 done
 
-echo last_year_act_hist $last_year_act_hist
 echo list_pot_y1_hist $list_pot_y1_hist
 echo list_pot_y1_future $list_pot_y1_future
-
 
 #############################################################################################
 
@@ -314,7 +313,7 @@ if [[ ${do_hist} -eq 1 ]]; then
     pushdq "${dir_acthist}"
     sed -i "s/UUUU/${last_year_act_hist}/" main.ins    # lasthistyear
     sed -iE "s/^\s*restart_year/\!restart_year/g" main.ins
-    sed -i "s/WWWW/\"${list_pot_y1_hist}\"/" main.ins    # save_years
+    sed -i "s/WWWW/\"${save_years_hist}\"/" main.ins    # save_years
     sed -i "s/XXXX/${last_LUyear_past}/" landcover.ins    # XXXXpast_YYYYall_LU.txt
     sed -i "s/YYYY/${last_LUyear_all}/" landcover.ins    # XXXXpast_YYYYall_LU.txt
     sed -iE "s/^\s*first_plut_year/\!first_plut_year/g" landcover.ins
@@ -358,11 +357,6 @@ if [[ ${do_hist} -eq 1 && ${potential_only} -eq 0 ]]; then
     echo " "
 fi
 
-# Exit if no ssp-period simulations are being done
-if [[ ${last_LUyear_past} -le ${hist_yN} ]]; then
-    exit 0
-fi
-
 # Get list of years being state-saved from historical run
 hist_save_years="$(get_param.sh ${topinsfile} save_years)"
 if [[ "${hist_save_years}" == "" ]]; then
@@ -391,7 +385,7 @@ for thisSSP in ${ssp_list}; do
         theseYears="${future_y1}-${future_yN}"
     fi
     thisDir=${thisSSP}_${theseYears}
-    if [[ ${potential_only} -eq 0 ]]; then
+    if [[ ${potential_only} -eq 0 && ${do_future_act} -eq 1 ]]; then
         echo "###############################"
         echo "### actual/${thisSSP} ${theseYears} ###"
         echo "###############################"
@@ -455,12 +449,6 @@ for thisSSP in ${ssp_list}; do
         do_setup ${walltime_fut}
     fi
 
-
-
-    echo "INCOMPLETE. EXITING"
-    exit 1
-
-
     cd ..
 
     if [[ ${split_ssp_period} -eq 1 ]]; then
@@ -511,7 +499,10 @@ for thisSSP in ${ssp_list}; do
                 dependency="-d ${lastactrun}"
             fi
         fi
-        cd ../potential
+
+        cd ..
+        mkdir -p potential
+        cd potential
         save_years=""
         state_path=$(echo $state_path | sed -E "s/ -L.*//")
         . lsf_setup_potential_loop.sh ${thisSSP} ${future_y1} ${future_yN}
@@ -521,6 +512,11 @@ for thisSSP in ${ssp_list}; do
         save_years=""
     fi
     cd ../actual
+
+echo "INCOMPLETE. STOPPING"
+exit 1
+
+
 done # Loop through SSPs
 
 

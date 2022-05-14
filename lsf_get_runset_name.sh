@@ -3,11 +3,11 @@
 if [[ $PWD == *calibration* ]]; then
     runsetname="calibration"
 else
-    runsetname=$(g2p_get_basename.sh)
+    runsetname=$(lsf_get_basename.sh)
 fi
 
 if [[ "${runsetname}" == "" ]]; then
-    >&2 echo "g2p_get_runset_name.sh: runsetname is blank"
+    >&2 echo "lsf_get_runset_name.sh: runsetname is blank"
     exit 1
 fi
 
