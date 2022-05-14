@@ -373,9 +373,7 @@ fi
 cd ..
 
 # If first period was hist, remove it
-if [[ ${do_hist} -eq 1 ]]; then
-    ssp_list="${ssp_list/hist /}"
-fi
+ssp_list="${ssp_list/hist /}"
 
 
 # Set up SSP actual and potential runs
