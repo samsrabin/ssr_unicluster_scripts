@@ -10,7 +10,7 @@ fi
 #############################################################################################
 # Function-parsing code from https://gist.github.com/neatshell/5283811
 
-script="g2p_setup_1run.sh"
+script="lsf_setup_1run.sh"
 #Declare the number of mandatory args
 margs=7
 
@@ -210,7 +210,7 @@ else
 fi
 
 # Get name of this runset
-runsetname=$(g2p_get_runset_name.sh)
+runsetname=$(lsf_get_runset_name.sh)
 if [[ "${runsetname}" == "" ]]; then
     echo "runsetname is blank"
     exit 1
@@ -218,7 +218,7 @@ fi
 if [[ $PWD == *calibration* ]]; then
     runsetname="calibration"
 else
-    runsetname=$(g2p_get_basename.sh)
+    runsetname=$(lsf_get_basename.sh)
 fi
 
 # Get directories, modifying paths if testing
@@ -231,7 +231,7 @@ jobname=${runid}_$(date "+%Y%m%d%H%M%S")
 if [[ ${prefix} != "" ]]; then
     jobname=${prefix}_${jobname}
 fi
-rundir_top=$(g2p_get_rundir_top.sh ${dev})
+rundir_top=$(lsf_get_rundir_top.sh ${dev})
 if [[ "${rundir_top}" == "" ]]; then
     echo "Error finding rundir_top; exiting."
     exit 1
@@ -246,7 +246,9 @@ if [[ ${dev} -eq 1 ]]; then
         done
     fi
 fi
-state_path_absolute=$(g2p_get_state_path_absolute.sh "${rundir_top}" "${state_path_absolute}")
+echo "lsf_setup_1run.sh: state_path_absolute A: $state_path_absolute"
+state_path_absolute=$(lsf_get_state_path_absolute.sh "${rundir_top}" "${state_path_absolute}")
+echo "lsf_setup_1run.sh: state_path_absolute B: $state_path_absolute"
 
 # End function-parsing code
 #############################################################################################

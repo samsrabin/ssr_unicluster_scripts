@@ -175,7 +175,51 @@ while [[ ${y1} -le ${pot_yN} ]] && [[ ${y1} -lt ${future_y1} ]]; do
     y1=$((y1 + pot_step))
 done
 hist_yN=$((future_y1 - 1))
-last_year_act_hist=$((last_LUyear_past<hist_yN ? last_LUyear_past : hist_yN))
+last_year_act_hist=$((last_LUyear_past - 1))
+do_future_act=0
+while [[ ${y1} -le ${pot_yN} ]] && [[ ${y1} -lt ${future_yN} ]]; do
+    do_future_act=1
+    last_LUyear_past=$((last_LUyear_past + pot_step))
+    last_LUyear_all=$((last_LUyear_all + pot_step))
+    y1=$((y1 + pot_step))
+done
+last_year_act_future=$((last_LUyear_past - 1))
+if [[ ${do_future_act} -eq 1 ]]; then
+    last_year_act_hist=${hist_yN}
+fi
+
+# Generate list of states to save: Historical period
+y1=${first_LUyear_past}
+while [[ ${y1} -le ${pot_yN} ]] && [[ ${y1} -lt ${future_y1} ]]; do
+    if [[ ${y1} -eq ${first_LUyear_past} ]]; then
+        list_pot_y1_hist="${y1}"
+    else
+        list_pot_y1_hist="${list_pot_y1_hist} ${y1}"
+    fi
+    y1=$((y1 + pot_step))
+done
+if [[ ${pot_yN} -gt ${future_y1} ]]; then
+    if [[ "${list_pot_y1_hist}" == "" ]]; then
+        list_pot_y1_hist="${future_y1}"
+    else
+        list_pot_y1_hist="${list_pot_y1_hist} ${future_y1}"
+    fi
+fi
+
+# Generate list of states to save: ssp period
+while [[ ${y1} -le ${pot_yN} ]] && [[ ${y1} -lt ${future_yN} ]]; do
+    if [[ "${list_pot_y1_future}" == "" ]]; then
+        list_pot_y1_future="${y1}"
+    else
+        list_pot_y1_future="${list_pot_y1_future} ${y1}"
+    fi
+    y1=$((y1 + pot_step))
+done
+
+echo last_year_act_hist $last_year_act_hist
+echo list_pot_y1_hist $list_pot_y1_hist
+echo list_pot_y1_future $list_pot_y1_future
+
 
 #############################################################################################
 
@@ -265,30 +309,12 @@ if [[ ${do_hist} -eq 1 ]]; then
         rm -rf "${dir_acthist}"
     fi
 
-    # Generate list of states to save
-    y1=${first_LUyear_past}
-    while [[ ${y1} -le ${pot_yN} ]] && [[ ${y1} -lt ${future_y1} ]]; do
-        if [[ ${y1} -eq ${first_LUyear_past} ]]; then
-            list_pot_y1="${y1}"
-        else
-            list_pot_y1="${list_pot_y1} ${y1}"
-        fi
-        y1=$((y1 + pot_step))
-    done
-    if [[ ${last_year_act_hist} -ge ${future_y1} ]]; then
-        if [[ "${list_pot_y1}" == "" ]]; then
-            list_pot_y1="${future_y1}"
-        else
-            list_pot_y1="${list_pot_y1} ${future_y1}"
-        fi
-    fi
-
     # Make run directory from template
     cp -a template "${dir_acthist}"
     pushdq "${dir_acthist}"
     sed -i "s/UUUU/${last_year_act_hist}/" main.ins    # lasthistyear
     sed -iE "s/^\s*restart_year/\!restart_year/g" main.ins
-    sed -i "s/WWWW/\"${list_pot_y1}\"/" main.ins    # save_years
+    sed -i "s/WWWW/\"${list_pot_y1_hist}\"/" main.ins    # save_years
     sed -i "s/XXXX/${last_LUyear_past}/" landcover.ins    # XXXXpast_YYYYall_LU.txt
     sed -i "s/YYYY/${last_LUyear_all}/" landcover.ins    # XXXXpast_YYYYall_LU.txt
     sed -iE "s/^\s*first_plut_year/\!first_plut_year/g" landcover.ins
@@ -306,14 +332,16 @@ if [[ "${gridlist}" == "" ]]; then
     exit 1
 fi
 
+# Set up rundir_top
+thisbasename=$(lsf_get_basename.sh)
+rundir_top=$(lsf_get_rundir_top.sh ${istest})
+if [[ "${rundir_top}" == "" ]]; then
+    echo "Error finding rundir_top; exiting."
+    exit 1
+fi
+mkdir -p "${rundir_top}"
+
 ## Set up dirForPLUM
-#thisbasename=$(lsf_get_basename.sh)
-#rundir_top=$(lsf_get_rundir_top.sh ${istest})
-#if [[ "${rundir_top}" == "" ]]; then
-#    echo "Error finding rundir_top; exiting."
-#    exit 1
-#fi
-#mkdir -p "${rundir_top}"
 #if [[ "${dirForPLUM}" == "" ]]; then
 #    dirForPLUM=$(realpath ${rundir_top}/../..)/outputs/outForPLUM-$(date "+%Y-%m-%d-%H%M%S")
 #fi
@@ -330,15 +358,10 @@ if [[ ${do_hist} -eq 1 && ${potential_only} -eq 0 ]]; then
     echo " "
 fi
 
-
-
-
-
-echo "INCOMPLETE. EXITING."
-exit 1
-
-
-
+# Exit if no ssp-period simulations are being done
+if [[ ${last_LUyear_past} -le ${hist_yN} ]]; then
+    exit 0
+fi
 
 # Get list of years being state-saved from historical run
 hist_save_years="$(get_param.sh ${topinsfile} save_years)"
@@ -346,15 +369,6 @@ if [[ "${hist_save_years}" == "" ]]; then
     echo "Error getting save_years from hist run"
     exit 1
 fi
-
-
-
-echo "hist_save_years: ${hist_save_years}"
-exit 1
-
-
-
-
 
 cd ..
 
@@ -379,26 +393,48 @@ for thisSSP in ${ssp_list}; do
         theseYears="${future_y1}-${future_yN}"
     fi
     thisDir=${thisSSP}_${theseYears}
-    if [[ ! -d ${thisDir} ]]; then
-        echo "Skipping ${thisSSP} because ${thisDir} does not exist"
-        continue
-    fi
     if [[ ${potential_only} -eq 0 ]]; then
         echo "###############################"
         echo "### actual/${thisSSP} ${theseYears} ###"
         echo "###############################"
+
+        # Archive existing directory, if needed
+        if [[ -d "${thisDir}" ]]; then
+            archive_thisDir="${thisDir}.$(date "+%Y-%m-%d-%H%M%S").tar"
+            echo "Archiving existing $(pwd)/${thisDir} as ${archive_thisDir}"
+            tar -cf "${archive_thisDir}" "${thisDir}"
+            rm -rf "${thisDir}"
+        fi
+
+        # Copy and fill template runDir
+        cp -a ../template "${thisDir}"
+        pushdq "${thisDir}"
+        sed -i "s/UUUU/${last_year_act_future}/" main.ins    # lasthistyear
+        sed -iE "s/^\!restart_year VVVV/restart_year ${future_y1}/g" main.ins
+        sed -i "s/VVVV/${future_y1}/" main.ins    # restart_year
+        sed -i "s/WWWW/\"${list_pot_y1_future}\"/" main.ins    # save_years
+        sed -i "s/XXXX/${last_LUyear_past}/" landcover.ins    # XXXXpast_YYYYall_LU.txt
+        sed -i "s/YYYY/${last_LUyear_all}/" landcover.ins    # XXXXpast_YYYYall_LU.txt
+        sed -iE "s/^\s*first_plut_year/\!first_plut_year/g" landcover.ins
+        sed -i "s/restart 0/restart 1/g" main.ins
+        popdq
     fi
     set " "
     cd ${thisDir}
+
 
     # Set up state directory for this SSP
     # IF YOU WIND UP WITH PROBLEMS HERE, CONSIDER USING THIS FUNCTIONALITY
     # BUILT IN TO lsf_setup_1run.sh INSTEAD!
     # I.e., -L flag
-    # Would need to ensure that it's ONLY used for first part of future runs.
+    # Would need to ensure that it's ONLY used for first part of future runs (if splitting ssp period).
     state_path=""
+    echo "lsf_setup.sh: state_path_absolute A: $state_path_absolute"
     state_path_absolute=$(lsf_get_state_path_absolute.sh "${rundir_top}" "${state_path_absolute}")
+    echo "lsf_setup.sh: state_path_absolute B: $state_path_absolute"
+    echo "lsf_setup.sh: state_path_thisSSP A: $state_path_thisSSP"
     state_path_thisSSP="${state_path_absolute}_${thisSSP}"
+    echo "lsf_setup.sh: state_path_thisSSP B: $state_path_thisSSP"
     mkdir -p ${state_path_thisSSP}
     pushd ${state_path_thisSSP} 1>/dev/null
     for y in ${hist_save_years}; do
@@ -420,6 +456,12 @@ for thisSSP in ${ssp_list}; do
     if [[ ${potential_only} -eq 0 ]]; then
         do_setup ${walltime_fut}
     fi
+
+
+
+    echo "INCOMPLETE. EXITING"
+    exit 1
+
 
     cd ..
 

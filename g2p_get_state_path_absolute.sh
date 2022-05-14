@@ -11,6 +11,7 @@ fi
 
 periodname=$(basename "${rundir_top}")
 
+# Relies on $periodname only being found once in $rundir_top (at the end)
 state_path_absolute=$(echo $rundir_top | sed "s@${periodname}@states@")
 
 echo $state_path_absolute
