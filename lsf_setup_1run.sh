@@ -229,7 +229,7 @@ fi
 
 # Get directories, modifying paths if testing
 if [[ "${whichrun}" == "pot" ]]; then
-    runid=$(echo $PWD | grep -oE "ssp[0-9]+/.*" | sed "s@/@_@")
+    runid=$(echo $PWD | grep -oE "[0-9]+pot.*" | sed -E "s/_[0-9]+-[0-9]+//" | sed "s/_ssp//")
 else
     runid=$(basename $PWD)
 fi
