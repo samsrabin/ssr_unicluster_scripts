@@ -148,7 +148,7 @@ margs_check $insfile "$extra_insfiles" $gridlist $input_module $nprocess $arch $
 
 # Parse dependency
 if [[ "${dependency_tmp}" == "LATEST" ]]; then
-	dependency_tmp=$(awk 'END {print $NF}' ~/submitted_jobs.log)
+	dependency_tmp=$(awk 'END {print $NF}' ${HOME}/submitted_jobs.log)
 	echo "Using latest submitted job (${dependency_tmp}) as dependency"
 	dependency="#SBATCH -d afterany:$dependency_tmp"
 elif [[ "${dependency_tmp}" != "" ]]; then
@@ -515,11 +515,11 @@ if [[ "\${jobID_finish}" == "" ]]; then
 fi
 echo "job_finish.sh: \$jobID_finish"
 echo "job_finish.sh: \$jobID_finish" >> latest_submitted_jobs.log
-echo " " >> ~/submitted_jobs.log
+echo " " >> ${HOME}/submitted_jobs.log
 EOL
 fi
 cat<<EOL >> startguess.sh
-cat latest_submitted_jobs.log >> ~/submitted_jobs.log
+cat latest_submitted_jobs.log >> ${HOME}/submitted_jobs.log
 exit 0
 EOL
 chmod +x startguess.sh

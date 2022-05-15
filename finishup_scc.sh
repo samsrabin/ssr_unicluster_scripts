@@ -12,7 +12,7 @@ LANG=en_US.UTF-8
 start_msg="Job ${SLURM_JOB_ID} started ${datenow}"
 echo "${start_msg}" >> "${WORK_DIR}/latest_submitted_jobs.log"
 echo "${start_msg}" >> "${WORK_DIR}/submitted_jobs.log"
-echo "${start_msg}" >> "~/submitted_jobs.log"
+echo "${start_msg}" >> "${HOME}/submitted_jobs.log"
 
 # Make sure you're okay to do this
 if [[ -e RUN_INPROGRESS ]]; then
@@ -204,7 +204,7 @@ cd ..
 end_msg="Job ${SLURM_JOB_ID} ended ${datenow}"
 echo "${end_msg}" >> "${WORK_DIR}/latest_submitted_jobs.log"
 echo "${end_msg}" >> "${WORK_DIR}/submitted_jobs.log"
-echo "${end_msg}" >> "~/submitted_jobs.log"
+echo "${end_msg}" >> "${HOME}/submitted_jobs.log"
 
 #cd ..
 #cp $OUTFILE $outdir/
