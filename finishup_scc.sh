@@ -8,10 +8,17 @@ echo ${datenow}
 
 LANG=en_US.UTF-8
 
+if [[ "${WORK_DIR}" != "" ]]; then
+    work_dir="${WORK_DIR}"
+fi
+if [[ "${work_dir}" == "" ]]; then
+    work_dir=${SLURM_SUBMIT_DIR}
+fi
+
 # save log file
 start_msg="Job ${SLURM_JOB_ID} started ${datenow}"
-echo "${start_msg}" >> "${WORK_DIR}/latest_submitted_jobs.log"
-echo "${start_msg}" >> "${WORK_DIR}/submitted_jobs.log"
+echo "${start_msg}" >> "${work_dir}/latest_submitted_jobs.log"
+echo "${start_msg}" >> "${work_dir}/submitted_jobs.log"
 echo "${start_msg}" >> "${HOME}/submitted_jobs.log"
 
 # Make sure you're okay to do this
@@ -202,8 +209,8 @@ echo ${datenow}
 # save log file
 cd ..
 end_msg="Job ${SLURM_JOB_ID} ended ${datenow}"
-echo "${end_msg}" >> "${WORK_DIR}/latest_submitted_jobs.log"
-echo "${end_msg}" >> "${WORK_DIR}/submitted_jobs.log"
+echo "${end_msg}" >> "${work_dir}/latest_submitted_jobs.log"
+echo "${end_msg}" >> "${work_dir}/submitted_jobs.log"
 echo "${end_msg}" >> "${HOME}/submitted_jobs.log"
 
 #cd ..
