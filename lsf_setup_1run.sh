@@ -114,6 +114,9 @@ do
         -d  | --dependency)  shift
             dependency_tmp=$1
             ;;
+        --dependency-name)  shift
+            dependency_name=$1
+            ;;
         -L  | --linked_restart_dir)  shift
             linked_restart_dir_array+=($1)
             ;;
@@ -173,6 +176,9 @@ if [[ "${dependency_tmp}" == "LATEST" ]]; then
 elif [[ "${dependency_tmp}" != "" ]]; then
     echo "Depending on job ${dependency_tmp}"
     dependency="#SBATCH -d afterany:$dependency_tmp"
+fi
+if [[ "${dependency_name}" != "" ]]; then
+    echo "I.e., depending on ${dependency_name}"
 fi
 
 # Process memory specification
@@ -246,9 +252,7 @@ if [[ ${dev} -eq 1 ]]; then
         done
     fi
 fi
-echo "lsf_setup_1run.sh: state_path_absolute A: $state_path_absolute"
 state_path_absolute=$(lsf_get_state_path_absolute.sh "${rundir_top}" "${state_path_absolute}")
-echo "lsf_setup_1run.sh: state_path_absolute B: $state_path_absolute"
 
 # End function-parsing code
 #############################################################################################

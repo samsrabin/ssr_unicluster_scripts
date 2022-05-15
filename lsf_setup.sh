@@ -17,12 +17,6 @@ firstPart2yr=9999 # The year that will be the first in the 2nd part of the SSP p
 future_yN=2100 # Because last year of emulator output is 2084
 Nyears_getready=2
 
-if [[ "${reservation}" == "" ]]; then
-    sequential_pot=0
-else
-    sequential_pot=1
-fi
-
 firstpotyear=$((future_y1 - Nyears_getready - 2*Nyears_pot))
 
 #############################################################################################
@@ -79,12 +73,6 @@ do
             ;;
         --fu)
             arg_do_fu=1
-            ;;
-        --seq-pot)
-            sequential_pot=1
-            ;;
-        --no-seq-pot)
-            sequential_pot=0
             ;;
         --dirForPLUM)  shift
             dirForPLUM="$1"
@@ -266,6 +254,11 @@ popdq () {
     command popd "$@" > /dev/null
 }
 
+function get_latest_run {
+    grep "LPJ-GUESS" ${HOME}/submitted_jobs.log | tail -n 1 | sed "s/LPJ-GUESS run: //"
+}
+
+
 #############################################################################################
 
 echo " "
@@ -279,6 +272,13 @@ while [[ ! -d template ]]; do
         exit 1
     fi
 done
+
+
+# Set up job arrays
+arr_job_name=()
+arr_job_num=()
+arr_y1=()
+arr_yN=()
 
 # Get job name prefix
 prefix="$(lsf_chain_shortname.sh $(basename ${PWD}) ${istest})"
@@ -353,6 +353,14 @@ state_path=""
 if [[ ${do_hist} -eq 1 && ${potential_only} -eq 0 ]]; then
     hist_save_years=""
     do_setup ${walltime_hist}
+
+    arr_job_name+=("act-hist")
+    if [[ "${submit}" != "" ]]; then
+        arr_job_num+=( $(get_latest_run) )
+    fi
+    arr_y1+=(0) # nonsense
+    arr_yN+=(${last_year_act_hist})
+
     echo " "
     echo " "
 fi
@@ -376,8 +384,18 @@ for thisSSP in ${ssp_list}; do
         thisSSP="ssp${thisSSP}"
     fi
 
-    # Actual runs always wait for previous hist or SSP run to complete
-    dependency="-d LATEST"
+    # Set up dependency for actual ssp run
+    dependency=""
+    if [[ "${submit}" != "" && ${do_hist} -eq 1 ]]; then
+        r=-1
+        for this_jobname in ${arr_job_name[@]}; do
+            r=$((r+1))
+            if [[ "${this_jobname}" == "act-hist" ]]; then
+                dependency="-d ${arr_job_num[r]} --dependency-name 'act-hist'"
+                break
+            fi
+        done
+    fi
 
     if [[ ${split_ssp_period} -eq 1 ]]; then
         theseYears="${future_y1}-$((firstPart2yr - 1))"
@@ -421,12 +439,8 @@ for thisSSP in ${ssp_list}; do
     # I.e., -L flag
     # Would need to ensure that it's ONLY used for first part of future runs (if splitting ssp period).
     state_path=""
-    echo "lsf_setup.sh: state_path_absolute A: $state_path_absolute"
     state_path_absolute=$(lsf_get_state_path_absolute.sh "${rundir_top}" "${state_path_absolute}")
-    echo "lsf_setup.sh: state_path_absolute B: $state_path_absolute"
-    echo "lsf_setup.sh: state_path_thisSSP A: $state_path_thisSSP"
     state_path_thisSSP="${state_path_absolute}_${thisSSP}"
-    echo "lsf_setup.sh: state_path_thisSSP B: $state_path_thisSSP"
     mkdir -p ${state_path_thisSSP}
     pushd ${state_path_thisSSP} 1>/dev/null
     for y in ${hist_save_years}; do
@@ -447,6 +461,17 @@ for thisSSP in ${ssp_list}; do
     fi
     if [[ ${potential_only} -eq 0 ]]; then
         do_setup ${walltime_fut}
+
+        if [[ ${split_ssp_period} -eq 1 ]]; then
+            arr_job_name+=("act-${thisSSP}_${theseYears}")
+        else
+            arr_job_name+=("act-${thisSSP}")
+        fi
+        if [[ "${submit}" != "" ]]; then
+            arr_job_num+=($(get_latest_run))
+        fi
+        arr_y1+=(${future_y1})
+        arr_yN+=($(echo $theseYears | cut -d"-" -f2))
     fi
 
     cd ..
@@ -476,6 +501,14 @@ for thisSSP in ${ssp_list}; do
         save_years="${save_years} ${save_years2}"
         if [[ ${potential_only} -eq 0 ]]; then
             do_setup ${walltime_fut}
+
+            arr_job_name+=("act-${thisSSP}_${theseYears}")
+            if [[ "${submit}" != "" ]]; then
+                arr_job_num+=($(get_latest_run))
+            fi
+            arr_y1+=(${future_y1})
+            arr_yN+=($(echo $theseYears} | cut -d"-" -f2))
+
             echo " "
             echo " "
         fi
@@ -490,16 +523,6 @@ for thisSSP in ${ssp_list}; do
         echo "#########################"
         set " "
     
-        # Set dependency for all potential runs to latest actual run
-        if [[ ${sequential_pot} -eq 0 ]]; then
-            if [[ ${potential_only} -eq 1 ]]; then
-                dependency="${dependency_pot}"
-            else
-                lastactrun=$(tail ~/submitted_jobs.log | grep "LPJ-GUESS" | tail -n 1 | grep -oE "[0-9]+")
-                dependency="-d ${lastactrun}"
-            fi
-        fi
-
         cd ..
         mkdir -p potential
         cd potential
@@ -513,11 +536,14 @@ for thisSSP in ${ssp_list}; do
     fi
     cd ../actual
 
-echo "INCOMPLETE. STOPPING"
-exit 1
 
+    echo arr_job_name ${arr_job_name[@]}
+    echo arr_job_num ${arr_job_num[@]}
+    echo arr_y1 ${arr_y1[@]}
+    echo arr_yN ${arr_yN[@]}
 
 done # Loop through SSPs
 
+squeue -o "%10i %.7P %.35j %.10T %.10M %.9l %.6D %.16R %E" -S JOBID | sed "s/unfulfilled/unf/g"
 
 exit 0

@@ -213,10 +213,36 @@ for y1 in ${y1_list}; do
 ##       exit 1
 ##    fi
 ##    sed -i "s/NFERTLIST/${nfertlist}/g" postproc.sh
+
+    # Set up dependency (or not)
+    dependency=""
+    if [[ "${submit}" != "" ]]; then
+        if [[ $((y1-1)) -le ${hist_yN} ]]; then
+            thisPeriod="hist"
+        else
+            thisPeriod="${thisSSP}"
+        fi
+        dependency_name="act-${thisPeriod}"
+        r=-1
+        for this_jobname in ${arr_job_name[@]}; do
+            r=$((r+1))
+            if [[ "${this_jobname}" == "${dependency_name}" ]]; then
+                dependency="-d ${arr_job_num[r]} --dependency-name ${dependency_name}"
+                break
+            fi
+        done
+    fi
     
     # Actually set up and even submit, if being called from within setup_all.sh
     if [[ ${actually_setup} -eq 1 ]]; then
         do_setup ${walltime_pot} ${firstoutyear} ${yN}
+
+        arr_job_name+=("${thisdir}")
+        if [[ "${submit}" != "" ]]; then
+            arr_job_num+=($(get_latest_run))
+        fi
+        arr_y1+=(${y1})
+        arr_yN+=(${yN})
     fi
 
     popd 1>/dev/null
