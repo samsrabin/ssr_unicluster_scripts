@@ -340,13 +340,13 @@ if [[ "${rundir_top}" == "" ]]; then
 fi
 mkdir -p "${rundir_top}"
 
-## Set up dirForPLUM
-#if [[ "${dirForPLUM}" == "" ]]; then
-#    dirForPLUM=$(realpath ${rundir_top}/../..)/outputs/outForPLUM-$(date "+%Y-%m-%d-%H%M%S")
-#fi
-#mkdir -p ${dirForPLUM}
-#echo "Top-level output directory: $dirForPLUM"
-#echo " "
+# Set up dirForPLUM
+if [[ "${dirForPLUM}" == "" ]]; then
+    dirForPLUM=$(realpath ${rundir_top}/../..)/outputs/outForPLUM-$(date "+%Y-%m-%d-%H%M%S")
+fi
+mkdir -p ${dirForPLUM}
+echo "Top-level output directory: $dirForPLUM"
+echo " "
 
 # Submit historical run (or not)
 state_path=""

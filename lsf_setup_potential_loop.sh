@@ -187,32 +187,18 @@ for y1 in ${y1_list}; do
 
     pushd ${thisdir} 1>/dev/null
     
-#    # Copy over template script
-#    postproc_template="$HOME/scripts/lsf_postproc.template.sh"
-#    if [[ ! -f ${postproc_template} ]]; then
-#       echo "postproc_template file not found: ${postproc_template}"
-#       exit 1
-#    fi
-#    cp ${postproc_template} postproc.sh
-#    # Replace years
-#    sed -i "s/THISSSP/${thisSSP}/g" postproc.sh
-#    sed -i "s/OUTY1/${firstoutyear}/g" postproc.sh
-#    sed -i "s/OUTYN/${yN}/g" postproc.sh
-#    sed -i "s@DIRFORPLUM@${dirForPLUM}@g" postproc.sh
-#    # Replace croplist
-#    croplist=$(echo $(grep "pft" $(ls -tr crop_n_pftlist.*.ins  | tail -n 1) | sed -E 's/pft\s+"([^".]+)"\s*\(/\1/g' | grep -v "ExtraCrop") | sed 's/ /\" \"/g')
-#    if [[ "${croplist}" == "" ]]; then
-#       echo "Unable to parse croplist; failing"
-#       exit 1
-#    fi
-#     sed -i "s/CROPLIST/${croplist}/g" postproc.sh
-##    # Replace Nfertlist
-##    nfertlist=$(echo $(grep "st " crop_n_stlist.*.ins | sed "s/C[34]//g" | grep -oE "[0-9]+\"" | sort | uniq | sed 's/"//') | sed 's/ /\" \"/g')
-##    if [[ "${nfertlist}" == "" ]]; then
-##       echo "Unable to parse nfertlist; failing"
-##       exit 1
-##    fi
-##    sed -i "s/NFERTLIST/${nfertlist}/g" postproc.sh
+    # Copy over template script
+    postproc_template="$HOME/scripts/lsf_postproc.template.sh"
+    if [[ ! -f ${postproc_template} ]]; then
+       echo "postproc_template file not found: ${postproc_template}"
+       exit 1
+    fi
+    cp ${postproc_template} postproc.sh
+    # Replace years
+    sed -i "s/THISSSP/${thisSSP}/g" postproc.sh
+    sed -i "s/OUTY1/${first_plut_year}/g" postproc.sh
+    sed -i "s/OUTYN/${yN}/g" postproc.sh
+    sed -i "s@DIRFORPLUM@${dirForPLUM}@g" postproc.sh
 
     # Set up dependency (or not)
     dependency=""
