@@ -14,7 +14,7 @@ while [[ ! -d outputs/ ]]; do
    fi
 done
 cd outputs/
-dirForPLUM=${PWD}/$(ls -d outForPLUM-* | tail -n 1)
+dirForPLUM="DIRFORPLUM"
 cd "${thisDir}"
 
 pp_y1=OUTY1

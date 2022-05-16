@@ -12,7 +12,7 @@ while [[ ! -d outputs/ ]]; do
    fi
 done
 cd outputs/
-dirForPLUM=${PWD}/$(ls -d outForPLUM-* | tail -n 1)
+dirForPLUM="DIRFORPLUM"
 cd "${thisDir}"
 
 thisSSP=$(echo $PWD | rev | cut -d"/" -f3 | rev)
