@@ -150,7 +150,11 @@ for y1 in ${y1_list}; do
     first_plut_year=$((y1+Nyears_getready))
     thisdir=${first_plut_year}pot_${y1}-${yN}
     if [[ ${incl_future} -eq 1 ]]; then
-        thisdir=${thisdir}_${thisSSP}
+        mkdir -p "${thisSSP}"
+        thisdir="${thisSSP}/${thisdir}"
+    else
+        mkdir -p "hist"
+        thisdir="hist/${thisdir}"
     fi
 
     if [[ ${actually_setup} -eq 0 ]]; then
@@ -202,10 +206,7 @@ for y1 in ${y1_list}; do
        exit 1
     fi
     cp ${postproc_template} postproc.sh
-    # Replace years
-    sed -i "s/THISSSP/${thisSSP}/g" postproc.sh
-    sed -i "s/OUTY1/${first_plut_year}/g" postproc.sh
-    sed -i "s/OUTYN/${yN}/g" postproc.sh
+    # Replace placeholder(s)
     sed -i "s@DIRFORPLUM@${dirForPLUM}@g" postproc.sh
 
     # Set up dependency (or not)

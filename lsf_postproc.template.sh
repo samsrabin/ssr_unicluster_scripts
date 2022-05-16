@@ -15,10 +15,15 @@ cd outputs/
 dirForPLUM=${PWD}/$(ls -d outForPLUM-* | tail -n 1)
 cd "${thisDir}"
 
-pp_y1=OUTY1
-pp_yN=$((pp_y1 + NYEARS_POT - 1))
-
-outDir_thisSSPpd=postproc/THISSSP_${pp_y1}-${pp_yN}
+thisSSP=$(echo $PWD | rev | cut -d"/" -f3 | rev)
+thisPot=$(echo $PWD | rev | cut -d"/" -f2 | rev)
+lastYear="-$(echo ${thisPot} | cut -d"-" -f2)"
+dirName="$(echo ${thisPot} | grep -oE "[0-9]+pot")-${lastYear}"
+if [[ "${thisSSP}" != "hist" ]]; then
+    dirName+="_${thisSSP}"
+fi
+dirName+="-$(echo ${thisPot} | cut -d"-" -f2)"
+outDir_thisSSPpd=postproc/${dirName}
 mkdir -p ${outDir_thisSSPpd}
 for f in $(ls landsymm_p[cl]ut[CW]*); do
     echo "   gzipping ${f}..."
@@ -29,7 +34,7 @@ touch ${outDir_thisSSPpd}/done
 rsync -ahm ${outDir_thisSSPpd} ${dirForPLUM}/
 
 # Save run info to directory for PLUM
-tarfile=${dirForPLUM}/THISSSP_${pp_y1}-${pp_yN}/runinfo_pot.tar
+tarfile=${dirForPLUM}/${dirName}/runinfo_pot.tar
 tar -cf ${tarfile} *ins
 tar -rf ${tarfile} *txt
 tar -rf ${tarfile} *log
