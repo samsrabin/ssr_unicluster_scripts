@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-remap_code_ver="remap12_2016"
+runset_ver="runs-2022-05"
 symbol_norun="--"            # No run started for this period within this job chain.
 symbol_pend_depend="👀"      # Pending: waiting on dependency
 symbol_pend_other="⏳"       # Pending: other reason
@@ -292,9 +292,9 @@ function check_jobs {
 
 }
 
-cd "/home/kit/imk-ifu/lr8247/g2p/runs/${remap_code_ver}"
+cd "/home/kit/imk-ifu/lr8247/landsymm/runs-forestonly/${runset_ver}"
 
-tmpfile=.tmp.g2p_view_jobchains.$(date +%N)
+tmpfile=.tmp.lsf_view_jobchains.$(date +%N)
 touch $tmpfile
 
 act_col_heads=""
@@ -315,14 +315,17 @@ for g in ${gcmlist}; do
         fi
     
         # Get short name for this chain
-        thischain_name="$(g2p_chain_shortname.sh ${d} ${testing})"
+        thischain_name="$(lsf_chain_shortname.sh ${d} ${testing})"
     
         actdir="${d}/actual"
         if [[ ! -d "${actdir}" ]]; then
             echo "actdir not found: ${PWD}/${actdir})"
             exit 13
         fi
-        ssp_list="ssp126 ssp370 ssp585"
+        pot_run_names="$(find ${d}/potential -type d -name "*pot_*" | cut -d"/" -f4 | grep -oE "[0-9]+pot" | sort | uniq)"
+        
+#        ssp_list="hist ssp126 ssp370 ssp585"
+        ssp_list="hist ssp126"
         s=0
         latest_job=""
         latest_actual_job="-1"
@@ -333,16 +336,17 @@ for g in ${gcmlist}; do
             else
                 islast_act=0
             fi
-    
-            # Get potential column headers, if necessary
+
+            # Get subdirectory
             potdir="${d}/potential/${ssp}/"
             if [[ ! -d "${potdir}" ]]; then
                 #echo "Skipping ${potdir} (directory not found)"
                 continue
             fi
+    
+            # Get potential column headers, if necessary
             if [[ "${pot_col_heads}" == "" ]]; then
-                pot_col_heads="$(echo $(ls "${potdir}") | sed "s/ /,/g")"
-                pot_col_heads="$(echo ${pot_col_heads} | sed "s/^20/,/g" | sed "s/,20/,/g" | sed "s/-20/-/g")"
+                pot_col_heads="$(echo ${pot_run_names} | sed "s/ot//g" | sed "s/ /,/g")"
             fi
     
             # Check historical period, if necessary
@@ -354,37 +358,39 @@ for g in ${gcmlist}; do
                 thisline=" :"
             fi
     
-            # Get future-actual periods
-            futureactdirs=$(ls -d "${d}/actual/${ssp}_"*)
-            if [[ "${futureactdirs}" == "" ]]; then
-                echo "No directories found matching ${d}/actual/${ssp}_*"
-                exit 1
-            fi
-    
-            # Check future-actual periods
-            x=0
-            get_act_col_heads=0
-            if [[ "${act_col_heads}" == "" ]]; then
-                get_act_col_heads=1
-            fi
-            for d_act in ${futureactdirs}; do
-                x=$((x + 1))
-                if [[ $get_act_col_heads -eq 1 ]]; then
-                    act_col_heads="${act_col_heads}ACT${x},"
+            if [[ "${ssp}" != "hist" ]] ; then
+                # Get future-actual periods
+                futureactdirs=$(ls -d "${d}/actual/${ssp}_"* | grep -vE "\.tar$")
+                if [[ "${futureactdirs}" == "" ]]; then
+                    echo "No directories found matching ${d}/actual/${ssp}_*"
+                    exit 1
                 fi
-    
-                homedir_rel="${d_act}"
-                if [[ $x -eq 1 ]]; then
-                    thisline="${thisline} ${ssp/ssp/}"
+        
+                # Check future-actual periods
+                x=0
+                get_act_col_heads=0
+                if [[ "${act_col_heads}" == "" ]]; then
+                    get_act_col_heads=1
                 fi
-                check_jobs ${thischain_name}_$(basename ${d_act})_
-                if [[ ${latest_job} -gt ${latest_actual_job} ]]; then
-                    latest_actual_job=${latest_job}
-                fi
-            done
+                for d_act in ${futureactdirs}; do
+                    x=$((x + 1))
+                    if [[ $get_act_col_heads -eq 1 ]]; then
+                        act_col_heads="${act_col_heads}ACT${x},"
+                    fi
+        
+                    homedir_rel="${d_act}"
+                    if [[ $x -eq 1 ]]; then
+                        thisline="${thisline} ${ssp/ssp/}"
+                    fi
+                    check_jobs ${thischain_name}_$(basename ${d_act})_
+                    if [[ ${latest_job} -gt ${latest_actual_job} ]]; then
+                        latest_actual_job=${latest_job}
+                    fi
+                done
+            fi # if not hist
     
             # Check potential periods
-            pot_list=$(ls "${potdir}" | cut -d' ' -f1-2)
+            pot_list=$(ls "${potdir}" | cut -d' ' -f1-2 | grep -vE "\.tar$")
             for pot in ${pot_list}; do
                 homedir_rel="${d}/potential/${ssp}/${pot}"
                 check_jobs ${thischain_name}_${ssp}_${pot}
@@ -394,6 +400,11 @@ for g in ${gcmlist}; do
         done
     done
 done
+
+
+echo act_col_heads $act_col_heads
+echo pot_col_heads $pot_col_heads
+
 
 cat $tmpfile | column --table --table-columns RUNSET,HIST,SSP,${act_col_heads}${pot_col_heads} -s ": "
 
