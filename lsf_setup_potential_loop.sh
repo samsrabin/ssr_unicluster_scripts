@@ -162,6 +162,14 @@ for y1 in ${y1_list}; do
         echo " "
     fi
 
+    # Archive existing directory, if needed
+    if [[ -d "${thisdir}" ]]; then
+        this_archive="${thisdir}.$(date "+%Y-%m-%d-%H%M%S").tar"
+#        echo "Archiving existing $(pwd)/${thisdir} as ${this_archive}"
+        tar -cf "${this_archive}" "${thisdir}"
+        rm -rf "${thisdir}"
+    fi
+
     # Copy and fill template runDir
     cp -a ../template "${thisdir}"
     pushdq "${thisdir}"
