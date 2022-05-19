@@ -344,6 +344,23 @@ for g in ${gcmlist}; do
                 #echo "Skipping ${potdir} (directory not found)"
                 continue
             fi
+
+            # Get actual column headers, if necessary
+            if [[ "${act_col_heads}" == "" ]]; then
+                pushdq "${d}"
+                testSSP="$(ls -1 "actual" | grep -oE "ssp[0-9]+" | sort | uniq | head -n 1)"
+                futureactdirs=$(ls -d "actual/${testSSP}_"* | grep -vE "\.tar$")
+                if [[ "${futureactdirs}" == "" ]]; then
+                    echo "No directories found matching ${d}/actual/${testSSP}_*"
+                    exit 1
+                fi
+                Nact=0
+                for d_act in ${futureactdirs}; do
+                    Nact=$((Nact + 1))
+                    act_col_heads="${act_col_heads}ACT${Nact},"
+                done
+                popdq
+            fi
     
             # Get potential column headers, if necessary
             if [[ "${pot_col_heads}" == "" ]]; then
@@ -355,8 +372,14 @@ for g in ${gcmlist}; do
                 homedir_rel="${d}/actual/hist"
                 thisline="${thischain_name} "
                 check_jobs ${thischain_name}_hist
-                # Add blanks for SSP column
-                thisline="${thisline} ${symbol_runna} ${symbol_runna}"
+                # Add blank for SSP column
+                thisline="${thisline} ${symbol_runna}"
+                # Add blank(s) for ACTN column(s)
+                x=${Nact}
+                while [[ ${x} -gt 0 ]]; do
+                    thisline="${thisline} ${symbol_runna}"
+                    x=$((x-1))
+                done
             else
                 thisline=" :"
             fi
@@ -368,20 +391,11 @@ for g in ${gcmlist}; do
                     echo "No directories found matching ${d}/actual/${ssp}_*"
                     exit 1
                 fi
-
         
                 # Check future-actual periods
                 x=0
-                get_act_col_heads=0
-                if [[ "${act_col_heads}" == "" ]]; then
-                    get_act_col_heads=1
-                fi
                 for d_act in ${futureactdirs}; do
                     x=$((x + 1))
-                    if [[ $get_act_col_heads -eq 1 ]]; then
-                        act_col_heads="${act_col_heads}ACT${x},"
-                    fi
-        
                     homedir_rel="${d_act}"
                     if [[ $x -eq 1 ]]; then
                         thisline="${thisline} ${ssp/ssp/}"
