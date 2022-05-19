@@ -179,20 +179,31 @@ function get_symbol() {
 
                             # Otherwise...
                         else
-                            # If all cells completed with "Finished" message, that's great!
-                            nprocs=$({ head "${file_stdout}" | grep -oE "Total slots allocated [0-9]+" | grep -oE "[0-9]+" || true; })
+                            # Check whether all processes completed successfully
+                            nnodes=$(grep "Data for node" "${file_stdout}" | wc -l)
+                            nprocs=0
+                            while [[ ${nnodes} -gt 0 ]]; do
+                                this_nprocs=$(grep "Data for node" "${file_stdout}" | grep -oE "[0-9]+$")
+                                nprocs=$((nprocs + this_nprocs))
+                                nnodes=$((nnodes - 1))
+                            done
                             if [[ "${nprocs}" == "" ]]; then
-                                >&2 echo "Error getting nprocs from $(realpath ${file_stdout})"
+                                >&2 echo "Error getting nprocs from $(realpath ${file_stdout}): blank!"
+                                exit 17
+                            elif [[ ${nprocs} -eq 0 ]]; then
+                                >&2 echo "Error getting nprocs from $(realpath ${file_stdout}): nprocs = 0"
                                 exit 17
                             fi
                             nfinished=$(grep "Finished" ${file_stdout} | grep -v "Finished with" | wc -l )
                             nunfinished=$((nprocs - nfinished))
+
+                            # If all processes completed with "Finished" message, that's great!
                             if [[ $nprocs == $nfinished ]]; then
                                 symbol="${symbol_ok}"
                                 touch ${file_stdout}.ok
 
 
-                                # Otherwise, assume run failed.
+                            # Otherwise, assume run failed.
                             else
                                 symbol="${symbol_failed}"
                                 touch ${file_stdout}.fail
