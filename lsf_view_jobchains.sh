@@ -3,6 +3,7 @@ set -e
 
 runset_ver="runs-2022-05"
 symbol_norun="--"            # No run started for this period within this job chain.
+symbol_runna=" "            # Run not applicable for this period (U+2002 EN SPACE)
 symbol_pend_depend="👀"      # Pending: waiting on dependency
 symbol_pend_other="⏳"       # Pending: other reason
 symbol_running="🏃"          # Job is currently running
@@ -354,6 +355,8 @@ for g in ${gcmlist}; do
                 homedir_rel="${d}/actual/hist"
                 thisline="${thischain_name} "
                 check_jobs ${thischain_name}_hist
+                # Add blanks for SSP column
+                thisline="${thisline} ${symbol_runna} ${symbol_runna}"
             else
                 thisline=" :"
             fi
@@ -365,6 +368,7 @@ for g in ${gcmlist}; do
                     echo "No directories found matching ${d}/actual/${ssp}_*"
                     exit 1
                 fi
+
         
                 # Check future-actual periods
                 x=0
@@ -388,22 +392,29 @@ for g in ${gcmlist}; do
                     fi
                 done
             fi # if not hist
-    
+
             # Check potential periods
             pot_list=$(ls "${potdir}" | cut -d' ' -f1-2 | grep -vE "\.tar$")
-            for pot in ${pot_list}; do
-                homedir_rel="${d}/potential/${ssp}/${pot}"
-                check_jobs ${thischain_name}_${ssp}_${pot}
+            for pot in ${pot_run_names}; do
+                p_found=0
+                for p in ${pot_list}; do
+                    if [[ "${p}" == "${pot}"* ]]; then
+                        p_found=1
+                        break
+                    fi
+                done
+                if [[ ${p_found} -eq 1 ]]; then
+                    homedir_rel="${d}/potential/${ssp}/${p}"
+                    check_jobs ${thischain_name}_${ssp}_${pot}
+                else
+                    thisline="${thisline} ${symbol_runna}"
+                fi
             done
     
             echo ${thisline} >> $tmpfile
         done
     done
 done
-
-
-echo act_col_heads $act_col_heads
-echo pot_col_heads $pot_col_heads
 
 
 cat $tmpfile | column --table --table-columns RUNSET,HIST,SSP,${act_col_heads}${pot_col_heads} -s ": "
