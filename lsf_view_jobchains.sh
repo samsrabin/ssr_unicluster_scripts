@@ -42,11 +42,11 @@ do
     shift
 done
 
-pushd () {
+pushdq () {
     command pushd "$@" > /dev/null
 }
 
-popd () {
+popdq () {
     command popd "$@" > /dev/null
 }
 
@@ -113,7 +113,7 @@ function get_symbol() {
 
         # workdir DOES exist
     else
-        pushd "${workdir}"
+        pushdq "${workdir}"
         workdir_short=$(echo $workdir | sed "s@${WORK}@\$WORK@")
 
         matching_jobs=$(echo "${jobs}" | { grep -E "\s${thepattern}" || true; })
@@ -271,7 +271,7 @@ function get_symbol() {
                 exit 2
             fi # What's the job status?
         fi # Are there matching jobs?
-        popd
+        popdq
     fi # Does workdir exist?
 
     echo $symbol
