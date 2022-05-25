@@ -242,7 +242,6 @@ function do_setup {
         state_path=$(get_state_path)
         [[ "${state_path}" == "get_param.sh_FAILED" ]] && exit 1
     fi
-    #croplist=$(grep "pft" $(ls -tr crop_n_pftlist.*.ins  | tail -n 1) | sed -E 's/pft\s+"([^".]+)"\s*\(/\1/g' | grep -v "ExtraCrop")
     lsf_setup_1run.sh ${topinsfile} "$(get_ins_files)" ${gridlist} ${inputmodule} ${nproc} ${arch} ${walltime} -p "${prefix}" ${state_path} ${submit} ${ppfudev} ${dependency} ${reservation} --lpjg_topdir $HOME/lpj-guess_git-svn_20190828 ${mem_spec}
 }
 
@@ -477,6 +476,9 @@ for thisSSP in ${ssp_list}; do
     cd ..
 
     if [[ ${split_ssp_period} -eq 1 ]]; then
+
+        echo "split_ssp_period not yet set up for lsf_setup.sh"
+        exit 1
 
         theseYears="${firstPart2yr}-$((future_yN - Nyears_pot))"
         if [[ ${potential_only} -eq 0 ]]; then
