@@ -316,6 +316,10 @@ if [[ ${do_hist} -eq 1 ]]; then
     sed -i "s/XXXX/${last_LUyear_past}/" landcover.ins    # XXXXpast_YYYYall_LU.txt
     sed -i "s/YYYY/${last_LUyear_all}/" landcover.ins    # XXXXpast_YYYYall_LU.txt
     sed -iE "s/^\s*first_plut_year/\!first_plut_year/g" landcover.ins
+    sed -i "s/co2_ssp585_annual_2015_2100.txt/co2_historical_annual_1850_2014.txt/g" main.ins
+    sed -i "s/population-density_3b_2015soc_30arcmin_annual_1601_2100.lpjg.nc/population-density_3b_histsoc_30arcmin_annual_1850_2014.lpjg.nc/g" main.ins
+    sed -i "s/Effectively 2015soc/histsoc/g" main.ins
+    sed -i "s/2015soc/histsoc/g" main.ins
 
     popdq
 fi
@@ -426,6 +430,7 @@ for thisSSP in ${ssp_list}; do
         sed -i "s/YYYY/${last_LUyear_all}/" landcover.ins    # XXXXpast_YYYYall_LU.txt
         sed -iE "s/^\s*first_plut_year/\!first_plut_year/g" landcover.ins
         sed -i "s/restart 0/restart 1/g" main.ins
+        sed -i "s/ssp585/${thisSSP}/g" main.ins
         popdq
     fi
     set " "

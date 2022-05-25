@@ -194,6 +194,8 @@ for y1 in ${y1_list}; do
     # outputs
     sed -i "s/do_plut 0/do_plut 1/g" landcover.ins
     sed -i "s/ZZZZ/${first_plut_year}/" landcover.ins    # first_plut_year
+    # inputs
+    sed -i "s/ssp585/${thisSSP}/g" main.ins
     popdq
     mkdir -p ${thisdir}
 
