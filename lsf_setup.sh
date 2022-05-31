@@ -11,7 +11,7 @@ testinsfile="main_test1_fast.ins"; testnproc=1
 inputmodule="cfx"
 walltime_hist="72:00:00"
 walltime_fut="6:00:00"  # Should take around 4 hours
-walltime_pot="2:00:00"  # Should take around 1 hour
+walltime_pot="72:00:00"  # Should take around 1 hour
 future_y1=2015
 firstPart2yr=9999 # The year that will be the first in the 2nd part of the SSP period
 future_yN=2100 # Because last year of emulator output is 2084
@@ -377,8 +377,14 @@ fi
 
 cd ..
 
-# If first period was hist, remove it
-ssp_list="${ssp_list/hist /}"
+# If the only period was hist, we're done
+if [[ "${ssp_list}" == "hist" ]]; then
+    ssp_list=""
+
+# Otherwise, if first period was hist, remove it
+else
+    ssp_list="${ssp_list/hist /}"
+fi
 
 
 # Set up SSP actual and potential runs
