@@ -410,7 +410,7 @@ for thisSSP in ${ssp_list}; do
             if [[ ${potential_only} -eq 1 ]]; then
                 dependency="${dependency_pot}"
             else
-                lastactrun=$(tail ${HOME}/submitted_jobs.log | grep "LPJ-GUESS" | tail -n 1 | grep -oE "[0-9]+")
+                lastactrun=$(grep "LPJ-GUESS" ${HOME}/submitted_jobs.log | tail -n 1 | grep -oE "[0-9]+")
                 dependency="-d ${lastactrun}"
             fi
         fi
