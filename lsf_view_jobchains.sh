@@ -108,7 +108,7 @@ function get_symbol() {
     workdir="$(pwd | sed "s@/pfs/data5@@" | sed "s@$HOME@$WORK@")/${homedir_rel_tmp}"
 
     # workdir does NOT exist
-    if [[ ! -d "${homedir_rel_tmp}" && ! -d "${workdir}" ]]; then
+    if [[ ! -d "${homedir_rel_tmp}" || ! -d "${workdir}" ]]; then
         symbol="${symbol_norun}"
 
         # workdir DOES exist
