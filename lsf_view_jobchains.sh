@@ -182,10 +182,9 @@ function get_symbol() {
                             # Check whether all processes completed successfully
                             nnodes=$(grep "Data for node" "${file_stdout}" | wc -l)
                             nprocs=0
-                            while [[ ${nnodes} -gt 0 ]]; do
-                                this_nprocs=$(grep "Data for node" "${file_stdout}" | grep -oE "[0-9]+$")
-                                nprocs=$((nprocs + this_nprocs))
-                                nnodes=$((nnodes - 1))
+                            this_nprocs=$(grep "Data for node" "${file_stdout}" | grep -oE "[0-9]+$")
+                            for x in ${this_nprocs}; do
+                                nprocs=$((nprocs + x))
                             done
                             if [[ "${nprocs}" == "" ]]; then
                                 >&2 echo "Error getting nprocs from $(realpath ${file_stdout}): blank!"
