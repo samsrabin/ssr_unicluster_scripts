@@ -13,7 +13,7 @@ walltime_hist="72:00:00"
 walltime_fut="6:00:00"  # Should take around 4 hours
 walltime_pot="72:00:00"  # Should take around 1 hour
 future_y1=2015
-firstPart2yr=9999 # The year that will be the first in the 2nd part of the SSP period
+maxNstates=5
 future_yN=2100 # Because last year of emulator output is 2084
 Nyears_getready=2
 
@@ -146,12 +146,6 @@ else
     fi
 fi
 
-# Are we actually splitting the ssp period into 2 parts?
-split_ssp_period=1
-if [[ ${firstPart2yr} -gt ${future_yN} ]]; then
-    split_ssp_period=0
-fi
-
 # Get info for last XXXXpast_YYYYall_LU.txt
 first_LUyear_past=$((pot_y1 - Nyears_getready))
 last_LUyear_past=${first_LUyear_past}
@@ -186,12 +180,12 @@ while [[ ${y1} -le ${pot_yN} ]] && [[ ${y1} -lt ${future_y1} ]]; do
     fi
     y1=$((y1 + pot_step))
 done
-save_years_hist="${list_pot_y1_hist}"
+hist_save_years="${list_pot_y1_hist}"
 if [[ ${pot_yN} -gt ${future_y1} ]]; then
-    if [[ "${save_years_hist}" == "" ]]; then
-        save_years_hist="${future_y1}"
+    if [[ "${hist_save_years}" == "" ]]; then
+        hist_save_years="${future_y1}"
     else
-        save_years_hist="${list_pot_y1_hist} ${future_y1}"
+        hist_save_years="${list_pot_y1_hist} ${future_y1}"
     fi
 fi
 
@@ -289,93 +283,139 @@ else
     do_hist=0
 fi
 
-
-# Set up "actual" historical run
+# Set up "actual" historical run(s)
 thisSSP=""
+previous_act_jobnum=
 mkdir -p actual
-dir_acthist="actual/hist"
 if [[ ${do_hist} -eq 1 ]]; then
-    echo "###################"
-    echo "### actual/hist ###"
-    echo "###################"
 
-    # Archive existing directory, if needed
-    if [[ -d "${dir_acthist}" ]]; then
-        archive_acthist="${dir_acthist}.$(date "+%Y-%m-%d-%H%M%S").tar"
-        echo "Archiving existing $(pwd)/${dir_acthist} as ${archive_acthist}"
-        tar -cf "${archive_acthist}" "${dir_acthist}"
-        rm -rf "${dir_acthist}"
-    fi
+    # Risk of filling up scratch space if saving too many states.
+    # Avoid this by splitting run into groups of at most maxNstates states.
+    hist_save_years_lines="$(xargs -n ${maxNstates} <<< ${hist_save_years})"
+    
+    # Now set up each group of states.
+    restart_year=
+    while IFS= read -r save_years; do
 
-    # Make run directory from template
-    cp -a template "${dir_acthist}"
-    pushdq "${dir_acthist}"
-    sed -i "s/UUUU/${last_year_act_hist}/" main.ins    # lasthistyear
-    sed -iE "s/^\s*restart_year/\!restart_year/g" main.ins
-    sed -i "s/WWWW/\"${save_years_hist}\"/" main.ins    # save_years
-    sed -i "s/XXXX/${last_LUyear_past}/" landcover.ins    # XXXXpast_YYYYall_LU.txt
-    sed -i "s/YYYY/${last_LUyear_all}/" landcover.ins    # XXXXpast_YYYYall_LU.txt
-    sed -iE "s/^\s*first_plut_year/\!first_plut_year/g" landcover.ins
-    sed -i "s/co2_ssp585_annual_2015_2100.txt/co2_historical_annual_1850_2014.txt/g" main.ins
-    sed -i "s/population-density_3b_2015soc_30arcmin_annual_1601_2100.lpjg.nc/population-density_3b_histsoc_30arcmin_annual_1850_2014.lpjg.nc/g" main.ins
-    sed -i "s/Effectively 2015soc/histsoc/g" main.ins
-    sed -i "s/2015soc/histsoc/g" main.ins
+        # Get lasthistyear
+        echo save_years $save_years;
+        lastsaveyear=$(echo ${save_years} | awk '{print $NF}')
+        lasthistyear=$((lastsaveyear - 1))
+        do_break=0
+        if [[ ${last_hist_year} -gt ${last_year_act_hist} ]]; then
+            echo "Warning: Some historical-period save_year (${lastsaveyear}) implies a run outside historical period (${last_year_act_hist})."
+            echo "         Ignoring, and ending historical run(s) in ${last_year_act_hist}."
+            lasthistyear=$((last_year_act_hist))
+        do_break=1
+        fi
+        echo lastsaveyear $lastsaveyear
+        echo lasthistyear $lasthistyear
 
-    popdq
-fi
-set " "
-pushdq "${dir_acthist}"
+        # Set up directory
+        if [[ "${restart_year}" == "" ]]; then
+            firstyear_thisrun="$(get_param.sh template/${topinsfile} "firsthistyear")"
+        else
+            firstyear_thisrun=${restart_year}
+        fi
+        dir_acthist="actual/hist_${firstyear_thisrun}-${lasthistyear}"
 
-# Get gridlist
-gridlist=$(get_param.sh ${topinsfile} "file_gridlist")
-[[ "${gridlist}" == "get_param.sh_FAILED" ]] && exit 1
-if [[ "${gridlist}" == "" ]]; then
-    echo "Unable to parse gridlist from ${topinsfile} and its dependencies"
-    exit 1
-fi
+        echo "#############################"
+        echo "### ${dir_acthist} ###"
+        echo "#############################"
+    
+        # Archive existing directory, if needed
+        if [[ -d "${dir_acthist}" ]]; then
+            archive_acthist="${dir_acthist}.$(date "+%Y-%m-%d-%H%M%S").tar"
+            echo "Archiving existing $(pwd)/${dir_acthist} as ${archive_acthist}"
+            tar -cf "${archive_acthist}" "${dir_acthist}"
+            rm -rf "${dir_acthist}"
+        fi
+    
+        # Make run directory from template
+        cp -a template "${dir_acthist}"
+        pushdq ${dir_acthist}
+    
+        # Replace placeholder values from template
+        sed -i "s/UUUU/${lasthistyear}/" main.ins    # lasthistyear
+        if [[ "${restart_year}" == "" ]]; then
+            sed -iE "s/^\s*restart_year/\!restart_year/g" main.ins
+        else
+            sed -iE "s/^\!restart_year VVVV/restart_year ${restart_year}/g" main.ins
+            sed -i "s/VVVV/${restart_year}/" main.ins    # restart_year
+            sed -i "s/restart 0/restart 1/g" main.ins
+        fi
+        sed -i "s/WWWW/\"${save_years}\"/" main.ins    # save_years
+        sed -i "s/XXXX/${last_LUyear_past}/" landcover.ins    # XXXXpast_YYYYall_LU.txt
+        sed -i "s/YYYY/${last_LUyear_all}/" landcover.ins    # XXXXpast_YYYYall_LU.txt
+        sed -iE "s/^\s*first_plut_year/\!first_plut_year/g" landcover.ins
+        sed -i "s/co2_ssp585_annual_2015_2100.txt/co2_historical_annual_1850_2014.txt/g" main.ins
+        sed -i "s/population-density_3b_2015soc_30arcmin_annual_1601_2100.lpjg.nc/population-density_3b_histsoc_30arcmin_annual_1850_2014.lpjg.nc/g" main.ins
+        sed -i "s/Effectively 2015soc/histsoc/g" main.ins
+        sed -i "s/2015soc/histsoc/g" main.ins
+    
+        set " "
+        
+        # Get gridlist
+        gridlist=$(get_param.sh ${topinsfile} "file_gridlist")
+        [[ "${gridlist}" == "get_param.sh_FAILED" ]] && exit 1
+        if [[ "${gridlist}" == "" ]]; then
+            echo "Unable to parse gridlist from ${topinsfile} and its dependencies"
+            exit 1
+        fi
+        
+        # Set up rundir_top
+        thisbasename=$(lsf_get_basename.sh)
+        rundir_top=$(lsf_get_rundir_top.sh ${istest})
+        if [[ "${rundir_top}" == "" ]]; then
+            echo "Error finding rundir_top; exiting."
+            exit 1
+        fi
+        mkdir -p "${rundir_top}"
+        
+        # Set up dirForPLUM
+        if [[ "${dirForPLUM}" == "" ]]; then
+            dirForPLUM=$(realpath ${rundir_top}/../..)/outputs/outForPLUM-$(date "+%Y-%m-%d-%H%M%S")
+        fi
+        mkdir -p ${dirForPLUM}
+        echo "Top-level output directory: $dirForPLUM"
+        echo " "
 
-# Set up rundir_top
-thisbasename=$(lsf_get_basename.sh)
-rundir_top=$(lsf_get_rundir_top.sh ${istest})
-if [[ "${rundir_top}" == "" ]]; then
-    echo "Error finding rundir_top; exiting."
-    exit 1
-fi
-mkdir -p "${rundir_top}"
+        # Set up dependency, if any
+        dependency=
+        if [[ ${previous_act_jobnum} != "" ]]; then
+            dependency="-d ${previous_act_jobnum}"
+        fi
+        
+        # Submit historical run
+        state_path=""
+        do_setup ${walltime_hist}
+    
+        arr_job_name+=("act-hist")
+        previous_act_jobnum=$(get_latest_run)
+        if [[ "${submit}" != "" ]]; then
+            arr_job_num+=( ${previous_act_jobnum} )
+        fi
+        arr_y1+=(0) # nonsense
+        arr_yN+=(${last_year_act_hist})
 
-# Set up dirForPLUM
-if [[ "${dirForPLUM}" == "" ]]; then
-    dirForPLUM=$(realpath ${rundir_top}/../..)/outputs/outForPLUM-$(date "+%Y-%m-%d-%H%M%S")
-fi
-mkdir -p ${dirForPLUM}
-echo "Top-level output directory: $dirForPLUM"
-echo " "
+        # Set up for next historical run, if any
+        restart_year=${lastsaveyear}
+    
+        echo " "
+        echo " "
+        popdq
 
-# Submit historical run (or not)
-state_path=""
-if [[ ${do_hist} -eq 1 && ${potential_only} -eq 0 ]]; then
-    hist_save_years=""
-    do_setup ${walltime_hist}
-
-    arr_job_name+=("act-hist")
-    if [[ "${submit}" != "" ]]; then
-        arr_job_num+=( $(get_latest_run) )
-    fi
-    arr_y1+=(0) # nonsense
-    arr_yN+=(${last_year_act_hist})
-
-    echo " "
-    echo " "
+        if [[ ${do_break} -eq 1 ]]; then
+            break
+        fi
+    done <<< ${hist_save_years_lines}
 fi
 
 # Get list of years being state-saved from historical run
-hist_save_years="$(get_param.sh ${topinsfile} save_years)"
 if [[ "${hist_save_years}" == "" ]]; then
     echo "Error getting save_years from hist run"
     exit 1
 fi
-
-cd ..
 
 # If the only period was hist, we're done
 if [[ "${ssp_list}" == "hist" ]]; then
@@ -406,129 +446,106 @@ for thisSSP in ${ssp_list}; do
         done
     fi
 
-    if [[ ${split_ssp_period} -eq 1 ]]; then
-        theseYears="${future_y1}-$((firstPart2yr - 1))"
-    else
-        theseYears="${future_y1}-${future_yN}"
-    fi
-    thisDir=${thisSSP}_${theseYears}
     if [[ ${potential_only} -eq 0 && ${do_future_act} -eq 1 ]]; then
-        echo "###############################"
-        echo "### actual/${thisSSP} ${theseYears} ###"
-        echo "###############################"
 
-        # Archive existing directory, if needed
-        if [[ -d "${thisDir}" ]]; then
-            archive_thisDir="${thisDir}.$(date "+%Y-%m-%d-%H%M%S").tar"
-            echo "Archiving existing $(pwd)/${thisDir} as ${archive_thisDir}"
-            tar -cf "${archive_thisDir}" "${thisDir}"
-            rm -rf "${thisDir}"
-        fi
+        # Risk of filling up scratch space if saving too many states.
+        # Avoid this by splitting run into groups of at most maxNstates states.
+        fut_save_years_lines="$(xargs -n ${maxNstates} <<< ${list_pot_y1_future})"
+        
+        # Now set up each group of states.
+        pushdq "actual"
+        while IFS= read -r save_years; do
 
-        # Copy and fill template runDir
-        cp -a ../template "${thisDir}"
-        pushdq "${thisDir}"
-        sed -i "s/UUUU/${last_year_act_future}/" main.ins    # lasthistyear
-        sed -iE "s/^\!restart_year VVVV/restart_year ${future_y1}/g" main.ins
-        sed -i "s/VVVV/${future_y1}/" main.ins    # restart_year
-        sed -i "s/WWWW/\"${list_pot_y1_future}\"/" main.ins    # save_years
-        sed -i "s/XXXX/${last_LUyear_past}/" landcover.ins    # XXXXpast_YYYYall_LU.txt
-        sed -i "s/YYYY/${last_LUyear_all}/" landcover.ins    # XXXXpast_YYYYall_LU.txt
-        sed -iE "s/^\s*first_plut_year/\!first_plut_year/g" landcover.ins
-        sed -i "s/restart 0/restart 1/g" main.ins
-        sed -i "s/ssp585/${thisSSP}/g" main.ins
-        popdq
-    fi
-    set " "
-    cd ${thisDir}
+            # Get lasthistyear
+            echo save_years $save_years;
+            lastsaveyear=$(echo ${save_years} | awk '{print $NF}')
+            lasthistyear=$((lastsaveyear - 1))
+            do_break=0
+            if [[ ${last_hist_year} -gt ${last_year_act_future} ]]; then
+                echo "Warning: Some future-period save_year (${lastsaveyear}) implies a run outside future period (${last_year_act_future})."
+                echo "         Ignoring, and ending future run(s) in ${last_year_act_future}."
+                lasthistyear=$((last_year_act_future))
+                do_break=1
+            fi
+            echo lastsaveyear $lastsaveyear
+            echo lasthistyear $lasthistyear
 
-
-    # Set up state directory for this SSP
-    # IF YOU WIND UP WITH PROBLEMS HERE, CONSIDER USING THIS FUNCTIONALITY
-    # BUILT IN TO lsf_setup_1run.sh INSTEAD!
-    # I.e., -L flag
-    # Would need to ensure that it's ONLY used for first part of future runs (if splitting ssp period).
-    state_path=""
-    state_path_absolute=$(lsf_get_state_path_absolute.sh "${rundir_top}" "${state_path_absolute}")
-    state_path_thisSSP="${state_path_absolute}_${thisSSP}"
-    mkdir -p ${state_path_thisSSP}
-    pushd ${state_path_thisSSP} 1>/dev/null
-    for y in ${hist_save_years}; do
-        if [[ -L ${y} ]]; then
-            rm -f ${y}
-        fi
-        ln -s ../states/${y}
-    done
-    popd 1>/dev/null
-
-
-    # Set up run
-    topdir_prev=$(echo $PWD | sed "s@/${thisDir}@/hist@")
-    save_years=$(get_param.sh ${topdir_prev}/${topinsfile} "save_years")
-    if [[ "${save_years}" == "get_param.sh_FAILED" ]]; then
-        echo "get_param.sh_FAILED"
-        exit 1
-    fi
-    if [[ ${potential_only} -eq 0 ]]; then
-        do_setup ${walltime_fut}
-
-        if [[ ${split_ssp_period} -eq 1 ]]; then
-            arr_job_name+=("act-${thisSSP}_${theseYears}")
-        else
-            arr_job_name+=("act-${thisSSP}")
-        fi
-        if [[ "${submit}" != "" ]]; then
-            arr_job_num+=($(get_latest_run))
-        fi
-        arr_y1+=(${future_y1})
-        arr_yN+=($(echo $theseYears | cut -d"-" -f2))
-    fi
-
-    cd ..
-
-    if [[ ${split_ssp_period} -eq 1 ]]; then
-
-        echo "split_ssp_period not yet set up for lsf_setup.sh"
-        exit 1
-
-        theseYears="${firstPart2yr}-$((future_yN - Nyears_pot))"
-        if [[ ${potential_only} -eq 0 ]]; then
-            echo " "
-            echo " "
+            theseYears="${restart_year}-${lasthistyear}"
+            thisDir="${thisSSP}_${theseYears}"
             echo "###############################"
-            echo "### actual/${thisSSP} ${theseYears} ###"
+            echo "### actual/${thisDir} ###"
             echo "###############################"
-        fi
-        set " "
-        prevDir=${thisDir}
-        thisDir=${thisSSP}_${theseYears}
-        cd ${thisDir}
+    
+            # Archive existing directory, if needed
+            if [[ -d "${thisDir}" ]]; then
+                archive_thisDir="${thisDir}.$(date "+%Y-%m-%d-%H%M%S").tar"
+                echo "Archiving existing $(pwd)/${thisDir} as ${archive_thisDir}"
+                tar -cf "${archive_thisDir}" "${thisDir}"
+                rm -rf "${thisDir}"
+            fi
+    
+            # Copy and fill template runDir
+            echo pwd $(pwd)
+            cp -a ../template "${thisDir}"
+            cd "${thisDir}"
+            sed -i "s/UUUU/${lasthistyear}/" main.ins    # lasthistyear
+            sed -iE "s/^\!restart_year VVVV/restart_year ${restart_year}/g" main.ins
+            sed -i "s/VVVV/${restart_year}/" main.ins    # restart_year
+            sed -i "s/WWWW/\"${list_pot_y1_future}\"/" main.ins    # save_years
+            sed -i "s/XXXX/${last_LUyear_past}/" landcover.ins    # XXXXpast_YYYYall_LU.txt
+            sed -i "s/YYYY/${last_LUyear_all}/" landcover.ins    # XXXXpast_YYYYall_LU.txt
+            sed -iE "s/^\s*first_plut_year/\!first_plut_year/g" landcover.ins
+            sed -i "s/restart 0/restart 1/g" main.ins
+            sed -i "s/ssp585/${thisSSP}/g" main.ins
 
-        # Set up run
-        topdir_prev=$(echo $PWD | sed "s@/${thisDir}@/${prevDir}@")
-        save_years2=$(get_param.sh ${topdir_prev}/${topinsfile} "save_years")
-        if [[ "${save_years2}" == "get_param.sh_FAILED" ]]; then
-            echo "get_param.sh_FAILED"
-            exit 1
-        fi
-        save_years="${save_years} ${save_years2}"
-        if [[ ${potential_only} -eq 0 ]]; then
+            set " "
+        
+            # Set up state directory for this SSP, if needed
+            # IF YOU WIND UP WITH PROBLEMS HERE, CONSIDER USING THIS FUNCTIONALITY
+            # BUILT IN TO lsf_setup_1run.sh INSTEAD!
+            # I.e., -L flag
+            # Would need to ensure that it's ONLY used for first part of future runs (if splitting ssp period).
+            state_path=""
+            state_path_absolute=$(lsf_get_state_path_absolute.sh "${rundir_top}" "${state_path_absolute}")
+            state_path_thisSSP="${state_path_absolute}_${thisSSP}"
+            if [[ ! -d ${state_path_thisSSP} ]]; then
+                mkdir -p ${state_path_thisSSP}
+                pushd ${state_path_thisSSP} 1>/dev/null
+                for y in ${hist_save_years}; do
+                    if [[ -L ${y} ]]; then
+                        rm -f ${y}
+                    fi
+                    ln -s ../states/${y}
+                done
+                popd 1>/dev/null
+            fi
+
+            # Set up dependency, if any
+            dependency=
+            if [[ ${previous_act_jobnum} != "" ]]; then
+                dependency="-d ${previous_act_jobnum}"
+            fi
+        
+            # Set up run
             do_setup ${walltime_fut}
-
+        
+            # Add run to job list
             arr_job_name+=("act-${thisSSP}_${theseYears}")
+            previous_act_jobnum=$(get_latest_run)
             if [[ "${submit}" != "" ]]; then
-                arr_job_num+=($(get_latest_run))
+                arr_job_num+=( ${previous_act_jobnum} )
             fi
             arr_y1+=(${future_y1})
-            arr_yN+=($(echo $theseYears} | cut -d"-" -f2))
+            arr_yN+=($(echo $theseYears | cut -d"-" -f2))
+        
+            cd ..
 
-            echo " "
-            echo " "
-        fi
+            # Set up for next actual run, if needed
+            restart_year=${lastsaveyear}
     
-        cd ..
-
-    fi # if split_ssp_period
+        done <<< ${fut_save_years_lines}
+        popdq
+    fi # If doing future hist
 
     if [[ ${actual_only} -eq 0 ]]; then
         echo "#########################"
