@@ -334,8 +334,6 @@ if [[ ${do_hist} -eq 1 ]]; then
             lasthistyear=$((last_year_act_hist))
         do_break=1
         fi
-        echo lastsaveyear $lastsaveyear
-        echo lasthistyear $lasthistyear
 
         # Set up directory
         if [[ "${restart_year}" == "" ]]; then
@@ -493,8 +491,6 @@ for thisSSP in ${ssp_list}; do
                 lasthistyear=$((last_year_act_future))
                 do_break=1
             fi
-            echo lastsaveyear $lastsaveyear
-            echo lasthistyear $lasthistyear
 
             theseYears="${restart_year}-${lasthistyear}"
             thisDir="${thisSSP}_${theseYears}"
