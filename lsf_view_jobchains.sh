@@ -317,6 +317,13 @@ function get_act_col_heads {
         echo "get_act_col_heads: No directories found matching ${d}/actual/${testSSP}_*" >&2
         exit 1
     fi
+
+    # If there's a "spin" directory, put it on top
+    spinline="$(echo -e "${theseactdirs}" | grep "hist_spin")"
+    if [[ "${spinline}" != "" ]]; then
+        theseactdirs="${spinline}"$'\n'"$(echo -e "${theseactdirs}" | grep -v "hist_spin")"
+    fi
+
     Nact=0
     act_col_heads=""
     for d_act in ${theseactdirs}; do
@@ -395,12 +402,17 @@ for g in ${gcmlist}; do
             elif [[ $s -gt 2 ]]; then
                 thisline=" :"
             fi
-    
+
             # Get actual periods
             theseactdirs=$(ls -d "${d}/actual/${ssp}_"* | grep -vE "\.tar$")
             if [[ "${theseactdirs}" == "" ]]; then
                 echo "No directories found matching ${d}/actual/${ssp}_*"
                 exit 1
+            fi
+            # If there's a "spin" directory, put it on top
+            spinline="$(echo -e "${theseactdirs}" | { grep "hist_spin" || true; })"
+            if [[ "${spinline}" != "" ]]; then
+                theseactdirs="${spinline}"$'\n'"$(echo -e "${theseactdirs}" | grep -v "hist_spin")"
             fi
         
             # Check actual periods

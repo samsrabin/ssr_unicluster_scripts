@@ -291,15 +291,41 @@ if [[ ${do_hist} -eq 1 ]]; then
 
     # Risk of filling up scratch space if saving too many states.
     # Avoid this by splitting run into groups of at most maxNstates states.
-    hist_save_years_lines="$(xargs -n ${maxNstates} <<< ${hist_save_years})"
-    
+    #
+    # First, get the state(s) that happen during spinup, and split them from states
+    # in the transient period.
+    firsthistyear="$(get_param.sh template/${topinsfile} "firsthistyear")"
+    hist_save_years_spin=""
+    hist_save_years_trans="${hist_save_years}"
+    for y in ${hist_save_years}; do
+        if [[ ${y} -gt ${firsthistyear} ]]; then
+            break
+        fi
+        hist_save_years_spin="${hist_save_years_spin} ${y}"
+        hist_save_years_trans=${hist_save_years_trans/${y}/}
+    done
+    # If running spinup period only, make sure to save a restart for firsthistyear
+    separate_spinup=0
+    if [[ $(echo ${hist_save_years_spin} | wc -w) -le $((maxNstates - 1)) ]]; then
+        separate_spinup=1
+        if [[ "$(echo ${hist_save_years_spin} | { grep "${firsthistyear}" || true; })" == "" ]]; then
+            hist_save_years_spin="${hist_save_years_spin} ${firsthistyear}"
+        fi
+    fi
+    # Now split each save_years list up as needed given maxNstates
+    hist_save_years_lines="$(xargs -n ${maxNstates} <<< ${hist_save_years_spin})"$'\n'"$(xargs -n ${maxNstates} <<< ${hist_save_years_trans})"
+
     # Now set up each group of states.
     restart_year=
     while IFS= read -r save_years; do
 
         # Get lasthistyear
         echo save_years $save_years;
-        lastsaveyear=$(echo ${save_years} | awk '{print $NF}')
+        if [[ "${restart_year}" == "" && ${separate_spinup} -eq 1 ]]; then
+            lastsaveyear=${firsthistyear}
+        else
+            lastsaveyear=$(echo ${save_years} | awk '{print $NF}')
+        fi
         lasthistyear=$((lastsaveyear - 1))
         do_break=0
         if [[ ${last_hist_year} -gt ${last_year_act_hist} ]]; then
@@ -313,7 +339,7 @@ if [[ ${do_hist} -eq 1 ]]; then
 
         # Set up directory
         if [[ "${restart_year}" == "" ]]; then
-            firstyear_thisrun="$(get_param.sh template/${topinsfile} "firsthistyear")"
+            firstyear_thisrun="spin"
         else
             firstyear_thisrun=${restart_year}
         fi
