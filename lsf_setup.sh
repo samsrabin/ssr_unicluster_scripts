@@ -9,9 +9,9 @@ testinsfile="main_test1_fast.ins"; testnproc=1
 #testinsfile="main_test2x2.ins"; testnproc=2
 #testinsfile="main_test160x3.ins"; testnproc=160
 inputmodule="cfx"
-walltime_hist="72:00:00"
-walltime_fut="6:00:00"  # Should take around 4 hours
-walltime_pot="72:00:00"  # Should take around 1 hour
+walltime_hist="48:00:00"
+walltime_fut="48:00:00"  # Should take around ??? hours
+walltime_pot="48:00:00"  # Should take around ??? hours
 future_y1=2015
 maxNstates=3
 future_yN=2100 # Because last year of emulator output is 2084
