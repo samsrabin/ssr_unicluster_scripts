@@ -303,12 +303,37 @@ function check_jobs {
 
 }
 
+function get_act_col_heads {
+    pushdq "${d}"
+    if [[ "${ssp}" == "hist" ]]; then
+        testSSP="hist"
+        col_code="ACTH"
+    else
+        col_code="ACTF"
+        testSSP="$(ls -1 "actual" | grep -oE "ssp[0-9]+" | sort | uniq | head -n 1)"
+    fi
+    theseactdirs=$(ls -d "actual/${testSSP}_"* | grep -vE "\.tar$")
+    if [[ "${theseactdirs}" == "" ]]; then
+        echo "get_act_col_heads: No directories found matching ${d}/actual/${testSSP}_*" >&2
+        exit 1
+    fi
+    Nact=0
+    act_col_heads=""
+    for d_act in ${theseactdirs}; do
+        Nact=$((Nact + 1))
+        act_col_heads="${act_col_heads}${col_code}${Nact},"
+    done
+    popdq
+    echo "${act_col_heads}"
+}
+
 cd "/home/kit/imk-ifu/lr8247/landsymm/runs-forestonly/${runset_ver}"
 
 tmpfile=.tmp.lsf_view_jobchains.$(date +%N)
 touch $tmpfile
 
-act_col_heads=""
+hist_act_col_heads=""
+future_act_col_heads=""
 pot_col_heads=""
 for g in ${gcmlist}; do
     dirlist=$(ls -d ${g}* | grep -v "calibration\|_test\|\.sh")
@@ -353,20 +378,10 @@ for g in ${gcmlist}; do
             fi
 
             # Get actual column headers, if necessary
-            if [[ "${act_col_heads}" == "" ]]; then
-                pushdq "${d}"
-                testSSP="$(ls -1 "actual" | grep -oE "ssp[0-9]+" | sort | uniq | head -n 1)"
-                futureactdirs=$(ls -d "actual/${testSSP}_"* | grep -vE "\.tar$")
-                if [[ "${futureactdirs}" == "" ]]; then
-                    echo "No directories found matching ${d}/actual/${testSSP}_*"
-                    exit 1
-                fi
-                Nact=0
-                for d_act in ${futureactdirs}; do
-                    Nact=$((Nact + 1))
-                    act_col_heads="${act_col_heads}ACT${Nact},"
-                done
-                popdq
+            if [[ "${ssp}" == "hist" && "${hist_act_col_heads}" == "" ]]; then
+                hist_act_col_heads="$(get_act_col_heads)"
+            elif [[ "${ssp}" != "hist" && "${future_act_col_heads}" == "" ]]; then
+                future_act_col_heads="$(get_act_col_heads)"
             fi
     
             # Get potential column headers, if necessary
@@ -374,51 +389,41 @@ for g in ${gcmlist}; do
                 pot_col_heads="$(echo ${pot_run_names} | sed "s/ot//g" | sed "s/ /,/g")"
             fi
     
-            # Check historical period, if necessary
+            # Set up beginning of line if necessary
             if [[ $s -eq 1 ]]; then
-                homedir_rel="${d}/actual/hist"
                 thisline="${thischain_name} "
-                check_jobs ${thischain_name}_hist
-                # Add blank for SSP column
-                thisline="${thisline} ${symbol_runna}"
-                # Add blank(s) for ACTN column(s)
-                x=${Nact}
-                while [[ ${x} -gt 0 ]]; do
-                    thisline="${thisline} ${symbol_runna}"
-                    x=$((x-1))
-                done
-            else
+            elif [[ $s -gt 2 ]]; then
                 thisline=" :"
             fi
     
-            if [[ "${ssp}" != "hist" ]] ; then
-                # Get future-actual periods
-                futureactdirs=$(ls -d "${d}/actual/${ssp}_"* | grep -vE "\.tar$")
-                if [[ "${futureactdirs}" == "" ]]; then
-                    echo "No directories found matching ${d}/actual/${ssp}_*"
-                    exit 1
-                fi
+            # Get actual periods
+            theseactdirs=$(ls -d "${d}/actual/${ssp}_"* | grep -vE "\.tar$")
+            if [[ "${theseactdirs}" == "" ]]; then
+                echo "No directories found matching ${d}/actual/${ssp}_*"
+                exit 1
+            fi
         
-                # Check future-actual periods
-                x=0
-                for d_act in ${futureactdirs}; do
-                    x=$((x + 1))
-                    homedir_rel="${d_act}"
-                    if [[ $x -eq 1 ]]; then
-                        thisline="${thisline} ${ssp/ssp/}"
-                    fi
-                    check_jobs ${thischain_name}_$(basename ${d_act})_
-                    if [[ ${latest_job} -gt ${latest_actual_job} ]]; then
-                        latest_actual_job=${latest_job}
-                    fi
-                done
-            fi # if not hist
+            # Check actual periods
+            x=0
+            for d_act in ${theseactdirs}; do
+                x=$((x + 1))
+                homedir_rel="${d_act}"
+                if [[ $x -eq 1 && "${ssp}" != "hist" ]]; then
+                    thisline="${thisline} ${ssp/ssp/}"
+                fi
+                check_jobs ${thischain_name}_$(basename ${d_act})_
+                if [[ ${latest_job} -gt ${latest_actual_job} ]]; then
+                    latest_actual_job=${latest_job}
+                fi
+            done
 
             # Get potential subdirectory
             potdir="${d}/potential/${ssp}/"
             if [[ ! -d "${potdir}" ]]; then
                 #echo "Skipping ${potdir} (directory not found)"
-                echo ${thisline} >> $tmpfile
+                if [[ "${ssp}" != "hist" ]]; then
+                    echo ${thisline} >> $tmpfile
+                fi
                 continue
             fi
 
@@ -445,8 +450,7 @@ for g in ${gcmlist}; do
     done
 done
 
-
-cat $tmpfile | column --table --table-columns RUNSET,HIST,SSP,${act_col_heads}${pot_col_heads} -s ": "
+cat $tmpfile | column --table --table-columns RUNSET,${hist_act_col_heads},SSP,${future_act_col_heads}${pot_col_heads} -s ": "
 
 rm $tmpfile
 

@@ -553,7 +553,6 @@ for thisSSP in ${ssp_list}; do
         echo "#########################"
         set " "
     
-        cd ..
         mkdir -p potential
         cd potential
         save_years=""
