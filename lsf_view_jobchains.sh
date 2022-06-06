@@ -333,7 +333,11 @@ for g in ${gcmlist}; do
             echo "actdir not found: ${PWD}/${actdir})"
             exit 13
         fi
-        pot_run_names="$(find ${d}/potential -type d -name "*pot_*" | cut -d"/" -f4 | grep -oE "[0-9]+pot" | sort | uniq)"
+        if [[ -d "${d}/potential" ]]; then
+            pot_run_names="$(find ${d}/potential -type d -name "*pot_*" | cut -d"/" -f4 | grep -oE "[0-9]+pot" | sort | uniq)"
+        else
+            pot_run_names=""
+        fi
         
 #        ssp_list="hist ssp126 ssp370 ssp585"
         ssp_list="hist ssp126"
@@ -346,13 +350,6 @@ for g in ${gcmlist}; do
                 islast_act=1
             else
                 islast_act=0
-            fi
-
-            # Get subdirectory
-            potdir="${d}/potential/${ssp}/"
-            if [[ ! -d "${potdir}" ]]; then
-                #echo "Skipping ${potdir} (directory not found)"
-                continue
             fi
 
             # Get actual column headers, if necessary
@@ -416,6 +413,14 @@ for g in ${gcmlist}; do
                     fi
                 done
             fi # if not hist
+
+            # Get potential subdirectory
+            potdir="${d}/potential/${ssp}/"
+            if [[ ! -d "${potdir}" ]]; then
+                #echo "Skipping ${potdir} (directory not found)"
+                echo ${thisline} >> $tmpfile
+                continue
+            fi
 
             # Check potential periods
             pot_list=$(ls "${potdir}" | cut -d' ' -f1-2 | grep -vE "\.tar$")
