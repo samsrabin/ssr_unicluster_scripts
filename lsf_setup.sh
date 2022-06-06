@@ -13,7 +13,7 @@ walltime_hist="72:00:00"
 walltime_fut="6:00:00"  # Should take around 4 hours
 walltime_pot="72:00:00"  # Should take around 1 hour
 future_y1=2015
-maxNstates=5
+maxNstates=3
 future_yN=2100 # Because last year of emulator output is 2084
 Nyears_getready=2
 
