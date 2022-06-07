@@ -9,11 +9,34 @@ if [[ "${work_dir}" == "" ]]; then
     work_dir=${SLURM_SUBMIT_DIR}
 fi
 
+# Get rank of this process
+unset local_nrank
+#for uc2 if run with module mpi/impi mpirun
+if [[ -z $local_nrank && ! -z $PMI_RANK ]]; then
+    #[163] PMI_RANK=163
+    #[163] MPI_LOCALNRANKS=80
+    #[163] MPI_LOCALRANKID=3
+    local_nrank=$PMI_RANK
+fi
+if [[ -z $local_nrank && ! -z $OMPI_COMM_WORLD_RANK ]]; then
+    local_nrank=$OMPI_COMM_WORLD_RANK
+fi
+if [[ -z $local_nrank && ! -z $SLURM_PROCID ]]; then
+    local_nrank=$SLURM_PROCID
+fi
+if [[ -z $local_nrank ]]; then
+    echo "ERROR: can not determine MPI RANK"
+    exit -1
+fi
+echo "local_nrank $local_nrank"
+
 # save log file
-start_msg="Job ${SLURM_JOB_ID} started $(date)"
-echo "${start_msg}" >> "${work_dir}/latest_submitted_jobs.log"
-echo "${start_msg}" >> "${work_dir}/submitted_jobs.log"
-echo "${start_msg}" >> "${HOME}/submitted_jobs.log"
+if [[ ${local_nrank} -eq 0 ]]; then
+    start_msg="Job ${SLURM_JOB_ID} started $(date)"
+    echo "${start_msg}" >> "${work_dir}/latest_submitted_jobs.log"
+    echo "${start_msg}" >> "${work_dir}/submitted_jobs.log"
+    echo "${start_msg}" >> "${HOME}/submitted_jobs.log"
+fi
 
 #synchronize the output generate by a mpi job back to the submit run dir
 if [[ $# -eq 0 ]]; then
@@ -179,10 +202,12 @@ echo ${HOSTNAME} ls ${work_run_dir}
 ls ${work_run_dir}
 
 # save log file
-end_msg="Job ${SLURM_JOB_ID} ended $(date)"
-echo "${end_msg}" >> "${work_dir}/latest_submitted_jobs.log"
-echo "${end_msg}" >> "${work_dir}/submitted_jobs.log"
-echo "${end_msg}" >> "${HOME}/submitted_jobs.log"
+if [[ ${local_nrank} -eq 0 ]]; then
+    end_msg="Job ${SLURM_JOB_ID} ended $(date)"
+    echo "${end_msg}" >> "${work_dir}/latest_submitted_jobs.log"
+    echo "${end_msg}" >> "${work_dir}/submitted_jobs.log"
+    echo "${end_msg}" >> "${HOME}/submitted_jobs.log"
+fi
 
 echo "All done!"
 
