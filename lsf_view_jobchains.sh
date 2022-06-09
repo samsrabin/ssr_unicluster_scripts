@@ -343,7 +343,10 @@ hist_act_col_heads=""
 future_act_col_heads=""
 pot_col_heads=""
 for g in ${gcmlist}; do
-    dirlist=$(ls -d ${g}* | grep -v "calibration\|_test\|\.sh")
+    if ! compgen -G "${g}"*/ >/dev/null; then
+        continue
+    fi
+    dirlist=$(ls -d "${g}"* | grep -v "calibration\|_test\|\.sh")
     for d in ${dirlist}; do
         islast_act=0
     
