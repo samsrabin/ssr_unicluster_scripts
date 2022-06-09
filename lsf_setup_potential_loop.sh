@@ -121,11 +121,10 @@ y1_list="${list_pot_y1_hist} ${list_pot_y1_future}"
 # Loop through periods
 ###################
 
-if [[ "${topinsfile}" != "" && "${gridlist}" != "" && "${inputmodule}" != "" && "${nproc}" != "" && "${arch}" != "" && "${walltime_pot}" != "" && "${prefix}" != "" ]]; then
+if [[ "${topinsfile}" != "" && "${inputmodule}" != "" && "${nproc}" != "" && "${arch}" != "" && "${walltime_pot}" != "" && "${prefix}" != "" ]]; then
     actually_setup=1
 else
 #    echo topinsfile $topinsfile
-#    echo gridlist $gridlist
 #    echo inputmodule $inputmodule
 #    echo nproc $nproc
 #    echo arch $arch
@@ -174,9 +173,12 @@ for y1 in ${y1_list}; do
         rm -rf "${thisdir}"
     fi
 
-    # Copy and fill template runDir
+    # Copy template runDir
     cp -a ../template "${thisdir}"
+
     pushdq "${thisdir}"
+
+    # Fill template runDir
     sed -i "s/UUUU/${yN}/" main.ins    # lasthistyear
     # restarting
     sed -i "s/^\!restart_year VVVV/restart_year ${y1}/g" main.ins
@@ -196,11 +198,12 @@ for y1 in ${y1_list}; do
     sed -i "s/ZZZZ/${first_plut_year}/" landcover.ins    # first_plut_year
     # inputs
     sed -i "s/ssp585/${thisSSP}/g" main.ins
-    popdq
-    mkdir -p ${thisdir}
 
-    pushd ${thisdir} 1>/dev/null
-    
+    # Get gridlist for later
+    if [[ "${gridlist}" == "" ]]; then
+        gridlist=$(get_param.sh ${topinsfile} "file_gridlist")
+    fi
+
     # Copy over template script
     postproc_template="$HOME/scripts/lsf_postproc.template.sh"
     if [[ ! -f ${postproc_template} ]]; then

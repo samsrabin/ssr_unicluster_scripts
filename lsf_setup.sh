@@ -216,6 +216,10 @@ function get_ins_files {
 # Set up function for getting absolute state path
 function get_state_path {
     if [[ ${thisSSP} != "" ]]; then
+        if [[ "${state_path_thisSSP}" == "" ]]; then
+            echo "get_state_path(): state_path_thisSSP is unspecified" >&2
+            exit 1
+        fi
         state_path_absolute="-s ${state_path_thisSSP}"
     fi
     echo "${state_path_absolute}"
@@ -575,6 +579,30 @@ for thisSSP in ${ssp_list}; do
         echo "#########################"
         set " "
     
+        # Get directory info for do_setup, if needed
+        if [[ "${state_path_absolute}" == "" || "${state_path_thisSSP}" == "" ]]; then
+            if [[ ! -d "actual" ]]; then
+                echo "Trying to set up potential runs without having set up actual runs. Exiting."
+                exit 1
+            fi
+            cd actual
+            cd $(ls -d */ | head -n 1)
+            thisbasename=$(lsf_get_basename.sh)
+            rundir_top=$(lsf_get_rundir_top.sh ${istest})
+            if [[ "${rundir_top}" == "" ]]; then
+                echo "Error finding rundir_top; exiting."
+                exit 1
+            fi
+            state_path=""
+            state_path_absolute=$(lsf_get_state_path_absolute.sh "${rundir_top}" "${state_path_absolute}")
+            state_path_thisSSP="${state_path_absolute}_${thisSSP}"
+            if [[ ${potential_only} -eq 1 && ! -d "${state_path_thisSSP}" ]]; then
+                echo "state_path_thisSSP (${state_path_thisSSP}) not found, and no actual runs are being submitted to create it. Exiting."
+                exit 1
+            fi
+            cd ../..
+        fi
+
         mkdir -p potential
         cd potential
         save_years=""
