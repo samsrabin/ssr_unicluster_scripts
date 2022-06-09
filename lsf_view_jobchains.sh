@@ -121,6 +121,7 @@ function get_symbol() {
         # There are NO matching jobs
         if [[ "${matching_jobs}" == "" ]]; then
 
+
             # latest_submitted_jobs.log doesn't actually exist yet
             if [[ ! -e latest_submitted_jobs.log ]]; then
                 symbol="${symbol_norun}"
@@ -153,8 +154,10 @@ function get_symbol() {
                         was_it_canceled=$(was_canceled ${latest_job})
                         if [[ ${was_it_canceled} -lt 0 ]]; then
                             symbol="${symbol_unknown2}"
+                            >&2 echo "${symbol} stdout file not found: ${workdir_short}/${file_stdout}"
                         elif [[ ${was_it_canceled} -eq 0 ]]; then
                             symbol="${symbol_unknown}"
+                            >&2 echo "${symbol} stdout file not found: ${workdir_short}/${file_stdout}"
                         else
                             symbol="${symbol_canceled_manual}"
                         fi
@@ -293,13 +296,11 @@ function check_jobs {
     thepattern="${1}"
     capture newpart get_symbol "${thisstatus}"
     thisline="${thisline} ${newpart}"
-    #	echo $thisline
 
     # Postprocessing
     thepattern="jobfin_${thepattern}"
     capture newpart get_symbol "${thisstatus}"
     thisline="${thisline}/${newpart}"
-    #	echo $thisline
 
 }
 
@@ -370,6 +371,8 @@ for g in ${gcmlist}; do
         fi
         if [[ -d "${d}/potential" ]]; then
             pot_run_names="$(find ${d}/potential -type d -name "*pot_*" | cut -d"/" -f4 | grep -oE "[0-9]+pot" | sort | uniq)"
+            hist_pot_run_names="$(find ${d}/potential/hist -type d -name "*pot_*" | cut -d"/" -f4 | grep -oE "[0-9]+pot" | sort | uniq)"
+            future_pot_run_names="$(find ${d}/potential/ssp* -type d -name "*pot_*" | cut -d"/" -f4 | grep -oE "[0-9]+pot" | sort | uniq)"
         else
             pot_run_names=""
         fi
@@ -387,17 +390,23 @@ for g in ${gcmlist}; do
                 islast_act=0
             fi
 
-            # Get actual column headers, if necessary
+            # Get historical column headers, if necessary
             if [[ "${ssp}" == "hist" && "${hist_act_col_heads}" == "" ]]; then
                 hist_act_col_heads="$(get_act_col_heads)"
-            elif [[ "${ssp}" != "hist" && "${future_act_col_heads}" == "" ]]; then
-                future_act_col_heads="$(get_act_col_heads)"
+                hist_col_heads="${hist_act_col_heads}$(echo ${hist_pot_run_names} | sed "s/pot/p/g" | sed "s/ /,/g"),"
             fi
-    
+
+            # Get future column headers, if necessary
+            if [[ "${ssp}" != "hist" && "${future_act_col_heads}" == "" ]]; then
+                future_act_col_heads="$(get_act_col_heads)"
+                future_col_heads="${future_act_col_heads}$(echo ${future_pot_run_names} | sed "s/pot/p/g" | sed "s/ /,/g"),"
+            fi
+
             # Get potential column headers, if necessary
             if [[ "${pot_col_heads}" == "" ]]; then
                 pot_col_heads="$(echo ${pot_run_names} | sed "s/ot//g" | sed "s/ /,/g")"
             fi
+
     
             # Set up beginning of line if necessary
             if [[ $s -eq 1 ]]; then
@@ -444,7 +453,12 @@ for g in ${gcmlist}; do
 
             # Check potential periods
             pot_list=$(ls "${potdir}" | cut -d' ' -f1-2 | grep -vE "\.tar$")
-            for pot in ${pot_run_names}; do
+            if [[ "${ssp}" == "hist" ]]; then
+                these_pot_run_names="${hist_pot_run_names}"
+            else
+                these_pot_run_names="${future_pot_run_names}"
+            fi
+            for pot in ${these_pot_run_names}; do
                 p_found=0
                 for p in ${pot_list}; do
                     if [[ "${p}" == "${pot}"* ]]; then
@@ -459,13 +473,15 @@ for g in ${gcmlist}; do
                     thisline="${thisline} ${symbol_runna}"
                 fi
             done
-    
-            echo ${thisline} >> $tmpfile
+
+            if [[ "${ssp}" != "hist" ]]; then
+                echo ${thisline} >> $tmpfile
+            fi
         done
     done
 done
 
-cat $tmpfile | column --table --table-columns RUNSET,${hist_act_col_heads},SSP,${future_act_col_heads}${pot_col_heads} -s ": "
+cat $tmpfile | column --table --table-columns RUNSET,${hist_col_heads},SSP,${future_col_heads} -s ": "
 
 rm $tmpfile
 
