@@ -235,6 +235,11 @@ for y1 in ${y1_list}; do
     
     # Actually set up and even submit, if being called from within setup_all.sh
     if [[ ${actually_setup} -eq 1 ]]; then
+        if [[ ${yN} -le ${hist_yN} ]]; then
+            this_prefix="${prefix}_hist"
+        else
+            this_prefix="${prefix}_${thisSSP}"
+        fi
         do_setup ${walltime_pot} ${firstoutyear} ${yN}
 
         arr_job_name+=("${thisdir}")

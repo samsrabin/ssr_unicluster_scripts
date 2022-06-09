@@ -240,7 +240,7 @@ function do_setup {
         state_path=$(get_state_path)
         [[ "${state_path}" == "get_param.sh_FAILED" ]] && exit 1
     fi
-    lsf_setup_1run.sh ${topinsfile} "$(get_ins_files)" ${gridlist} ${inputmodule} ${nproc} ${arch} ${walltime} -p "${prefix}" ${state_path} ${submit} ${ppfudev} ${dependency} ${reservation} --lpjg_topdir $HOME/lpj-guess_git-svn_20190828 ${mem_spec}
+    lsf_setup_1run.sh ${topinsfile} "$(get_ins_files)" ${gridlist} ${inputmodule} ${nproc} ${arch} ${walltime} -p "${this_prefix}" ${state_path} ${submit} ${ppfudev} ${dependency} ${reservation} --lpjg_topdir $HOME/lpj-guess_git-svn_20190828 ${mem_spec}
 }
 
 pushdq () {
@@ -416,6 +416,7 @@ if [[ ${do_hist} -eq 1 ]]; then
         
         # Submit historical run
         state_path=""
+        this_prefix="${prefix}_hist"
         do_setup ${walltime_hist}
     
         arr_job_name+=("act-hist")
@@ -460,6 +461,7 @@ for thisSSP in ${ssp_list}; do
     if [[ "${thisSSP:0:3}" != "ssp" ]]; then
         thisSSP="ssp${thisSSP}"
     fi
+    this_prefix="${prefix}_${thisSSP}"
 
     # Set up dependency for actual ssp run
     dependency=""
