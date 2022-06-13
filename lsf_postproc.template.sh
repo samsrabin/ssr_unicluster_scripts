@@ -3,26 +3,16 @@ set -e
 
 echo $PWD > this_directory.txt
 
-thisDir="${PWD}"
-while [[ ! -d outputs/ ]]; do
-   cd ../
-   if [[ "$PWD" == "/" ]]; then
-      echo "Could not find an outputs directory in this directory tree"
-      exit 1
-   fi
-done
-cd outputs/
 dirForPLUM="DIRFORPLUM"
 cd "${thisDir}"
 
 thisSSP=$(echo $PWD | rev | cut -d"/" -f3 | rev)
 thisPot=$(echo $PWD | rev | cut -d"/" -f2 | rev)
 lastYear="-$(echo ${thisPot} | cut -d"-" -f2)"
-dirName="$(echo ${thisPot} | grep -oE "[0-9]+pot")-${lastYear}"
+dirName="$(echo ${thisPot} | | sed -E "s/_[0-9]+//")"
 if [[ "${thisSSP}" != "hist" ]]; then
     dirName+="_${thisSSP}"
 fi
-dirName+="-$(echo ${thisPot} | cut -d"-" -f2)"
 outDir_thisSSPpd=postproc/${dirName}
 mkdir -p ${outDir_thisSSPpd}
 for f in $(ls landsymm_p[cl]ut[CW]*); do
