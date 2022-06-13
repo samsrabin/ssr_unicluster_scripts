@@ -609,6 +609,15 @@ for thisSSP in ${ssp_list}; do
         cd potential
         save_years=""
         state_path=$(echo $state_path | sed -E "s/ -L.*//")
+
+        # Set up dirForPLUM
+        if [[ "${dirForPLUM}" == "" ]]; then
+            dirForPLUM=$(realpath ${rundir_top}/../..)/outputs/outForPLUM-$(date "+%Y-%m-%d-%H%M%S")
+            mkdir -p ${dirForPLUM}
+            echo "Top-level output directory: $dirForPLUM"
+            echo " "
+        fi
+
         . lsf_setup_potential_loop.sh ${thisSSP} ${future_y1} ${future_yN}
         echo " "
         echo " "

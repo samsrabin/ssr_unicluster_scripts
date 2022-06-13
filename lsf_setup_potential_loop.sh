@@ -212,6 +212,10 @@ for y1 in ${y1_list}; do
     fi
     cp ${postproc_template} postproc.sh
     # Replace placeholder(s)
+    if [[ "${dirForPLUM}" == "" ]]; then
+        echo "dirForPLUM unspecified"
+        exit 1
+    fi
     sed -i "s@DIRFORPLUM@${dirForPLUM}@g" postproc.sh
 
     # Set up dependency (or not)
