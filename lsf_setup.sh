@@ -602,11 +602,10 @@ for thisSSP in ${ssp_list}; do
         . lsf_setup_potential_loop.sh ${thisSSP} ${future_y1} ${future_yN}
         echo " "
         echo " "
+        cd ..
     else
         save_years=""
     fi
-    cd ../actual
-
 
     echo arr_job_name ${arr_job_name[@]}
     echo arr_job_num ${arr_job_num[@]}
