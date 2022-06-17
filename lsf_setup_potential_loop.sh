@@ -114,7 +114,7 @@ fi
 Nyears=$((Nyears_getready + Nyears_pot))
 
 # Get list of beginning years
-if [[ "${thisSSP}" == "ssphist" ]]; then
+if [[ "${thisSSP}" == "hist" ]]; then
     y1_list="${list_pot_y1_hist}"
 else
     y1_list="${list_pot_y1_future}"
@@ -202,6 +202,9 @@ for y1 in ${y1_list}; do
     sed -i "s/ZZZZ/${first_plut_year}/" landcover.ins    # first_plut_year
     # inputs
     sed -i "s/ssp585/${thisSSP}/g" main.ins
+    if [[ "${thisSSP}" == "hist" ]]; then
+        sed -i "s/co2_histhist/co2_histssp585/g" main.ins
+    fi
 
     # Get gridlist for later
     if [[ "${gridlist}" == "" ]]; then
@@ -225,17 +228,13 @@ for y1 in ${y1_list}; do
     # Set up dependency (or not)
     dependency=""
     if [[ "${submit}" != "" ]]; then
-        if [[ $((y1-1)) -le ${hist_yN} ]]; then
-            thisPeriod="hist"
-        else
-            thisPeriod="${thisSSP}"
-        fi
-        dependency_name="act-${thisPeriod}"
         r=-1
-        for this_jobname in ${arr_job_name[@]}; do
+        for dep_jobnum in ${arr_job_num[@]}; do
             r=$((r+1))
-            if [[ "${this_jobname}" == "${dependency_name}" ]]; then
-                dependency="-d ${arr_job_num[r]} --dependency-name ${dependency_name}"
+            dep_jobname=${arr_job_name[r]}
+            dep_yN=${arr_yN[r]}
+            if [[ ${dep_jobname} == "act-${thisSSP}"* && ${dep_yN} -ge $((y1 - 1)) ]]; then
+                dependency="-d ${arr_job_num[r]} --dependency-name ${dep_jobname}"
                 break
             fi
         done

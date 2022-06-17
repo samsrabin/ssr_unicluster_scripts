@@ -345,7 +345,8 @@ if [[ ${do_hist} -eq 1 ]]; then
         else
             firstyear_thisrun=${restart_year}
         fi
-        dir_acthist="actual/hist_${firstyear_thisrun}-${lasthistyear}"
+        theseYears="${firstyear_thisrun}-${lasthistyear}"
+        dir_acthist="actual/hist_${theseYears}"
 
         echo "#############################"
         echo "### ${dir_acthist} ###"
@@ -419,13 +420,13 @@ if [[ ${do_hist} -eq 1 ]]; then
         this_prefix="${prefix}_hist"
         do_setup ${walltime_hist}
     
-        arr_job_name+=("act-hist")
+        arr_job_name+=("act-hist_${theseYears}")
         previous_act_jobnum=$(get_latest_run)
         if [[ "${submit}" != "" ]]; then
             arr_job_num+=( ${previous_act_jobnum} )
         fi
         arr_y1+=(0) # nonsense
-        arr_yN+=(${last_year_act_hist})
+        arr_yN+=(${lasthistyear})
 
         # Set up for next historical run, if any
         restart_year=${lastsaveyear}
@@ -461,7 +462,7 @@ fi
 
 # Set up SSP actual and potential runs
 for thisSSP in ${ssp_list}; do
-    if [[ "${thisSSP:0:3}" != "ssp" ]]; then
+    if [[ "${thisSSP}" != "hist" && "${thisSSP:0:3}" != "ssp" ]]; then
         thisSSP="ssp${thisSSP}"
     fi
     this_prefix="${prefix}_${thisSSP}"
