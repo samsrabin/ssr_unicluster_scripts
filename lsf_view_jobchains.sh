@@ -167,6 +167,9 @@ function get_symbol() {
                     elif [[ -e ${file_stdout}.canceled_manual ]]; then
                         symbol="${symbol_canceled_manual}"
                     elif [[ -e ${file_stdout}.fail ]]; then
+                        if [[ ${verbose} -eq 1 ]]; then
+                            cat ${file_stdout}.fail >&2
+                        fi
                         symbol="${symbol_failed}"
                         # Otherwise...
                     else
@@ -177,8 +180,11 @@ function get_symbol() {
 
                             # Did job fail?
                         elif [[ $(tail -n 100 ${file_stdout} | grep "State: FAILED\|State: NODE_FAIL" | wc -l) -ne 0 ]]; then
+                            echo "${symbol_failed} $PWD/${file_stdout} has State indicating failure" > ${file_stdout}.fail
+                            if [[ ${verbose} -eq 1 ]]; then
+                                cat ${file_stdout}.fail >&2
+                            fi
                             symbol="${symbol_failed}"
-                            touch ${file_stdout}.fail
 
                             # Otherwise...
                         else
@@ -207,8 +213,11 @@ function get_symbol() {
 
                             # Otherwise, assume run failed.
                             else
+                                echo "${symbol_failed} Not all processes in $(pwd) ended with 'Finished'" > ${file_stdout}.fail
+                                if [[ ${verbose} -eq 1 ]]; then
+                                    cat ${file_stdout}.fail >&2
+                                fi
                                 symbol="${symbol_failed}"
-                                touch ${file_stdout}.fail
                             fi
                         fi # Was it canceled before beginning?
 
@@ -260,6 +269,10 @@ function get_symbol() {
 
                             # Otherwise, assume run failed.
                         else
+                            echo "${symbol_failed} Some other reason?" > ${file_stdout}.fail
+                            if [[ ${verbose} -eq 1 ]]; then
+                                cat ${file_stdout}.fail >&2
+                            fi
                             symbol="${symbol_failed}"
                         fi
                     fi # Does stdout file exist?
