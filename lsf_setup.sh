@@ -446,13 +446,16 @@ if [[ "${hist_save_years}" == "" ]]; then
     exit 1
 fi
 
-# If the only period was hist, we're done
-if [[ "${ssp_list}" == "hist" ]]; then
-    ssp_list=""
+# If we're not doing any potential runs...
+if [[ ${actual_only} -eq 1 ]]; then
+    # If the only period was hist, we're done
+    if [[ "${ssp_list}" == "hist" ]]; then
+        ssp_list=""
 
-# Otherwise, if first period was hist, remove it
-else
-    ssp_list="${ssp_list/hist /}"
+    # Otherwise, if first period was hist, remove it
+    else
+        ssp_list="${ssp_list/hist /}"
+    fi
 fi
 
 
@@ -476,7 +479,7 @@ for thisSSP in ${ssp_list}; do
         done
     fi
 
-    if [[ ${potential_only} -eq 0 && ${do_future_act} -eq 1 ]]; then
+    if [[ ${potential_only} -eq 0 && ${do_future_act} -eq 1 && ${thisSSP} != "hist" ]]; then
 
         # Risk of filling up scratch space if saving too many states.
         # Avoid this by splitting run into groups of at most maxNstates states.
@@ -529,24 +532,7 @@ for thisSSP in ${ssp_list}; do
             set " "
         
             # Set up state directory for this SSP, if needed
-            # IF YOU WIND UP WITH PROBLEMS HERE, CONSIDER USING THIS FUNCTIONALITY
-            # BUILT IN TO lsf_setup_1run.sh INSTEAD!
-            # I.e., -L flag
-            # Would need to ensure that it's ONLY used for first part of future runs (if splitting ssp period).
-            state_path=""
-            state_path_absolute=$(lsf_get_state_path_absolute.sh "${rundir_top}" "${state_path_absolute}")
-            state_path_thisSSP="${state_path_absolute}_${thisSSP}"
-            if [[ ! -d ${state_path_thisSSP} ]]; then
-                mkdir -p ${state_path_thisSSP}
-                pushd ${state_path_thisSSP} 1>/dev/null
-                for y in ${hist_save_years}; do
-                    if [[ -L ${y} ]]; then
-                        rm -f ${y}
-                    fi
-                    ln -s ../states/${y}
-                done
-                popd 1>/dev/null
-            fi
+            . lsf_get_state_path_thisSSP.sh
 
             # Set up dependency, if any
             dependency=
@@ -595,13 +581,8 @@ for thisSSP in ${ssp_list}; do
                 echo "Error finding rundir_top; exiting."
                 exit 1
             fi
-            state_path=""
-            state_path_absolute=$(lsf_get_state_path_absolute.sh "${rundir_top}" "${state_path_absolute}")
-            state_path_thisSSP="${state_path_absolute}_${thisSSP}"
-            if [[ ${potential_only} -eq 1 && ! -d "${state_path_thisSSP}" ]]; then
-                echo "state_path_thisSSP (${state_path_thisSSP}) not found, and no actual runs are being submitted to create it. Exiting."
-                exit 1
-            fi
+            # Set up state directory for this SSP, if needed
+            . lsf_get_state_path_thisSSP.sh
             cd ../..
         fi
 
