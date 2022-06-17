@@ -114,7 +114,11 @@ fi
 Nyears=$((Nyears_getready + Nyears_pot))
 
 # Get list of beginning years
-y1_list="${list_pot_y1_hist} ${list_pot_y1_future}"
+if [[ "${thisSSP}" == "ssphist" ]]; then
+    y1_list="${list_pot_y1_hist}"
+else
+    y1_list="${list_pot_y1_future}"
+fi
 
 
 ###################
@@ -191,8 +195,8 @@ for y1 in ${y1_list}; do
         sed -i "s/save_state 1/save_state 0/g" main.ins
     fi
     # land use file
-    sed -i "s/XXXX/${last_LUyear_past}/" landcover.ins    # XXXXpast_YYYYall_LU.txt
-    sed -i "s/YYYY/${last_LUyear_all}/" landcover.ins    # XXXXpast_YYYYall_LU.txt
+    sed -i "s/XXXX/${y1}/" landcover.ins    # XXXXpast_YYYYall_LU.txt
+    sed -i "s/YYYY/$((y1 + 1))/" landcover.ins    # XXXXpast_YYYYall_LU.txt
     # outputs
     sed -i "s/do_plut 0/do_plut 1/g" landcover.ins
     sed -i "s/ZZZZ/${first_plut_year}/" landcover.ins    # first_plut_year
