@@ -39,7 +39,7 @@ actual_only=0
 potential_only=0
 nproc=160
 ssp_list="hist ssp126 ssp370 ssp585"
-Nyears_pot=100
+Nyears_pot=99999
 pot_y1=1850
 pot_step=20
 pot_yN=2100
@@ -393,8 +393,7 @@ if [[ ${do_hist} -eq 1 ]]; then
         fi
         
         # Set up rundir_top
-        thisbasename=$(lsf_get_basename.sh)
-        rundir_top=$(lsf_get_rundir_top.sh ${istest})
+        rundir_top=$(lsf_get_rundir_top.sh ${istest} 0)
         if [[ "${rundir_top}" == "" ]]; then
             echo "Error finding rundir_top; exiting."
             exit 1
@@ -574,17 +573,17 @@ for thisSSP in ${ssp_list}; do
                 echo "Trying to set up potential runs without having set up actual runs. Exiting."
                 exit 1
             fi
-            cd actual
-            cd $(ls -d */ | head -n 1)
-            thisbasename=$(lsf_get_basename.sh)
-            rundir_top=$(lsf_get_rundir_top.sh ${istest})
+            rundir_top=$(lsf_get_rundir_top.sh ${istest} 1)
+            echo rundir_top in lsf_setup.sh $rundir_top
             if [[ "${rundir_top}" == "" ]]; then
                 echo "Error finding rundir_top; exiting."
+                exit 1
+            elif [[ ! -d "${rundir_top}" ]]; then
+                echo "rundir_top not found: ${rundir_top}"
                 exit 1
             fi
             # Set up state directory for this SSP, if needed
             . lsf_get_state_path_thisSSP.sh
-            cd ../..
         fi
 
         mkdir -p potential
