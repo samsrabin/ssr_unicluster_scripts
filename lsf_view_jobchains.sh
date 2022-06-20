@@ -93,7 +93,7 @@ function was_canceled {
 function get_symbol_() { passback latest_job; }
 
 function get_symbol() {
-    workdir="$(get_runset_workdir)/${homedir_rel}"
+    workdir="$(get_equiv_workdir.sh "$PWD")/${homedir_rel}"
 
     # workdir does NOT exist
     if [[ ! -d "${workdir}" ]]; then
@@ -305,24 +305,9 @@ function check_jobs {
 
 }
 
-function get_runset_workdir {
-    if [[ "${WORK}" == "" ]]; then
-       >&2 echo "\$WORK undefined"
-       exit 1
-    elif [[ ! -e "${WORK}" ]]; then
-       >&2 echo "\$WORK not found: $WORK"
-       exit 1
-    fi
-    runset_workdir=$(pwd | sed "s@/pfs/data5@@" | sed "s@$HOME@$WORK@")
-    if [[ ${testing} -eq 1 ]]; then
-        runset_workdir="${runset_workdir}_test"
-    fi
-    echo ${runset_workdir}
-}
-
 function get_act_col_heads {
     pushdq "${d}"
-    runset_workdir="$(get_runset_workdir)"
+    runset_workdir="$(get_equiv_workdir.sh "$PWD")"
     pushdq "${runset_workdir}"
     if [[ "${ssp}" == "hist" ]]; then
         testSSP="hist"
@@ -371,7 +356,7 @@ for g in ${gcmlist}; do
         islast_act=0
     
         # If this directory doesn't even have a working directory set up, you can skip
-        thischain_workdir=$(realpath $d | sed "s@/pfs/data5@@" | sed "s@$HOME@$WORK@")
+        thischain_workdir="$(get_equiv_workdir.sh "$(realpath $d)")"
         if [[ ${testing} -eq 1 ]]; then
             thischain_workdir="${thischain_workdir}_test"
         fi
@@ -439,7 +424,7 @@ for g in ${gcmlist}; do
             fi
 
             # Get actual periods
-            runset_workdir="$(get_runset_workdir)"
+            runset_workdir="$(get_equiv_workdir.sh "$PWD")"
             pushdq "${runset_workdir}"
             theseactdirs=$(ls -d "${d}/actual/${ssp}_"* | grep -vE "\.tar$")
             popdq

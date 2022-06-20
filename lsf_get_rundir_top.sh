@@ -25,7 +25,7 @@ if [[ ${ispot} -eq 1 ]]; then
        fi
    done
    # cd to equivalent directory on $WORK
-   cd $(pwd | sed "s@/pfs/data5@@" | sed "s@$HOME@$WORK@")
+   cd "$(get_equiv_workdir.sh "$PWD")"
    # cd to any actual directory
    cd actual
    cd $(ls -d */ | head -n 1)
