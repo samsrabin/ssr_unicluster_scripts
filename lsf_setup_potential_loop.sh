@@ -159,13 +159,6 @@ for y1 in ${y1_list}; do
     # Get state directory
     state_path=""
     rundir_top=placeholderneededinlsf_get_state_path_thisSSPdotsh
-    if [[ "${WORK}" == "" ]]; then
-       >&2 echo "\$WORK undefined"
-       exit 1
-    elif [[ ! -e "${WORK}" ]]; then
-       >&2 echo "\$WORK not found: $WORK"
-       exit 1
-    fi
     cd ..
     state_path_absolute=${runset_workdir}
     if [[ ${istest} -eq 1 ]]; then
