@@ -592,6 +592,13 @@ for thisSSP in ${ssp_list}; do
         echo "#########################"
         set " "
     
+        if [[ "${WORK}" == "" ]]; then
+           >&2 echo "\$WORK undefined"
+           exit 1
+        elif [[ ! -e "${WORK}" ]]; then
+           >&2 echo "\$WORK not found: $WORK"
+           exit 1
+        fi
         runset_workdir=$(pwd | sed "s@/pfs/data5@@" | sed "s@$HOME@$WORK@")
         mkdir -p potential
         cd potential

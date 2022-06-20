@@ -1,8 +1,6 @@
 #!/bin/bash
 set -e
 
-echo "REWORK TO LOOK IN WORK FOR DIRECTORIES FOR HEADERS, NOT HOME"
-
 runset_ver="runs-2022-05"
 symbol_norun="--"            # No run started for this period within this job chain.
 symbol_runna=" "            # Run not applicable for this period (U+2002 EN SPACE)
@@ -95,19 +93,7 @@ function was_canceled {
 function get_symbol_() { passback latest_job; }
 
 function get_symbol() {
-    # First, change to working directory
-    if [[ ! -d "${homedir_rel}" ]]; then
-        >&2 echo "homedir_rel not found: ${homedir_rel}"
-        >&2 echo "pwd: $PWD"
-        exit 14
-    fi
-    homedir_rel_tmp=
-    if [[ $testing -eq 0 ]]; then 
-        homedir_rel_tmp="${homedir_rel}"
-    else
-        homedir_rel_tmp=$(echo "${homedir_rel}" | sed "s@/@_test/@")
-    fi
-    workdir="$(pwd | sed "s@/pfs/data5@@" | sed "s@$HOME@$WORK@")/${homedir_rel_tmp}"
+    workdir="$(get_runset_workdir)/${homedir_rel}"
 
     # workdir does NOT exist
     if [[ ! -d "${workdir}" ]]; then
@@ -319,8 +305,25 @@ function check_jobs {
 
 }
 
+function get_runset_workdir {
+    if [[ "${WORK}" == "" ]]; then
+       >&2 echo "\$WORK undefined"
+       exit 1
+    elif [[ ! -e "${WORK}" ]]; then
+       >&2 echo "\$WORK not found: $WORK"
+       exit 1
+    fi
+    runset_workdir=$(pwd | sed "s@/pfs/data5@@" | sed "s@$HOME@$WORK@")
+    if [[ ${testing} -eq 1 ]]; then
+        runset_workdir="${runset_workdir}_test"
+    fi
+    echo ${runset_workdir}
+}
+
 function get_act_col_heads {
     pushdq "${d}"
+    runset_workdir="$(get_runset_workdir)"
+    pushdq "${runset_workdir}"
     if [[ "${ssp}" == "hist" ]]; then
         testSSP="hist"
         col_code="ACTH"
@@ -329,6 +332,7 @@ function get_act_col_heads {
         testSSP="$(ls -1 "actual" | grep -oE "ssp[0-9]+" | sort | uniq | head -n 1)"
     fi
     theseactdirs=$(ls -d "actual/${testSSP}_"* | grep -vE "\.tar$")
+    popdq
     if [[ "${theseactdirs}" == "" ]]; then
         echo "get_act_col_heads: No directories found matching ${d}/actual/${testSSP}_*" >&2
         exit 1
@@ -385,8 +389,12 @@ for g in ${gcmlist}; do
             exit 13
         fi
         if [[ -d "${d}/potential" ]]; then
-            pot_run_names="$(find ${d}/potential -type d -name "*pot_*" | cut -d"/" -f4 | grep -oE "[0-9]+pot" | sort | uniq)"
-            hist_pot_run_names="$(find ${d}/potential/hist -type d -name "*pot_*" | cut -d"/" -f4 | grep -oE "[0-9]+pot" | sort | uniq)"
+            pot_run_names="$(find ${d}/potential -type d -name "*pot_*" 2>/dev/null | cut -d"/" -f4 | grep -oE "[0-9]+pot" | sort | uniq)"
+            if [[ -d "${d}/potential/hist" ]]; then
+                hist_pot_run_names="$(find ${d}/potential/hist -type d -name "*pot_*" | cut -d"/" -f4 | grep -oE "[0-9]+pot" | sort | uniq)"
+            else
+                hist_pot_run_names=""
+            fi
             future_pot_run_names="$(find ${d}/potential/ssp* -type d -name "*pot_*" | cut -d"/" -f4 | grep -oE "[0-9]+pot" | sort | uniq)"
         else
             pot_run_names=""
@@ -431,7 +439,10 @@ for g in ${gcmlist}; do
             fi
 
             # Get actual periods
+            runset_workdir="$(get_runset_workdir)"
+            pushdq "${runset_workdir}"
             theseactdirs=$(ls -d "${d}/actual/${ssp}_"* | grep -vE "\.tar$")
+            popdq
             if [[ "${theseactdirs}" == "" ]]; then
                 echo "No directories found matching ${d}/actual/${ssp}_*"
                 exit 1
