@@ -7,15 +7,9 @@
 
 state_path=""
 state_path_absolute=$(lsf_get_state_path_absolute.sh "${rundir_top}" "${state_path_absolute}")
-state_path_thisSSP="${state_path_absolute}_${thisSSP}"
-if [[ ! -d ${state_path_thisSSP} ]]; then
-    mkdir -p ${state_path_thisSSP}
-    pushd ${state_path_thisSSP} 1>/dev/null
-    for y in ${hist_save_years}; do
-        if [[ -L ${y} ]]; then
-            rm -f ${y}
-        fi
-        ln -s ../states/${y}
-    done
-    popd 1>/dev/null
+if [[ ${ispot} -eq 0 ]]; then
+    state_path_thisSSP="${state_path_absolute}_${thisSSP}"
 fi
+
+. lsf_setup_statedir.sh
+

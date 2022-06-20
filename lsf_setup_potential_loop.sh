@@ -149,6 +149,38 @@ for y1 in ${y1_list}; do
         incl_future=0
     fi
 
+    # Only include runs that are appropriate for this period
+    if [[ "${thisSSP}" == "hist" ]]; then
+        break
+    elif [[ ${yN} -le ${hist_yN} ]]; then
+        continue
+    fi
+
+    # Get state directory
+    state_path=""
+    rundir_top=placeholderneededinlsf_get_state_path_thisSSPdotsh
+    if [[ "${WORK}" == "" ]]; then
+       >&2 echo "\$WORK undefined"
+       exit 1
+    elif [[ ! -e "${WORK}" ]]; then
+       >&2 echo "\$WORK not found: $WORK"
+       exit 1
+    fi
+    cd ..
+    state_path_absolute=${runset_workdir}
+    if [[ ${istest} -eq 1 ]]; then
+        state_path_absolute="${state_path_absolute}_test"
+    fi
+    state_path_absolute=${state_path_absolute}/actual/states
+    if [[ ${y1} -gt ${hist_yN} ]]; then
+        state_path_thisSSP="${state_path_absolute}_${thisSSP}"
+    else
+        state_path_thisSSP=${state_path_absolute}
+    fi
+    # Set up state directory for this SSP, if needed
+    . lsf_setup_statedir.sh
+    cd potential
+
     # Get dirname
     first_plut_year=$((y1+Nyears_getready))
     thisdir=${first_plut_year}pot_${y1}-${yN}
@@ -201,9 +233,13 @@ for y1 in ${y1_list}; do
     sed -i "s/do_plut 0/do_plut 1/g" landcover.ins
     sed -i "s/ZZZZ/${first_plut_year}/" landcover.ins    # first_plut_year
     # inputs
-    sed -i "s/ssp585/${thisSSP}/g" main.ins
     if [[ "${thisSSP}" == "hist" ]]; then
-        sed -i "s/co2_histhist/co2_histssp585/g" main.ins
+        sed -i "s/ssp585/historical/g" main.ins
+    else
+        sed -i "s/ssp585/${thisSSP}/g" main.ins
+    fi
+    if [[ "${thisSSP}" == "hist" ]]; then
+        sed -i "s/co2_histhistorical/co2_histssp585/g" main.ins
     fi
 
     # Get gridlist for later
@@ -247,7 +283,8 @@ for y1 in ${y1_list}; do
         else
             this_prefix="${prefix}_${thisSSP}"
         fi
-        do_setup ${walltime_pot} ${firstoutyear} ${yN}
+        ispot=1
+        do_setup ${walltime_pot} ${ispot}
 
         arr_job_name+=("${thisdir}")
         if [[ "${submit}" != "" ]]; then

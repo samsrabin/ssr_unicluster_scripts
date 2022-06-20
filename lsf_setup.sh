@@ -139,6 +139,7 @@ if [[ ${istest} -eq 1 ]]; then
         ppfudev="--dev --fu"
     fi
     reservation=""
+    maxNstates=999
 else
     topinsfile=${realinsfile}
     if [[ $do_fu -eq 0 ]]; then
@@ -172,22 +173,16 @@ fi
 
 # Generate list of states to save: Historical period
 y1=${first_LUyear_past}
-while [[ ${y1} -le ${pot_yN} ]] && [[ ${y1} -lt ${future_y1} ]]; do
+yN=$((y1 + Nyears_pot - 1))
+while [[ ${y1} -le ${pot_yN} ]] && [[ ${yN} -lt ${future_y1} ]]; do
     if [[ ${y1} -eq ${first_LUyear_past} ]]; then
         list_pot_y1_hist="${y1}"
     else
         list_pot_y1_hist="${list_pot_y1_hist} ${y1}"
     fi
     y1=$((y1 + pot_step))
+    yN=$((yN + pot_step))
 done
-hist_save_years="${list_pot_y1_hist}"
-if [[ ${pot_yN} -gt ${future_y1} ]]; then
-    if [[ "${hist_save_years}" == "" ]]; then
-        hist_save_years="${future_y1}"
-    else
-        hist_save_years="${list_pot_y1_hist} ${future_y1}"
-    fi
-fi
 
 # Generate list of states to save: ssp period
 while [[ ${y1} -le ${pot_yN} ]] && [[ ${y1} -lt ${future_yN} ]]; do
@@ -199,8 +194,30 @@ while [[ ${y1} -le ${pot_yN} ]] && [[ ${y1} -lt ${future_yN} ]]; do
     y1=$((y1 + pot_step))
 done
 
+hist_save_years="${list_pot_y1_hist}"
+added_future_y1=0
+for y in ${list_pot_y1_future}; do
+    if [[ ${y} -gt ${future_y1} && ${added_future_y1} -eq 0 ]]; then
+        hist_save_years="${hist_save_years} ${future_y1}"
+    fi
+    if [[ $((y - 1)) -gt ${hist_yN} ]]; then
+        break
+    fi
+    hist_save_years="${hist_save_years} ${y}"
+done
+
+fut_save_years=""
+for y in ${list_pot_y1_future}; do
+    if [[ ${y} -le ${future_y1} ]]; then
+        continue
+    fi
+    fut_save_years="${fut_save_years} ${y}"
+done
+
 echo list_pot_y1_hist $list_pot_y1_hist
 echo list_pot_y1_future $list_pot_y1_future
+echo hist_save_years $hist_save_years
+echo fut_save_years $fut_save_years
 
 #############################################################################################
 
@@ -228,6 +245,7 @@ function get_state_path {
 # Set up function to set up
 function do_setup {
     walltime=$1
+    ispot=$2
     if [[ "${walltime}" == "" ]]; then
         echo "You must provide walltime to do_setup()"
         exit 1
@@ -240,6 +258,7 @@ function do_setup {
         state_path=$(get_state_path)
         [[ "${state_path}" == "get_param.sh_FAILED" ]] && exit 1
     fi
+
     lsf_setup_1run.sh ${topinsfile} "$(get_ins_files)" ${gridlist} ${inputmodule} ${nproc} ${arch} ${walltime} -p "${this_prefix}" ${state_path} ${submit} ${ppfudev} ${dependency} ${reservation} --lpjg_topdir $HOME/lpj-guess_git-svn_20190828 ${mem_spec}
 }
 
@@ -308,6 +327,7 @@ if [[ ${do_hist} -eq 1 ]]; then
         hist_save_years_spin="${hist_save_years_spin} ${y}"
         hist_save_years_trans=${hist_save_years_trans/${y}/}
     done
+
     # If running spinup period only, make sure to save a restart for firsthistyear
     separate_spinup=0
     if [[ $(echo ${hist_save_years_spin} | wc -w) -le $((maxNstates - 1)) ]]; then
@@ -417,7 +437,8 @@ if [[ ${do_hist} -eq 1 ]]; then
         # Submit historical run
         state_path=""
         this_prefix="${prefix}_hist"
-        do_setup ${walltime_hist}
+        ispot=0
+        do_setup ${walltime_hist} ${ispot}
     
         arr_job_name+=("act-hist_${theseYears}")
         previous_act_jobnum=$(get_latest_run)
@@ -483,8 +504,8 @@ for thisSSP in ${ssp_list}; do
 
         # Risk of filling up scratch space if saving too many states.
         # Avoid this by splitting run into groups of at most maxNstates states.
-        fut_save_years_lines="$(xargs -n ${maxNstates} <<< ${list_pot_y1_future})"
-        
+        fut_save_years_lines="$(xargs -n ${maxNstates} <<< ${fut_save_years})"
+
         # Now set up each group of states.
         pushdq "actual"
         while IFS= read -r save_years; do
@@ -532,6 +553,7 @@ for thisSSP in ${ssp_list}; do
             set " "
         
             # Set up state directory for this SSP, if needed
+            ispot=0
             . lsf_get_state_path_thisSSP.sh
 
             # Set up dependency, if any
@@ -541,7 +563,8 @@ for thisSSP in ${ssp_list}; do
             fi
         
             # Set up run
-            do_setup ${walltime_fut}
+            ispot=0
+            do_setup ${walltime_fut} ${ispot}
         
             # Add run to job list
             arr_job_name+=("act-${thisSSP}_${theseYears}")
@@ -567,33 +590,14 @@ for thisSSP in ${ssp_list}; do
         echo "#########################"
         set " "
     
-        # Get directory info for do_setup, if needed
-        if [[ "${state_path_absolute}" == "" || "${state_path_thisSSP}" == "" ]]; then
-            if [[ ! -d "actual" ]]; then
-                echo "Trying to set up potential runs without having set up actual runs. Exiting."
-                exit 1
-            fi
-            rundir_top=$(lsf_get_rundir_top.sh ${istest} 1)
-            echo rundir_top in lsf_setup.sh $rundir_top
-            if [[ "${rundir_top}" == "" ]]; then
-                echo "Error finding rundir_top; exiting."
-                exit 1
-            elif [[ ! -d "${rundir_top}" ]]; then
-                echo "rundir_top not found: ${rundir_top}"
-                exit 1
-            fi
-            # Set up state directory for this SSP, if needed
-            . lsf_get_state_path_thisSSP.sh
-        fi
-
+        runset_workdir=$(pwd | sed "s@/pfs/data5@@" | sed "s@$HOME@$WORK@")
         mkdir -p potential
         cd potential
         save_years=""
-        state_path=$(echo $state_path | sed -E "s/ -L.*//")
 
         # Set up dirForPLUM
         if [[ "${dirForPLUM}" == "" ]]; then
-            dirForPLUM=$(realpath ${rundir_top}/../..)/outputs/outForPLUM-$(date "+%Y-%m-%d-%H%M%S")
+            dirForPLUM=${runset_workdir}/outputs/outForPLUM-$(date "+%Y-%m-%d-%H%M%S")
             mkdir -p ${dirForPLUM}
             echo "Top-level output directory: $dirForPLUM"
             echo " "

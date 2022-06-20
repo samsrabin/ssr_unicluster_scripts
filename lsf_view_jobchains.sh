@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+echo "REWORK TO LOOK IN WORK FOR DIRECTORIES FOR HEADERS, NOT HOME"
+
 runset_ver="runs-2022-05"
 symbol_norun="--"            # No run started for this period within this job chain.
 symbol_runna=" "            # Run not applicable for this period (U+2002 EN SPACE)
