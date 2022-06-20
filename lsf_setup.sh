@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+echo "REWORK THIS TO DO 'HISTORICAL POTENTIAL' RUNS TO AVOID REPEATING HISTORICAL PERIOD"
+
 reservation=""
 #reservation="-r landsymm-project"
 realinsfile="main.ins"
