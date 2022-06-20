@@ -257,7 +257,7 @@ function get_symbol() {
 
                             # Otherwise, assume run failed.
                         else
-                            echo "${symbol_failed} Some other reason?" > ${file_stdout}.fail
+                            echo "${symbol_failed} ${PWD} job_finish failed: Some other reason?" > ${file_stdout}.fail
                             if [[ ${verbose} -eq 1 ]]; then
                                 cat ${file_stdout}.fail >&2
                             fi
