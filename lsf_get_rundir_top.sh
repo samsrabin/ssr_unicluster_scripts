@@ -20,7 +20,7 @@ if [[ ${ispot} -eq 1 ]]; then
    while [[ ! -d template ]]; do
        cd ../
        if [[ "$PWD" == "/" ]]; then
-           echo "lsf_setup.sh must be called from a (subdirectory of a) directory that has a template/ directory"
+           echo "lsf_get_rundir_top.sh must be called from a (subdirectory of a) directory that has a template/ directory"
            exit 1
        fi
    done
