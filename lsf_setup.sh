@@ -33,7 +33,9 @@ function usage {
 # Set default values for non-positional arguments
 arch="landsymm-dev-forestry"
 istest=0
-arg_do_fu=0
+arg_yes_fu=0
+arg_no_fu=0
+do_fu_only=0
 submit=""
 dirForPLUM=""
 dependency=""
@@ -74,7 +76,13 @@ do
             arch="$1"
             ;;
         --fu)
-            arg_do_fu=1
+            arg_yes_fu=1
+            ;;
+        --no-fu)
+            arg_no_fu=1
+            ;;
+        --fu-only)
+            do_fu_only=1
             ;;
         --dirForPLUM)  shift
             dirForPLUM="$1"
@@ -120,8 +128,33 @@ if [[ "${dirForPLUM}" != "" && ! -d "${dirForPLUM}" ]]; then
     echo "dirForPLUM does not exist: ${dirForPLUM}"
     exit 1
 fi
-do_fu=0
-if [[ $istest -eq 0 || $arg_do_fu -eq 1 ]]; then
+
+# Do finishup or no?
+if [[ ${do_fu_only} -eq 1 ]]; then
+    if [[ ${arg_no_fu} == "1" ]]; then
+        echo "Both --fu-only and --no-fu specified; choose one."
+        exit 1
+    fi
+    do_fu=1
+elif [[ ${arg_no_fu} == "1" && ${arg_yes_fu} == "1" ]]; then
+    if [[ ${istest} -eq 1 ]]; then
+        echo "Both --fu and --no-fu specified. Using dev default of NO finishup."
+        do_fu=0
+    else
+        echo "Both --fu and --no-fu specified. Using non-dev default of YES finishup."
+        do_fu=1
+    fi
+elif [[ ${arg_no_fu} == "1" ]]; then
+    do_fu=0
+elif [[ ${istest} -eq 1 ]]; then
+    if [[ ${arg_yes_fu} == "1" ]]; then
+        do_fu=1
+    else
+        do_fu=0
+    fi
+elif [[ ${arg_yes_fu} == "0" ]]; then
+    do_fu=0
+else
     do_fu=1
 fi
 
@@ -135,15 +168,22 @@ if [[ ${istest} -eq 1 ]]; then
     walltime_pot="30:00"
     nproc=${testnproc}
     ppfudev="--dev"
-    if [[ $do_fu -eq 0 ]]; then
-        ppfudev="--dev"
-    else
+    if [[ $do_fu_only -eq 1 ]]; then
+        ppfudev="--dev --fu_only"
+    elif [[ $do_fu -eq 1 ]]; then
         ppfudev="--dev --fu"
     fi
     reservation=""
     maxNstates=999
 else
     topinsfile=${realinsfile}
+    if [[ $do_fu_only -eq 1 ]]; then
+        if [[ $do_fu -eq 0 ]]; then
+            echo "Both --fu-only and --no-fu specified; choose one."
+            exit 1
+        fi
+        ppfudev="--fu_only"
+    fi
     if [[ $do_fu -eq 0 ]]; then
         ppfudev="--no_fu"
     fi
@@ -225,9 +265,13 @@ echo fut_save_years $fut_save_years
 
 # Set up function for getting ins files
 function get_ins_files {
-    insfiles=$(ls *ins | grep -v "main")
-    if [[ ${istest} -eq 1 ]]; then
-        insfiles="${realinsfile} ${insfiles}"
+    if [[ ${do_fu_only} -eq 1 ]]; then
+        insfiles="xxx"
+    else
+        insfiles=$(ls *ins | grep -v "main")
+        if [[ ${istest} -eq 1 ]]; then
+            insfiles="${realinsfile} ${insfiles}"
+        fi
     fi
     echo $insfiles
 }
@@ -252,11 +296,13 @@ function do_setup {
         echo "You must provide walltime to do_setup()"
         exit 1
     fi
-    if [[ ! -e "${gridlist}" ]]; then
+    if [[ ${do_fu_only} -eq 1 ]]; then
+        gridlist="xxx"
+    elif [[ ! -e "${gridlist}" ]]; then
         echo "Gridlist file ${gridlist} not found"
         exit 1
     fi
-    if [[ "${state_path}" == "" ]]; then
+    if [[ ${do_fu_only} -eq 0 && "${state_path}" == "" ]]; then
         state_path=$(get_state_path)
         [[ "${state_path}" == "get_param.sh_FAILED" ]] && exit 1
     fi
@@ -373,54 +419,70 @@ if [[ ${do_hist} -eq 1 ]]; then
         echo "#############################"
         echo "### ${dir_acthist} ###"
         echo "#############################"
-    
-        # Archive existing directory, if needed
-        if [[ -d "${dir_acthist}" ]]; then
-            archive_acthist="${dir_acthist}.$(date "+%Y-%m-%d-%H%M%S").tar"
-            echo "Archiving existing $(pwd)/${dir_acthist} as ${archive_acthist}"
-            tar -cf "${archive_acthist}" "${dir_acthist}"
-            rm -rf "${dir_acthist}"
-        fi
-    
-        # Make run directory from template
-        cp -a template "${dir_acthist}"
-        pushdq ${dir_acthist}
-    
-        # Replace placeholder values from template
-        sed -i "s/UUUU/${lasthistyear}/" main.ins    # lasthistyear
-        if [[ "${restart_year}" == "" ]]; then
-            sed -iE "s/^\s*restart_year/\!restart_year/g" main.ins
+
+        if [[ ${do_fu_only} -eq 1 ]]; then
+
+            made_home_dir=0
+            if [[ ! -d ${dir_acthist} ]]; then
+                made_home_dir=1
+                mkdir ${dir_acthist}
+                home_dir_realpath="$(realpath ${dir_acthist})"
+            fi
+            pushdq ${dir_acthist}
+
         else
-            sed -iE "s/^\!restart_year VVVV/restart_year ${restart_year}/g" main.ins
-            sed -i "s/VVVV/${restart_year}/" main.ins    # restart_year
-            sed -i "s/restart 0/restart 1/g" main.ins
-        fi
-        sed -i "s/WWWW/\"${save_years}\"/" main.ins    # save_years
-        sed -i "s/XXXX/${last_LUyear_past}/" landcover.ins    # XXXXpast_YYYYall_LU.txt
-        sed -i "s/YYYY/${last_LUyear_all}/" landcover.ins    # XXXXpast_YYYYall_LU.txt
-        sed -iE "s/^\s*first_plut_year/\!first_plut_year/g" landcover.ins
-        sed -i "s/co2_ssp585_annual_2015_2100.txt/co2_historical_annual_1850_2014.txt/g" main.ins
-        sed -i "s/population-density_3b_2015soc_30arcmin_annual_1601_2100.lpjg.nc/population-density_3b_histsoc_30arcmin_annual_1850_2014.lpjg.nc/g" main.ins
-        sed -i "s/Effectively 2015soc/histsoc/g" main.ins
-        sed -i "s/2015soc/histsoc/g" main.ins
-    
-        set " "
+
+            # Archive existing directory, if needed
+            if [[ -d "${dir_acthist}" ]]; then
+                archive_acthist="${dir_acthist}.$(date "+%Y-%m-%d-%H%M%S").tar"
+                echo "Archiving existing $(pwd)/${dir_acthist} as ${archive_acthist}"
+                tar -cf "${archive_acthist}" "${dir_acthist}"
+                rm -rf "${dir_acthist}"
+            fi
         
-        # Get gridlist
-        gridlist=$(get_param.sh ${topinsfile} "file_gridlist")
-        [[ "${gridlist}" == "get_param.sh_FAILED" ]] && exit 1
-        if [[ "${gridlist}" == "" ]]; then
-            echo "Unable to parse gridlist from ${topinsfile} and its dependencies"
-            exit 1
-        fi
+            # Make run directory from template
+            cp -a template "${dir_acthist}"
+            pushdq ${dir_acthist}
         
+            # Replace placeholder values from template
+            sed -i "s/UUUU/${lasthistyear}/" main.ins    # lasthistyear
+            if [[ "${restart_year}" == "" ]]; then
+                sed -iE "s/^\s*restart_year/\!restart_year/g" main.ins
+            else
+                sed -iE "s/^\!restart_year VVVV/restart_year ${restart_year}/g" main.ins
+                sed -i "s/VVVV/${restart_year}/" main.ins    # restart_year
+                sed -i "s/restart 0/restart 1/g" main.ins
+            fi
+            sed -i "s/WWWW/\"${save_years}\"/" main.ins    # save_years
+            sed -i "s/XXXX/${last_LUyear_past}/" landcover.ins    # XXXXpast_YYYYall_LU.txt
+            sed -i "s/YYYY/${last_LUyear_all}/" landcover.ins    # XXXXpast_YYYYall_LU.txt
+            sed -iE "s/^\s*first_plut_year/\!first_plut_year/g" landcover.ins
+            sed -i "s/co2_ssp585_annual_2015_2100.txt/co2_historical_annual_1850_2014.txt/g" main.ins
+            sed -i "s/population-density_3b_2015soc_30arcmin_annual_1601_2100.lpjg.nc/population-density_3b_histsoc_30arcmin_annual_1850_2014.lpjg.nc/g" main.ins
+            sed -i "s/Effectively 2015soc/histsoc/g" main.ins
+            sed -i "s/2015soc/histsoc/g" main.ins
+
+            set " "
+
+            # Get gridlist
+            gridlist=$(get_param.sh ${topinsfile} "file_gridlist")
+            [[ "${gridlist}" == "get_param.sh_FAILED" ]] && exit 1
+            if [[ "${gridlist}" == "" ]]; then
+                echo "Unable to parse gridlist from ${topinsfile} and its dependencies"
+                exit 1
+            fi
+
+        fi # if do_fu_only else
+
         # Set up rundir_top
         rundir_top=$(lsf_get_rundir_top.sh ${istest} 0)
         if [[ "${rundir_top}" == "" ]]; then
             echo "Error finding rundir_top; exiting."
             exit 1
         fi
-        mkdir -p "${rundir_top}"
+        if [[ ${do_fu_only} -eq 0 ]]; then
+            mkdir -p "${rundir_top}"
+        fi
         
         # Set up dirForPLUM
         if [[ "${dirForPLUM}" == "" ]]; then
@@ -429,37 +491,45 @@ if [[ ${do_hist} -eq 1 ]]; then
         mkdir -p ${dirForPLUM}
         echo "Top-level output directory: $dirForPLUM"
         echo " "
-
-        # Set up dependency, if any
-        dependency=
-        if [[ ${previous_act_jobnum} != "" ]]; then
-            dependency="-d ${previous_act_jobnum}"
+    
+        if [[ ${do_fu_only} -eq 0 ]]; then
+            # Set up dependency, if any
+            dependency=
+            if [[ ${previous_act_jobnum} != "" ]]; then
+                dependency="-d ${previous_act_jobnum}"
+            fi
         fi
-        
-        # Submit historical run
+            
+        # Submit historical run or finishup
         state_path=""
         this_prefix="${prefix}_hist"
         ispot=0
         do_setup ${walltime_hist} ${ispot}
-    
-        arr_job_name+=("act-hist_${theseYears}")
-        previous_act_jobnum=$(get_latest_run)
-        if [[ "${submit}" != "" ]]; then
-            arr_job_num+=( ${previous_act_jobnum} )
+        
+        if [[ ${do_fu_only} -eq 0 ]]; then
+            arr_job_name+=("act-hist_${theseYears}")
+            previous_act_jobnum=$(get_latest_run)
+            if [[ "${submit}" != "" ]]; then
+                arr_job_num+=( ${previous_act_jobnum} )
+            fi
+            arr_y1+=(0) # nonsense
+            arr_yN+=(${lasthistyear})
+        elif [[ ${made_home_dir} -eq 1 ]]; then
+            rmdir "${home_dir_realpath}"
         fi
-        arr_y1+=(0) # nonsense
-        arr_yN+=(${lasthistyear})
-
-        # Set up for next historical run, if any
-        restart_year=${lastsaveyear}
     
+        # Set up for next historical run or finishup, if any
+        restart_year=${lastsaveyear}
+        
         echo " "
         echo " "
         popdq
-
+    
         if [[ ${do_break} -eq 1 ]]; then
             break
         fi
+
+
     done <<< ${hist_save_years_lines}
 fi
 
@@ -530,53 +600,82 @@ for thisSSP in ${ssp_list}; do
             echo "### actual/${thisDir} ###"
             echo "###############################"
     
-            # Archive existing directory, if needed
-            if [[ -d "${thisDir}" ]]; then
-                archive_thisDir="${thisDir}.$(date "+%Y-%m-%d-%H%M%S").tar"
-                echo "Archiving existing $(pwd)/${thisDir} as ${archive_thisDir}"
-                tar -cf "${archive_thisDir}" "${thisDir}"
-                rm -rf "${thisDir}"
-            fi
+            if [[ ${do_fu_only} -eq 1 ]]; then
+
+                made_home_dir=0
+                if [[ ! -d ${thisDir} ]]; then
+                    made_home_dir=1
+                    mkdir ${thisDir}
+                    home_dir_realpath="$(realpath ${thisDir})"
+                fi
+                cd "${thisDir}"
+
+            else
+
+                # Archive existing directory, if needed
+                if [[ -d "${thisDir}" ]]; then
+                    archive_thisDir="${thisDir}.$(date "+%Y-%m-%d-%H%M%S").tar"
+                    echo "Archiving existing $(pwd)/${thisDir} as ${archive_thisDir}"
+                    tar -cf "${archive_thisDir}" "${thisDir}"
+                    rm -rf "${thisDir}"
+                fi
+        
+                # Copy and fill template runDir
+                echo pwd $(pwd)
+                cp -a ../template "${thisDir}"
+                cd "${thisDir}"
+                sed -i "s/UUUU/${lasthistyear}/" main.ins    # lasthistyear
+                sed -iE "s/^\!restart_year VVVV/restart_year ${restart_year}/g" main.ins
+                sed -i "s/VVVV/${restart_year}/" main.ins    # restart_year
+                sed -i "s/WWWW/\"${list_pot_y1_future}\"/" main.ins    # save_years
+                sed -i "s/XXXX/${last_LUyear_past}/" landcover.ins    # XXXXpast_YYYYall_LU.txt
+                sed -i "s/YYYY/${last_LUyear_all}/" landcover.ins    # XXXXpast_YYYYall_LU.txt
+                sed -iE "s/^\s*first_plut_year/\!first_plut_year/g" landcover.ins
+                sed -i "s/restart 0/restart 1/g" main.ins
+                sed -i "s/ssp585/${thisSSP}/g" main.ins
     
-            # Copy and fill template runDir
-            echo pwd $(pwd)
-            cp -a ../template "${thisDir}"
-            cd "${thisDir}"
-            sed -i "s/UUUU/${lasthistyear}/" main.ins    # lasthistyear
-            sed -iE "s/^\!restart_year VVVV/restart_year ${restart_year}/g" main.ins
-            sed -i "s/VVVV/${restart_year}/" main.ins    # restart_year
-            sed -i "s/WWWW/\"${list_pot_y1_future}\"/" main.ins    # save_years
-            sed -i "s/XXXX/${last_LUyear_past}/" landcover.ins    # XXXXpast_YYYYall_LU.txt
-            sed -i "s/YYYY/${last_LUyear_all}/" landcover.ins    # XXXXpast_YYYYall_LU.txt
-            sed -iE "s/^\s*first_plut_year/\!first_plut_year/g" landcover.ins
-            sed -i "s/restart 0/restart 1/g" main.ins
-            sed -i "s/ssp585/${thisSSP}/g" main.ins
-
-            set " "
-        
-            # Set up state directory for this SSP, if needed
-            ispot=0
-            . lsf_get_state_path_thisSSP.sh
-
-            # Set up dependency, if any
-            dependency=
-            if [[ ${previous_act_jobnum} != "" ]]; then
-                dependency="-d ${previous_act_jobnum}"
+                set " "
+            
+                # Set up state directory for this SSP, if needed
+                ispot=0
+                . lsf_get_state_path_thisSSP.sh
+    
+                # Set up dependency, if any
+                dependency=
+                if [[ ${previous_act_jobnum} != "" ]]; then
+                    dependency="-d ${previous_act_jobnum}"
+                fi
             fi
-        
+            
             # Set up run
             ispot=0
             do_setup ${walltime_fut} ${ispot}
-        
-            # Add run to job list
-            arr_job_name+=("act-${thisSSP}_${theseYears}")
-            previous_act_jobnum=$(get_latest_run)
-            if [[ "${submit}" != "" ]]; then
-                arr_job_num+=( ${previous_act_jobnum} )
+    
+            # Set up dirForPLUM
+            if [[ "${dirForPLUM}" == "" ]]; then
+                dirForPLUM=$(realpath ${rundir_top}/../..)/outputs/outForPLUM-$(date "+%Y-%m-%d-%H%M%S")
             fi
-            arr_y1+=(${future_y1})
-            arr_yN+=($(echo $theseYears | cut -d"-" -f2))
-        
+            mkdir -p ${dirForPLUM}
+            echo "Top-level output directory: $dirForPLUM"
+            echo " "
+
+            if [[ ${do_fu_only} -eq 0 ]]; then
+
+                # Add run to job list
+                arr_job_name+=("act-${thisSSP}_${theseYears}")
+                previous_act_jobnum=$(get_latest_run)
+                if [[ "${submit}" != "" ]]; then
+                    arr_job_num+=( ${previous_act_jobnum} )
+                fi
+                arr_y1+=(${future_y1})
+                arr_yN+=($(echo $theseYears | cut -d"-" -f2))
+
+            else
+                if [[ ${made_home_dir} -eq 1 ]]; then
+                    rmdir "${home_dir_realpath}"
+                fi
+            fi
+
             cd ..
 
             # Set up for next actual run, if needed

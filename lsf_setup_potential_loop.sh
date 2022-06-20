@@ -156,23 +156,25 @@ for y1 in ${y1_list}; do
         continue
     fi
 
-    # Get state directory
-    state_path=""
-    rundir_top=placeholderneededinlsf_get_state_path_thisSSPdotsh
-    cd ..
-    state_path_absolute=${runset_workdir}
-    if [[ ${istest} -eq 1 ]]; then
-        state_path_absolute="${state_path_absolute}_test"
+    if [[ ${do_fu_only} -eq 0 ]]; then
+        # Get state directory
+        state_path=""
+        rundir_top=placeholderneededinlsf_get_state_path_thisSSPdotsh
+        cd ..
+        state_path_absolute=${runset_workdir}
+        if [[ ${istest} -eq 1 ]]; then
+            state_path_absolute="${state_path_absolute}_test"
+        fi
+        state_path_absolute=${state_path_absolute}/actual/states
+        if [[ ${y1} -gt ${hist_yN} ]]; then
+            state_path_thisSSP="${state_path_absolute}_${thisSSP}"
+        else
+            state_path_thisSSP=${state_path_absolute}
+        fi
+        # Set up state directory for this SSP, if needed
+        . lsf_setup_statedir.sh
+        cd potential
     fi
-    state_path_absolute=${state_path_absolute}/actual/states
-    if [[ ${y1} -gt ${hist_yN} ]]; then
-        state_path_thisSSP="${state_path_absolute}_${thisSSP}"
-    else
-        state_path_thisSSP=${state_path_absolute}
-    fi
-    # Set up state directory for this SSP, if needed
-    . lsf_setup_statedir.sh
-    cd potential
 
     # Get dirname
     first_plut_year=$((y1+Nyears_getready))
@@ -194,50 +196,78 @@ for y1 in ${y1_list}; do
         echo " "
     fi
 
-    # Archive existing directory, if needed
-    if [[ -d "${thisdir}" ]]; then
-        this_archive="${thisdir}.$(date "+%Y-%m-%d-%H%M%S").tar"
-#        echo "Archiving existing $(pwd)/${thisdir} as ${this_archive}"
-        tar -cf "${this_archive}" "${thisdir}"
-        rm -rf "${thisdir}"
-    fi
+    if [[ ${do_fu_only} -eq 0 ]]; then
 
-    # Copy template runDir
-    cp -a ../template "${thisdir}"
+        # Archive existing directory, if needed
+        if [[ -d "${thisdir}" ]]; then
+            this_archive="${thisdir}.$(date "+%Y-%m-%d-%H%M%S").tar"
+#            echo "Archiving existing $(pwd)/${thisdir} as ${this_archive}"
+            tar -cf "${this_archive}" "${thisdir}"
+            rm -rf "${thisdir}"
+        fi
+    
+        # Copy template runDir
+        cp -a ../template "${thisdir}"
+    
+        pushdq "${thisdir}"
+    
+        # Fill template runDir
+        sed -i "s/UUUU/${yN}/" main.ins    # lasthistyear
+        # restarting
+        sed -i "s/^\!restart_year VVVV/restart_year ${y1}/g" main.ins
+        sed -i "s/VVVV/${y1}/" main.ins    # restart_year
+        sed -i "s/firstoutyear 1850/firstoutyear ${y1}/" main.ins    # firstoutyear
+        sed -i "s/restart 0/restart 1/g" main.ins
+        # saving state
+        sed -i "s/WWWW/\"${future_y1}\"/" main.ins    # save_years
+        if [[ ${y1} -ge ${future_y1} ]]; then
+            sed -i "s/save_state 1/save_state 0/g" main.ins
+        fi
+        # land use file
+        sed -i "s/XXXX/${y1}/" landcover.ins    # XXXXpast_YYYYall_LU.txt
+        sed -i "s/YYYY/$((y1 + 1))/" landcover.ins    # XXXXpast_YYYYall_LU.txt
+        # outputs
+        sed -i "s/do_plut 0/do_plut 1/g" landcover.ins
+        sed -i "s/ZZZZ/${first_plut_year}/" landcover.ins    # first_plut_year
+        # inputs
+        if [[ "${thisSSP}" == "hist" ]]; then
+            sed -i "s/ssp585/historical/g" main.ins
+        else
+            sed -i "s/ssp585/${thisSSP}/g" main.ins
+        fi
+        if [[ "${thisSSP}" == "hist" ]]; then
+            sed -i "s/co2_histhistorical/co2_histssp585/g" main.ins
+        fi
+    
+        # Get gridlist for later
+        if [[ "${gridlist}" == "" ]]; then
+            gridlist=$(get_param.sh ${topinsfile} "file_gridlist")
+        fi
 
-    pushdq "${thisdir}"
+        # Set up dependency (or not)
+        dependency=""
+        if [[ "${submit}" != "" ]]; then
+            r=-1
+            for dep_jobnum in ${arr_job_num[@]}; do
+                r=$((r+1))
+                dep_jobname=${arr_job_name[r]}
+                dep_yN=${arr_yN[r]}
+                if [[ ${dep_jobname} == "act-${thisSSP}"* && ${dep_yN} -ge $((y1 - 1)) ]]; then
+                    dependency="-d ${arr_job_num[r]} --dependency-name ${dep_jobname}"
+                    break
+                fi
+            done
+        fi
 
-    # Fill template runDir
-    sed -i "s/UUUU/${yN}/" main.ins    # lasthistyear
-    # restarting
-    sed -i "s/^\!restart_year VVVV/restart_year ${y1}/g" main.ins
-    sed -i "s/VVVV/${y1}/" main.ins    # restart_year
-    sed -i "s/firstoutyear 1850/firstoutyear ${y1}/" main.ins    # firstoutyear
-    sed -i "s/restart 0/restart 1/g" main.ins
-    # saving state
-    sed -i "s/WWWW/\"${future_y1}\"/" main.ins    # save_years
-    if [[ ${y1} -ge ${future_y1} ]]; then
-        sed -i "s/save_state 1/save_state 0/g" main.ins
-    fi
-    # land use file
-    sed -i "s/XXXX/${y1}/" landcover.ins    # XXXXpast_YYYYall_LU.txt
-    sed -i "s/YYYY/$((y1 + 1))/" landcover.ins    # XXXXpast_YYYYall_LU.txt
-    # outputs
-    sed -i "s/do_plut 0/do_plut 1/g" landcover.ins
-    sed -i "s/ZZZZ/${first_plut_year}/" landcover.ins    # first_plut_year
-    # inputs
-    if [[ "${thisSSP}" == "hist" ]]; then
-        sed -i "s/ssp585/historical/g" main.ins
-    else
-        sed -i "s/ssp585/${thisSSP}/g" main.ins
-    fi
-    if [[ "${thisSSP}" == "hist" ]]; then
-        sed -i "s/co2_histhistorical/co2_histssp585/g" main.ins
-    fi
+    else # do_fu_only
 
-    # Get gridlist for later
-    if [[ "${gridlist}" == "" ]]; then
-        gridlist=$(get_param.sh ${topinsfile} "file_gridlist")
+        made_home_dir=0
+        if [[ ! -d ${thisdir} ]]; then
+            made_home_dir=1
+            mkdir ${thisdir}
+            home_dir_realpath="$(realpath ${thisdir})"
+        fi
+        pushdq ${thisdir}
     fi
 
     # Copy over template script
@@ -254,21 +284,6 @@ for y1 in ${y1_list}; do
     fi
     sed -i "s@DIRFORPLUM@${dirForPLUM}@g" postproc.sh
 
-    # Set up dependency (or not)
-    dependency=""
-    if [[ "${submit}" != "" ]]; then
-        r=-1
-        for dep_jobnum in ${arr_job_num[@]}; do
-            r=$((r+1))
-            dep_jobname=${arr_job_name[r]}
-            dep_yN=${arr_yN[r]}
-            if [[ ${dep_jobname} == "act-${thisSSP}"* && ${dep_yN} -ge $((y1 - 1)) ]]; then
-                dependency="-d ${arr_job_num[r]} --dependency-name ${dep_jobname}"
-                break
-            fi
-        done
-    fi
-    
     # Actually set up and even submit, if being called from within setup_all.sh
     if [[ ${actually_setup} -eq 1 ]]; then
         if [[ ${yN} -le ${hist_yN} ]]; then
@@ -278,13 +293,18 @@ for y1 in ${y1_list}; do
         fi
         ispot=1
         do_setup ${walltime_pot} ${ispot}
+    fi
 
+    if [[ ${do_fu_only} -eq 0 ]]; then
         arr_job_name+=("${thisdir}")
         if [[ "${submit}" != "" ]]; then
             arr_job_num+=($(get_latest_run))
         fi
         arr_y1+=(${y1})
         arr_yN+=(${yN})
+    elif [[ ${made_home_dir} -eq 1 ]]; then
+        rm "${home_dir_realpath}/postproc.sh"
+        rmdir "${home_dir_realpath}"
     fi
 
     popd 1>/dev/null
