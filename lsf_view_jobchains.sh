@@ -17,6 +17,7 @@ symbol_unknown2="⁉️ "         # Job not found by sacct
 # Set default values for non-positional arguments
 testing=0
 verbose=0
+work_cols=0
 gcmlist="gfdl ipsl mpi mri ukesm"
 
 # Args while-loop
@@ -32,6 +33,9 @@ do
             ;;
         -v  | --verbose)
             verbose=1
+            ;;
+        -w  | --work-cols)
+            work_cols=1
             ;;
         *)
             echo "$script: illegal option $1"
@@ -308,7 +312,12 @@ function check_jobs {
 function get_act_col_heads {
     pushdq "${d}"
     runset_workdir="$(get_equiv_workdir.sh "$PWD")"
-    pushdq "${runset_workdir}"
+    if [[ ${testing} -eq 1 ]]; then
+        runset_workdir+="_test"
+    fi
+    if [[ ${work_cols} -eq 1 ]]; then
+        pushdq "${runset_workdir}"
+    fi
     if [[ "${ssp}" == "hist" ]]; then
         testSSP="hist"
         col_code="ACTH"
@@ -317,7 +326,9 @@ function get_act_col_heads {
         testSSP="$(ls -1 "actual" | grep -oE "ssp[0-9]+" | sort | uniq | head -n 1)"
     fi
     theseactdirs=$(ls -d "actual/${testSSP}_"* | grep -vE "\.tar$")
-    popdq
+    if [[ ${work_cols} -eq 1 ]]; then
+        popdq
+    fi
     if [[ "${theseactdirs}" == "" ]]; then
         echo "get_act_col_heads: No directories found matching ${d}/actual/${testSSP}_*" >&2
         exit 1
@@ -367,23 +378,29 @@ for g in ${gcmlist}; do
     
         # Get short name for this chain
         thischain_name="$(lsf_chain_shortname.sh ${d} ${testing})"
-    
-        actdir="${d}/actual"
-        if [[ ! -d "${actdir}" ]]; then
-            echo "actdir not found: ${PWD}/${actdir})"
-            exit 13
+
+        # Get potential run names
+        if [[ ${work_cols} -eq 1 ]]; then
+            equiv_workdir="$(get_equiv_workdir.sh "${d}")"
+            if [[ ${testing} -eq 1 ]]; then
+                equiv_workdir+="_test"
+            fi
+            pushdq "${equiv_workdir}"
+        else
+            pushdq "${d}"
         fi
-        if [[ -d "${d}/potential" ]]; then
-            pot_run_names="$(find ${d}/potential -type d -name "*pot_*" 2>/dev/null | cut -d"/" -f4 | grep -oE "[0-9]+pot" | sort | uniq)"
-            if [[ -d "${d}/potential/hist" ]]; then
-                hist_pot_run_names="$(find ${d}/potential/hist -type d -name "*pot_*" | cut -d"/" -f4 | grep -oE "[0-9]+pot" | sort | uniq)"
+        if [[ -d "potential" ]]; then
+            pot_run_names="$(find "potential" -type d -name "*pot_*" 2>/dev/null | cut -d"/" -f3 | grep -oE "[0-9]+pot" | sort | uniq)"
+            if [[ -d "potential/hist" ]]; then
+                hist_pot_run_names="$(find potential/hist -type d -name "*pot_*" | cut -d"/" -f3 | grep -oE "[0-9]+pot" | sort | uniq)"
             else
                 hist_pot_run_names=""
             fi
-            future_pot_run_names="$(find ${d}/potential/ssp* -type d -name "*pot_*" | cut -d"/" -f4 | grep -oE "[0-9]+pot" | sort | uniq)"
+            future_pot_run_names="$(find potential/ssp* -type d -name "*pot_*" | cut -d"/" -f3 | grep -oE "[0-9]+pot" | sort | uniq)"
         else
             pot_run_names=""
         fi
+        popdq
         
 #        ssp_list="hist ssp126 ssp370 ssp585"
         ssp_list="hist ssp126"
@@ -424,10 +441,17 @@ for g in ${gcmlist}; do
             fi
 
             # Get actual periods
-            runset_workdir="$(get_equiv_workdir.sh "$PWD")"
-            pushdq "${runset_workdir}"
+            if [[ ${work_cols} -eq 1 ]]; then
+                runset_workdir="$(get_equiv_workdir.sh "$PWD")"
+                if [[ ${testing} -eq 1 ]]; then
+                    runset_workdir+="_test"
+                fi
+                pushdq "${runset_workdir}"
+            fi
             theseactdirs=$(ls -d "${d}/actual/${ssp}_"* | grep -vE "\.tar$")
-            popdq
+            if [[ ${work_cols} -eq 1 ]]; then
+                popdq
+            fi
             if [[ "${theseactdirs}" == "" ]]; then
                 echo "No directories found matching ${d}/actual/${ssp}_*"
                 exit 1
@@ -452,23 +476,34 @@ for g in ${gcmlist}; do
                 fi
             done
 
-            # Get potential subdirectory
-            potdir="${d}/potential/${ssp}/"
+            # Get potential periods
+            if [[ ${work_cols} -eq 1 ]]; then
+                equiv_workdir="$(get_equiv_workdir.sh "${d}")"
+                if [[ ${testing} -eq 1 ]]; then
+                    equiv_workdir+="_test"
+                fi
+                pushdq "${equiv_workdir}"
+            else
+                pushdq "${d}"
+            fi
+            potdir="potential/${ssp}/"
             if [[ ! -d "${potdir}" ]]; then
                 #echo "Skipping ${potdir} (directory not found)"
                 if [[ "${ssp}" != "hist" ]]; then
                     echo ${thisline} >> $tmpfile
                 fi
+                popdq
                 continue
             fi
-
-            # Check potential periods
             pot_list=$(ls "${potdir}" | cut -d' ' -f1-2 | grep -vE "\.tar$")
             if [[ "${ssp}" == "hist" ]]; then
                 these_pot_run_names="${hist_pot_run_names}"
             else
                 these_pot_run_names="${future_pot_run_names}"
             fi
+            popdq
+
+            # Check potential periods
             for pot in ${these_pot_run_names}; do
                 p_found=0
                 for p in ${pot_list}; do
