@@ -10,6 +10,7 @@ symbol_running="🏃"          # Job is currently running
 symbol_ok="✅"               # Job completed successfully
 symbol_canceled_manual="🙅"  # Job was canceled by user
 symbol_canceled_auto="☹️ "    # Job canceled itself (postprocessing recognized failed model run)
+symbol_timeout="🛑"          # Job reached maximum walltime
 symbol_failed="❌"           # Job failed
 symbol_unknown="❓"          # Job didn't seem to fail or have been canceled
 symbol_unknown2="⁉️ "         # Job not found by sacct
@@ -72,8 +73,9 @@ jobs=$(squeue -o "%P %i %j %T %r")
 #	echo $result
 #}
 
-function was_canceled {
+function check_sacct {
     jobnum=$1
+    checkstatus=$2
 
     # Check whether we've already sacct'd this run; if not, do so
     sacct_file=sacct.${jobnum}
@@ -85,12 +87,7 @@ function was_canceled {
     if [[ "${sacct_result}" == "" ]]; then
         echo -1
     else
-        # NODE_FAIL will give a CANCELLED in the sacct file
-        if [[ $(echo "${sacct_result}" | grep "NODE_FAIL" | wc -l) -eq 1 ]]; then
-            echo 0
-        else
-            echo "${sacct_result}" | grep "CANCEL" | wc -l
-        fi
+        echo "${sacct_result}" | grep -E "^${jobnum}\s" | grep "${checkstatus}" | wc -l
     fi
 }
 
@@ -122,10 +119,15 @@ function get_symbol() {
             elif [[ "${thepattern:0:6}" != "jobfin" ]]; then
                 latest_job=$(grep "LPJ-GUESS run" latest_submitted_jobs.log | awk 'END {print $NF}')
 
-                # Check if it was canceled
-                was_it_canceled=$(was_canceled ${latest_job})
+                # Check statuses from sacct
+                was_it_canceled=$(check_sacct ${latest_job} "CANCEL")
+                timed_out=$(check_sacct ${latest_job} "TIMEOUT")
                 if [[ ${was_it_canceled} -gt 0 ]]; then
                     symbol="${symbol_canceled_manual}"
+
+                # Check if it timed out
+                elif [[ ${timed_out} -gt 0 ]]; then
+                    symbol="${symbol_timeout}"
 
                     # If no run was started in this chain, then say so
                 elif [[ ${latest_job} -lt ${latest_actual_job} ]]; then
@@ -143,7 +145,7 @@ function get_symbol() {
                     file_stdout="guess_x.o${latest_job}"
                     # If not, assume it was canceled before beginning.
                     if [[ ! -e "${file_stdout}" ]]; then
-                        was_it_canceled=$(was_canceled ${latest_job})
+                        was_it_canceled=$(check_sacct ${latest_job} "CANCEL")
                         if [[ ${was_it_canceled} -lt 0 ]]; then
                             symbol="${symbol_unknown2}"
                             >&2 echo "${symbol} stdout file not found: ${workdir_short}/${file_stdout}"
@@ -235,7 +237,7 @@ function get_symbol() {
                 else
                     file_stdout="job_finish.${latest_job}.log"
                     if [[ ! -e "${file_stdout}" ]]; then
-                        was_it_canceled=$(was_canceled ${latest_job})
+                        was_it_canceled=$(check_sacct ${latest_job} "CANCEL")
                         if [[ ${was_it_canceled} -lt 0 ]]; then
                             symbol="${symbol_unknown2}"
                             >&2 echo "${symbol} stdout file not found: ${workdir_short}/${file_stdout}"
@@ -246,6 +248,8 @@ function get_symbol() {
                             symbol="${symbol_canceled_manual}"
                         fi
                     else
+
+                        timed_out=$(check_sacct ${latest_job} "TIMEOUT")
 
                         # Completed successfully?
                         if [[ $(tail -n 20 ${file_stdout} | grep "All done\!" | wc -l) -gt 0 ]]; then
@@ -258,6 +262,10 @@ function get_symbol() {
                             # If not, was job canceled manually?
                         elif [[ $(tail -n 100 ${file_stdout} | grep "State: CANCELLED" | wc -l) -ne 0 ]]; then
                             symbol="${symbol_canceled_manual}"
+
+                        # Check if it timed out
+                        elif [[ ${timed_out} -gt 0 ]]; then
+                            symbol="${symbol_timeout}"
 
                             # Otherwise, assume run failed.
                         else
