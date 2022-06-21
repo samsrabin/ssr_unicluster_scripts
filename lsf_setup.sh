@@ -152,7 +152,7 @@ elif [[ ${istest} -eq 1 ]]; then
     else
         do_fu=0
     fi
-elif [[ ${arg_yes_fu} == "0" ]]; then
+elif [[ ${arg_no_fu} == "1" ]]; then
     do_fu=0
 else
     do_fu=1
