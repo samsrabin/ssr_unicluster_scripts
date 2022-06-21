@@ -125,14 +125,13 @@ fi
 # Loop through periods
 ###################
 
-if [[ "${topinsfile}" != "" && "${inputmodule}" != "" && "${nproc}" != "" && "${arch}" != "" && "${walltime_pot}" != "" && "${prefix}" != "" ]]; then
+if [[ "${topinsfile}" != "" && "${inputmodule}" != "" && "${nproc}" != "" && "${arch}" != "" && "${prefix}" != "" ]]; then
     actually_setup=1
 else
 #    echo topinsfile $topinsfile
 #    echo inputmodule $inputmodule
 #    echo nproc $nproc
 #    echo arch $arch
-#    echo walltime_pot $walltime_pot
 #    echo prefix $prefix
     actually_setup=0
 fi
@@ -147,6 +146,21 @@ for y1 in ${y1_list}; do
         incl_future=1
     else
         incl_future=0
+    fi
+
+    # Get walltime
+    if [[ ${istest} -eq 1 ]]; then
+        walltime_pot=30
+    else
+        Nyears=$((yN - y1 + 1))
+        walltime_pot=$(echo "$Nyears * $walltime_pot_minutes_peryr" | bc)
+        walltime_pot=$(echo "($walltime_pot/$round_walltime_to_next+1)*$round_walltime_to_next" | bc)
+        if [[ ${walltime_pot} -lt ${walltime_pot_minutes_minimum} ]]; then
+            walltime_pot=${walltime_pot_minutes_minimum}
+        elif [[ ${walltime_pot} -gt ${walltime_minutes_max} ]]; then
+            echo "Warning: Requested walltime of ${walltime_pot} minutes (${Nyears} yr, ${walltime_pot_minutes_peryr} min/yr, rounding up to next ${round_walltime_to_next}) exceeds maximum ${walltime_minutes_max} minutes. Setting to ${walltime_minutes_max}."
+            walltime_pot=${walltime_minutes_max}
+        fi
     fi
 
     # Only include runs that are appropriate for this period

@@ -13,7 +13,10 @@ testinsfile="main_test1_fast.ins"; testnproc=1
 inputmodule="cfx"
 walltime_hist="48:00:00"
 walltime_fut="48:00:00"  # Should take around ??? hours
-walltime_pot="48:00:00"  # Should take around ??? hours
+walltime_minutes_max=4320
+round_walltime_to_next=30        # minutes
+walltime_pot_minutes_minimum=90  # 160 processes, Unicluster
+walltime_pot_minutes_peryr=2.3   # 160 processes, Unicluster
 future_y1=2015
 maxNstates=3
 future_yN=2100 # Because last year of emulator output is 2084
@@ -165,7 +168,6 @@ if [[ ${istest} -eq 1 ]]; then
     topinsfile=${testinsfile}
     walltime_hist="30:00"
     walltime_fut="30:00"
-    walltime_pot="30:00"
     nproc=${testnproc}
     ppfudev="--dev"
     if [[ $do_fu_only -eq 1 ]]; then
