@@ -115,11 +115,12 @@ Nyears=$((Nyears_getready + Nyears_pot))
 
 # Get list of beginning years
 if [[ "${thisSSP}" == "hist" ]]; then
-    y1_list="${list_pot_y1_hist}"
+    y1_list=(${list_pot_y1_hist[@]})
+    yN_list=(${list_pot_yN_hist[@]})
 else
-    y1_list="${list_pot_y1_future}"
+    y1_list=(${list_pot_y1_future[@]})
+    yN_list=(${list_pot_yN_future[@]})
 fi
-
 
 ###################
 # Loop through periods
@@ -135,17 +136,34 @@ else
 #    echo prefix $prefix
     actually_setup=0
 fi
-for y1 in ${y1_list}; do
+i=-1
+for y1 in ${y1_list[@]}; do
+    i=$((i+1))
+
+    is_resuming=0
+    restart_year=${y1}
+    y0=${y1}
+    if [[ ${thisSSP} != "hist" ]]; then
+        is_resuming=${list_future_is_resuming[i]}
+        if [[ ${is_resuming} -eq 1 ]]; then
+            y0=${list_pot_y0_future[i]}
+            restart_year=${future_y1}
+        fi
+    fi
 
     # Does this run include the ssp period?
-    yN=$((y1 + Nyears - 1))
-    if [[ ${yN} -gt ${future_yN} ]]; then
-        yN=${future_yN}
-    fi
+    yN=${yN_list[i]}
     if [[ ${yN} -gt  ${hist_yN} ]]; then
         incl_future=1
     else
         incl_future=0
+    fi
+    if [[ ${incl_future} -eq 1 && ${thisSSP} == "hist" ]]; then
+        echo ${y1}-${yN}: '${incl_future} -eq 1 && ${thisSSP} == "hist"'
+        exit 1
+    elif [[ ${incl_future} -eq 0 && ${thisSSP} != "hist" ]]; then
+        echo ${y1}-${yN}: '${incl_future} -eq 0 && ${thisSSP} != "hist"'
+        exit 1
     fi
 
     # Get walltime
@@ -163,13 +181,6 @@ for y1 in ${y1_list}; do
         fi
     fi
 
-    # Only include runs that are appropriate for this period
-    if [[ "${thisSSP}" == "hist" ]]; then
-        break
-    elif [[ ${yN} -le ${hist_yN} ]]; then
-        continue
-    fi
-
     if [[ ${do_fu_only} -eq 0 ]]; then
         # Get state directory
         state_path=""
@@ -180,7 +191,7 @@ for y1 in ${y1_list}; do
             state_path_absolute="${state_path_absolute}_test"
         fi
         state_path_absolute=${state_path_absolute}/actual/states
-        if [[ ${y1} -gt ${hist_yN} ]]; then
+        if [[ ${is_resuming} -eq 0 && ${y1} -gt ${hist_yN} ]]; then
             state_path_thisSSP="${state_path_absolute}_${thisSSP}"
         else
             state_path_thisSSP=${state_path_absolute}
@@ -192,7 +203,12 @@ for y1 in ${y1_list}; do
 
     # Get dirname
     first_plut_year=$((y1+Nyears_getready))
-    thisdir=${first_plut_year}pot_${y1}-${yN}
+    if [[ ${is_resuming} -eq 1 ]]; then
+        thisPot=$((y0 + Nyears_getready))pot
+    else
+        thisPot=${first_plut_year}pot
+    fi
+    thisdir=${thisPot}_${y1}-${yN}
     if [[ ${incl_future} -eq 1 ]]; then
         mkdir -p "${thisSSP}"
         thisdir="${thisSSP}/${thisdir}"
@@ -200,6 +216,15 @@ for y1 in ${y1_list}; do
         mkdir -p "hist"
         thisdir="hist/${thisdir}"
     fi
+
+    # Get jobname
+    this_jobname="${thisPot}-${thisSSP}"
+
+#    echo $thisdir
+#    echo $state_path_thisSSP
+#    echo $restart_year
+#    echo $this_jobname
+#    continue
 
     if [[ ${actually_setup} -eq 0 ]]; then
         echo "${thisdir}..."
@@ -228,8 +253,8 @@ for y1 in ${y1_list}; do
         # Fill template runDir
         sed -i "s/UUUU/${yN}/" main.ins    # lasthistyear
         # restarting
-        sed -i "s/^\!restart_year VVVV/restart_year ${y1}/g" main.ins
-        sed -i "s/VVVV/${y1}/" main.ins    # restart_year
+        sed -i "s/^\!restart_year VVVV/restart_year ${restart_year}/g" main.ins
+        sed -i "s/VVVV/${restart_year}/" main.ins
         sed -i "s/firstoutyear 1850/firstoutyear ${y1}/" main.ins    # firstoutyear
         sed -i "s/restart 0/restart 1/g" main.ins
         # saving state
@@ -238,8 +263,8 @@ for y1 in ${y1_list}; do
             sed -i "s/save_state 1/save_state 0/g" main.ins
         fi
         # land use file
-        sed -i "s/XXXX/${y1}/" landcover.ins    # XXXXpast_YYYYall_LU.txt
-        sed -i "s/YYYY/$((y1 + 1))/" landcover.ins    # XXXXpast_YYYYall_LU.txt
+        sed -i "s/XXXX/${y0}/" landcover.ins    # XXXXpast_YYYYall_LU.txt
+        sed -i "s/YYYY/$((y0 + 1))/" landcover.ins    # XXXXpast_YYYYall_LU.txt
         # outputs
         sed -i "s/do_plut 0/do_plut 1/g" landcover.ins
         sed -i "s/ZZZZ/${first_plut_year}/" landcover.ins    # first_plut_year
@@ -260,15 +285,39 @@ for y1 in ${y1_list}; do
 
         # Set up dependency (or not)
         dependency=""
+        r=-1
+        if [[ ${is_resuming} -eq 1 ]]; then
+            dep_jobname_prefix="${thisPot}-hist"
+        else
+            dep_jobname_prefix="act-${thisSSP}"
+        fi
         if [[ "${submit}" != "" ]]; then
-            r=-1
             for dep_jobnum in ${arr_job_num[@]}; do
                 r=$((r+1))
                 dep_jobname=${arr_job_name[r]}
-                dep_yN=${arr_yN[r]}
-                if [[ ${dep_jobname} == "act-${thisSSP}"* && ${dep_yN} -ge $((y1 - 1)) ]]; then
-                    dependency="-d ${arr_job_num[r]} --dependency-name ${dep_jobname}"
+                if [[ ${is_resuming} -eq 1 && ${dep_jobname} == "${dep_jobname_prefix}"* ]]; then
+                    dependency="-d ${dep_jobnum} --dependency-name ${dep_jobname}"
+                elif [[ ${is_resuming} -eq 0 ]]; then
+                    dep_jobname=${arr_job_name[r]}
+                    dep_yN=${arr_yN[r]}
+                    if [[ ${dep_jobname} == "${dep_jobname_prefix}"* && ${dep_yN} -ge $((y1 - 1)) ]]; then
+                        dependency="-d ${dep_jobnum} --dependency-name ${dep_jobname}"
+                        break
+                    fi
+                fi
+            done
+        else # not submitting
+            for dep_jobname in ${arr_job_name[@]}; do
+                r=$((r+1))
+                if [[ ${is_resuming} -eq 1 && ${dep_jobname} == "${dep_jobname_prefix}"* ]]; then
+                    echo "If submitting, would depend on job ${dep_jobname}"
                     break
+                elif [[ ${is_resuming} -eq 0 ]]; then
+                    dep_yN=${arr_yN[r]}
+                    if [[ ${dep_jobname} == "${dep_jobname_prefix}"* && ${dep_yN} -ge $((y1 - 1)) ]]; then
+                        echo "If submitting, would depend on job ${dep_jobname}"
+                        break
+                    fi
                 fi
             done
         fi
@@ -310,7 +359,7 @@ for y1 in ${y1_list}; do
     fi
 
     if [[ ${do_fu_only} -eq 0 ]]; then
-        arr_job_name+=("${thisdir}")
+        arr_job_name+=("${this_jobname}")
         if [[ "${submit}" != "" ]]; then
             arr_job_num+=($(get_latest_run))
         fi

@@ -1,8 +1,6 @@
 #!/bin/bash
 set -e
 
-echo "REWORK THIS TO DO 'HISTORICAL POTENTIAL' RUNS TO AVOID REPEATING HISTORICAL PERIOD"
-
 reservation=""
 #reservation="-r landsymm-project"
 realinsfile="main.ins"
@@ -47,6 +45,7 @@ potential_only=0
 nproc=160
 ssp_list="hist ssp126 ssp370 ssp585"
 Nyears_pot=99999
+#Nyears_pot=100
 pot_y1=1850
 pot_step=20
 pot_yN=2100
@@ -215,53 +214,92 @@ if [[ ${do_future_act} -eq 1 ]]; then
     last_year_act_hist=${hist_yN}
 fi
 
-# Generate list of states to save: Historical period
+# Generate lists of start and end years for potential runs
+list_pot_y1_hist=()
+list_pot_y1_future=()
+list_pot_yN_hist=()
+list_pot_yN_future=()
 y1=${first_LUyear_past}
 yN=$((y1 + Nyears_pot - 1))
+if [[ ${yN} -gt ${pot_yN} ]]; then
+    yN=${pot_yN}
+fi
+i=0
+list_pot_y0_future=()
 while [[ ${y1} -le ${pot_yN} ]] && [[ ${yN} -lt ${future_y1} ]]; do
-    if [[ ${y1} -eq ${first_LUyear_past} ]]; then
-        list_pot_y1_hist="${y1}"
-    else
-        list_pot_y1_hist="${list_pot_y1_hist} ${y1}"
-    fi
-    y1=$((y1 + pot_step))
-    yN=$((yN + pot_step))
-done
+    list_pot_y1_hist+=(${y1})
 
-# Generate list of states to save: ssp period
+    if [[ ${yN} -ge ${future_y1} ]]; then
+        list_pot_yN_hist+=(${hist_yN})
+        list_pot_y1_future+=(${future_y1})
+        list_pot_yN_future+=(${yN})
+        list_pot_y0_future+=(${y1})
+    else
+        list_pot_yN_hist+=(${yN})
+    fi
+
+    y1=$((y1 + pot_step))
+    yN=$((y1 + Nyears_pot - 1))
+    if [[ ${yN} -gt ${pot_yN} ]]; then
+        yN=${pot_yN}
+    fi
+done
+h=-1
+list_future_is_resuming=()
 while [[ ${y1} -le ${pot_yN} ]] && [[ ${y1} -lt ${future_yN} ]]; do
-    if [[ "${list_pot_y1_future}" == "" ]]; then
-        list_pot_y1_future="${y1}"
-    else
-        list_pot_y1_future="${list_pot_y1_future} ${y1}"
+    yN=$((y1 + Nyears_pot - 1))
+    if [[ ${yN} -gt ${pot_yN} ]]; then
+        yN=${pot_yN}
     fi
+
+    if [[ ${y1} -lt ${future_y1} ]]; then
+        list_pot_y1_hist+=(${y1})
+        list_pot_yN_hist+=(${hist_yN})
+        list_pot_y1_future+=(${future_y1})
+        list_pot_yN_future+=(${yN})
+        list_future_is_resuming+=(1)
+        h=$((h+1))
+        list_pot_y0_future+=(${y1})
+    else
+        list_pot_y1_future+=(${y1})
+        list_pot_yN_future+=(${yN})
+        list_future_is_resuming+=(0)
+        list_pot_y0_future+=(9999)
+    fi
+
     y1=$((y1 + pot_step))
 done
 
-hist_save_years="${list_pot_y1_hist}"
+# Generate lists of states to save in historical and future periods
+hist_save_years="${list_pot_y1_hist[@]}"
 added_future_y1=0
-for y in ${list_pot_y1_future}; do
-    if [[ ${y} -gt ${future_y1} && ${added_future_y1} -eq 0 ]]; then
-        hist_save_years="${hist_save_years} ${future_y1}"
-    fi
-    if [[ $((y - 1)) -gt ${hist_yN} ]]; then
-        break
-    fi
-    hist_save_years="${hist_save_years} ${y}"
-done
-
 fut_save_years=""
-for y in ${list_pot_y1_future}; do
-    if [[ ${y} -le ${future_y1} ]]; then
+i=-1
+for y in ${list_pot_y1_future[@]}; do
+    i=$((i+1))
+    is_resuming=${list_future_is_resuming[i]}
+    if [[ ${is_resuming} -eq 1 ]]; then
+        if [[ ${added_future_y1} -eq 0 ]]; then
+            hist_save_years+=" ${future_y1}"
+            added_future_y1=1
+        fi
+        continue
+    elif [[ ${y} -le ${future_y1} ]]; then
         continue
     fi
-    fut_save_years="${fut_save_years} ${y}"
+    fut_save_years+=" ${y}"
 done
 
-echo list_pot_y1_hist $list_pot_y1_hist
-echo list_pot_y1_future $list_pot_y1_future
-echo hist_save_years $hist_save_years
-echo fut_save_years $fut_save_years
+echo "Saving states in actual runs at beginning of years:"
+echo "    Historical runs:" $hist_save_years
+echo "        Future runs:" $fut_save_years
+echo "Historical potential runs:"
+echo "    Begin:" ${list_pot_y1_hist[@]}
+echo "      End:" ${list_pot_yN_hist[@]}
+echo "Future potential runs:"
+echo "       y0:" ${list_pot_y0_future[@]}
+echo "    Begin:" ${list_pot_y1_future[@]}
+echo "      End:" ${list_pot_yN_future[@]}
 
 #############################################################################################
 
@@ -629,7 +667,7 @@ for thisSSP in ${ssp_list}; do
                 sed -i "s/UUUU/${lasthistyear}/" main.ins    # lasthistyear
                 sed -iE "s/^\!restart_year VVVV/restart_year ${restart_year}/g" main.ins
                 sed -i "s/VVVV/${restart_year}/" main.ins    # restart_year
-                sed -i "s/WWWW/\"${list_pot_y1_future}\"/" main.ins    # save_years
+                sed -i "s/WWWW/\"${fut_save_years}\"/" main.ins    # save_years
                 sed -i "s/XXXX/${last_LUyear_past}/" landcover.ins    # XXXXpast_YYYYall_LU.txt
                 sed -i "s/YYYY/${last_LUyear_all}/" landcover.ins    # XXXXpast_YYYYall_LU.txt
                 sed -iE "s/^\s*first_plut_year/\!first_plut_year/g" landcover.ins
