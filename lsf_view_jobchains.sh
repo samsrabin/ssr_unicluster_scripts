@@ -95,6 +95,11 @@ function get_symbol_() { passback latest_job; }
 
 function get_symbol() {
     workdir="$(get_equiv_workdir.sh "$PWD")/${homedir_rel}"
+    if [[ ${testing} -eq 1 && "${PWD}" != *"_test" ]]; then
+        workdir="$(get_equiv_workdir.sh "$PWD")_test/${homedir_rel}"
+    else
+        workdir="$(get_equiv_workdir.sh "$PWD")/${homedir_rel}"
+    fi
 
     # workdir does NOT exist
     if [[ ! -d "${workdir}" ]]; then
@@ -122,7 +127,14 @@ function get_symbol() {
                 # Check statuses from sacct
                 was_it_canceled=$(check_sacct ${latest_job} "CANCEL")
                 timed_out=$(check_sacct ${latest_job} "TIMEOUT")
-                if [[ ${was_it_canceled} -gt 0 ]]; then
+                status=$(echo ${matching_jobs} | cut -d' ' -f4)
+                if [[ "${status}" == "PENDING" ]]; then
+                    if [[ $(echo ${matching_jobs} | grep "Dependency" | wc -l) -gt 0 ]]; then
+                        symbol="${symbol_pend_depend}"
+                    else
+                        symbol="${symbol_pend_other}"
+                    fi
+                elif [[ ${was_it_canceled} -gt 0 ]]; then
                     symbol="${symbol_canceled_manual}"
 
                 # Check if it timed out
@@ -354,7 +366,6 @@ function get_act_col_heads {
         Nact=$((Nact + 1))
         act_col_heads="${act_col_heads}${col_code}${Nact},"
     done
-    popdq
     echo "${act_col_heads}"
 }
 
@@ -450,16 +461,15 @@ for g in ${gcmlist}; do
 
             # Get actual periods
             if [[ ${work_cols} -eq 1 ]]; then
-                runset_workdir="$(get_equiv_workdir.sh "$PWD")"
+                runset_workdir="$(get_equiv_workdir.sh "$PWD/${d}")"
                 if [[ ${testing} -eq 1 ]]; then
                     runset_workdir+="_test"
                 fi
                 pushdq "${runset_workdir}"
+            else
+                pushdq "${d}"
             fi
-            theseactdirs=$(ls -d "${d}/actual/${ssp}_"* | grep -vE "\.tar$")
-            if [[ ${work_cols} -eq 1 ]]; then
-                popdq
-            fi
+            theseactdirs=$(ls -d "actual/${ssp}_"* | grep -vE "\.tar$")
             if [[ "${theseactdirs}" == "" ]]; then
                 echo "No directories found matching ${d}/actual/${ssp}_*"
                 exit 1
@@ -483,6 +493,7 @@ for g in ${gcmlist}; do
                     latest_actual_job=${latest_job}
                 fi
             done
+            popdq
 
             # Get potential periods
             if [[ ${work_cols} -eq 1 ]]; then
@@ -512,6 +523,7 @@ for g in ${gcmlist}; do
             popdq
 
             # Check potential periods
+            pushdq "${d}"
             for pot in ${these_pot_run_names}; do
                 p_found=0
                 for p in ${pot_list}; do
@@ -521,12 +533,13 @@ for g in ${gcmlist}; do
                     fi
                 done
                 if [[ ${p_found} -eq 1 ]]; then
-                    homedir_rel="${d}/potential/${ssp}/${p}"
+                    homedir_rel="potential/${ssp}/${p}"
                     check_jobs ${thischain_name}_${ssp}_${pot}
                 else
                     thisline="${thisline} ${symbol_runna}"
                 fi
             done
+            popdq
 
             if [[ "${ssp}" != "hist" ]]; then
                 echo ${thisline} >> $tmpfile
