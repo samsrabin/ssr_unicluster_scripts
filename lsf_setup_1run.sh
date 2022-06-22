@@ -336,13 +336,13 @@ USER=$(whoami)
 
 # ============================================================ prepare work dir ... ===================
 
+mkdir -p "${rundir_top}"
+echo "rundir_top = ${rundir_top}"
 if [[ -e postproc.sh ]]; then
     cp postproc.sh $rundir_top/
 fi
 
 if [[ ${do_finishup_only} -eq 0 ]]; then
-    mkdir -p "${rundir_top}"
-    echo "rundir_top = ${rundir_top}"
     
     #======Copy ins, gridlist and executable
     
