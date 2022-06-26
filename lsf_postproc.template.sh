@@ -19,6 +19,7 @@ for f in $(ls landsymm_p[cl]ut[CW]*); do
     echo "   gzipping ${f}..."
     gzip < "${f}" > "${outDir_thisSSPpd}/${f}.gz"
 done
+gzip < cflux_landsymm_sts.out > "${outDir_thisSSPpd}/cflux_landsymm_sts.out.gz"
 touch ${outDir_thisSSPpd}/done
 
 rsync -ahm ${outDir_thisSSPpd} ${dirForPLUM}/
