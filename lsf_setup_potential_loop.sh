@@ -1,6 +1,7 @@
 #!/bin/bash
 set -e
 
+
 ###################
 # Process input arguments
 ###################
@@ -143,6 +144,7 @@ for y1 in ${y1_list[@]}; do
     is_resuming=0
     restart_year=${y1}
     y0=${y1}
+    save_state=${list_pot_save_state[i]}
     if [[ ${thisSSP} != "hist" ]]; then
         is_resuming=${list_future_is_resuming[i]}
         if [[ ${is_resuming} -eq 1 ]]; then
@@ -166,6 +168,14 @@ for y1 in ${y1_list[@]}; do
         exit 1
     fi
 
+    # Name this one (e.g. 1850pot)
+    first_plut_year=$((y1+Nyears_getready))
+    if [[ ${is_resuming} -eq 1 ]]; then
+        thisPot=$((y0 + Nyears_getready))pot
+    else
+        thisPot=${first_plut_year}pot
+    fi
+
     # Get walltime
     if [[ ${istest} -eq 1 ]]; then
         walltime_pot=30
@@ -181,6 +191,7 @@ for y1 in ${y1_list[@]}; do
         fi
     fi
 
+    # Set up state directory for this run
     if [[ ${do_fu_only} -eq 0 ]]; then
         # Get state directory
         state_path=""
@@ -190,24 +201,19 @@ for y1 in ${y1_list[@]}; do
         if [[ ${istest} -eq 1 ]]; then
             state_path_absolute="${state_path_absolute}_test"
         fi
-        state_path_absolute=${state_path_absolute}/actual/states
         if [[ ${is_resuming} -eq 0 && ${y1} -gt ${hist_yN} ]]; then
+            state_path_absolute=${state_path_absolute}/actual/states
             state_path_thisSSP="${state_path_absolute}_${thisSSP}"
+            . lsf_setup_statedir.sh
         else
-            state_path_thisSSP=${state_path_absolute}
+            state_path_absolute=${state_path_absolute}/potential/states
+            state_path_thisSSP=${state_path_absolute}_${thisPot}
+            . lsf_setup_statedir_pot.sh
         fi
-        # Set up state directory for this SSP, if needed
-        . lsf_setup_statedir.sh
         cd potential
     fi
 
     # Get dirname
-    first_plut_year=$((y1+Nyears_getready))
-    if [[ ${is_resuming} -eq 1 ]]; then
-        thisPot=$((y0 + Nyears_getready))pot
-    else
-        thisPot=${first_plut_year}pot
-    fi
     thisdir=${thisPot}_${y1}-${yN}
     if [[ ${incl_future} -eq 1 ]]; then
         mkdir -p "${thisSSP}"

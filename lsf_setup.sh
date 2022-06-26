@@ -234,8 +234,10 @@ while [[ ${y1} -le ${pot_yN} ]] && [[ ${yN} -lt ${future_y1} ]]; do
         list_pot_y1_future+=(${future_y1})
         list_pot_yN_future+=(${yN})
         list_pot_y0_future+=(${y1})
+        list_pot_save_state+=(1)
     else
         list_pot_yN_hist+=(${yN})
+        list_pot_save_state+=(0)
     fi
 
     y1=$((y1 + pot_step))
@@ -247,6 +249,7 @@ done
 h=-1
 list_future_is_resuming=()
 while [[ ${y1} -le ${pot_yN} ]] && [[ ${y1} -lt ${future_yN} ]]; do
+    list_pot_save_state+=(0)
     yN=$((y1 + Nyears_pot - 1))
     if [[ ${yN} -gt ${pot_yN} ]]; then
         yN=${pot_yN}
@@ -523,7 +526,7 @@ if [[ ${do_hist} -eq 1 ]]; then
         if [[ ${do_fu_only} -eq 0 ]]; then
             mkdir -p "${rundir_top}"
         fi
-        
+
         # Set up dirForPLUM
         if [[ "${dirForPLUM}" == "" ]]; then
             dirForPLUM=$(realpath ${rundir_top}/../..)/outputs/outForPLUM-$(date "+%Y-%m-%d-%H%M%S")
@@ -677,6 +680,14 @@ for thisSSP in ${ssp_list}; do
                 set " "
             
                 # Set up state directory for this SSP, if needed
+                state_path_absolute="$(get_equiv_workdir.sh "../..")"
+                if [[ ${istest} -eq 1 ]]; then
+                    state_path_absolute="${state_path_absolute}_test"
+                fi
+                state_path_absolute=${state_path_absolute}/actual/states
+                state_path_thisSSP="${state_path_absolute}_${thisSSP}"
+                . lsf_setup_statedir.sh
+
                 ispot=0
                 . lsf_get_state_path_thisSSP.sh
     
@@ -690,7 +701,7 @@ for thisSSP in ${ssp_list}; do
             # Set up run
             ispot=0
             do_setup ${walltime_fut} ${ispot}
-    
+
             # Set up dirForPLUM
             if [[ "${dirForPLUM}" == "" ]]; then
                 dirForPLUM=$(realpath ${rundir_top}/../..)/outputs/outForPLUM-$(date "+%Y-%m-%d-%H%M%S")
