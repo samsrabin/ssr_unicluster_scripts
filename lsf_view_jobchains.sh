@@ -111,6 +111,11 @@ function get_symbol() {
         workdir_short=$(echo $workdir | sed "s@${WORK}@\$WORK@")
 
         matching_jobs=$(echo "${jobs}" | { grep -E "\s${thepattern}" || true; })
+        # Kludge
+        if [[ "${matching_jobs}" == "" ]]; then
+            thepattern=$(echo $thepattern | sed "s/${ssp}/${ssp}_${ssp}/");
+            matching_jobs=$(echo "${jobs}" | { grep -E "\s${thepattern}" || true; })
+        fi
 
         # There are NO matching jobs
         if [[ "${matching_jobs}" == "" ]]; then
@@ -134,6 +139,8 @@ function get_symbol() {
                     else
                         symbol="${symbol_pend_other}"
                     fi
+                elif [[ "${status}" == "CONFIGURING" || "${status}" == "RUNNING" || "${status}" == "COMPLETING" ]]; then
+                    symbol="${symbol_running}"
                 elif [[ ${was_it_canceled} -gt 0 ]]; then
                     symbol="${symbol_canceled_manual}"
 
