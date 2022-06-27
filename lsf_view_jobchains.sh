@@ -18,7 +18,7 @@ symbol_unknown2="⁉️ "         # Job not found by sacct
 # Set default values for non-positional arguments
 testing=0
 verbose=0
-work_cols=0
+work_cols=1
 gcmlist="gfdl ipsl mpi mri ukesm"
 
 # Args while-loop
@@ -29,14 +29,14 @@ do
             shift
             gcmlist="$1"
             ;;
+        -h  | --home-cols)
+            work_cols=0
+            ;;
         -t  | --test)
             testing=1
             ;;
         -v  | --verbose)
             verbose=1
-            ;;
-        -w  | --work-cols)
-            work_cols=1
             ;;
         *)
             echo "$script: illegal option $1"
