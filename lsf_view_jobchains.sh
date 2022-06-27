@@ -19,12 +19,16 @@ symbol_unknown2="⁉️ "         # Job not found by sacct
 testing=0
 verbose=0
 work_cols=1
+force_update=0
 gcmlist="gfdl ipsl mpi mri ukesm"
 
 # Args while-loop
 while [ "$1" != "" ];
 do
     case $1 in
+        -f  | --force-update)
+            force_update=1
+            ;;
         -g  | --gcmlist)
             shift
             gcmlist="$1"
@@ -162,6 +166,11 @@ function get_symbol() {
                     # Otherwise, check if simulation began
                 else
                     file_stdout="guess_x.o${latest_job}"
+                    if [[ ${force_update} ]]; then
+                        if compgen -G "${file_stdout}.*" > /dev/null; then
+                            rm "${file_stdout}".*
+                        fi
+                    fi
                     # If not, assume it was canceled before beginning.
                     if [[ ! -e "${file_stdout}" ]]; then
                         was_it_canceled=$(check_sacct ${latest_job} "CANCEL")
