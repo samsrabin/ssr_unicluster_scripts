@@ -113,7 +113,7 @@ while [ "$1" != "" ];
 do
     case $1 in
         -d  | --dependency)  shift
-            dependency_tmp=$1
+            dependency_tmp+=" $1"
             ;;
         --dependency-name)  shift
             dependency_name=$1
@@ -172,13 +172,17 @@ done
 margs_check $insfile "$extra_insfiles" $gridlist $input_module $nprocess $arch $walltime
 
 # Parse dependency
-if [[ "${dependency_tmp}" == "LATEST" ]]; then
-    dependency_tmp=$(awk 'END {print $NF}' ~/submitted_jobs.log)
-    echo "Using latest submitted job (${dependency_tmp}) as dependency"
-    dependency="#SBATCH -d afterany:$dependency_tmp"
-elif [[ "${dependency_tmp}" != "" ]]; then
-    echo "Depending on job ${dependency_tmp}"
-    dependency="#SBATCH -d afterany:$dependency_tmp"
+if [[ "${dependency_tmp}" != "" ]]; then
+    dependency="#SBATCH"
+    for d in ${dependency_tmp}; do
+        if [[ "${d}" == "LATEST" ]]; then
+            d=$(awk 'END {print $NF}' ~/submitted_jobs.log)
+            echo "Using latest submitted job (${d}) as dependency"
+        else
+            echo "Depending on job ${d}"
+        fi
+        dependency+=" -d afterany:$d"
+    done
 fi
 if [[ "${dependency_name}" != "" ]]; then
     echo "I.e., depending on ${dependency_name}"

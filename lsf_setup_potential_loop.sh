@@ -290,7 +290,7 @@ for y1 in ${y1_list[@]}; do
         fi
 
         # Set up dependency (or not)
-        dependency=""
+        dependency="${dependency_in}"
         r=-1
         if [[ ${is_resuming} -eq 1 ]]; then
             dep_jobname_prefix="${thisPot}-hist"
@@ -302,12 +302,12 @@ for y1 in ${y1_list[@]}; do
                 r=$((r+1))
                 dep_jobname=${arr_job_name[r]}
                 if [[ ${is_resuming} -eq 1 && ${dep_jobname} == "${dep_jobname_prefix}"* ]]; then
-                    dependency="-d ${dep_jobnum} --dependency-name ${dep_jobname}"
+                    dependency+=" -d ${dep_jobnum} --dependency-name ${dep_jobname}"
                 elif [[ ${is_resuming} -eq 0 ]]; then
                     dep_jobname=${arr_job_name[r]}
                     dep_yN=${arr_yN[r]}
                     if [[ ${dep_jobname} == "${dep_jobname_prefix}"* && ${dep_yN} -ge $((y1 - 1)) ]]; then
-                        dependency="-d ${dep_jobnum} --dependency-name ${dep_jobname}"
+                        dependency+=" -d ${dep_jobnum} --dependency-name ${dep_jobname}"
                         break
                     fi
                 fi

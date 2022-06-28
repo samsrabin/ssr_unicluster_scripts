@@ -39,7 +39,7 @@ arg_no_fu=0
 do_fu_only=0
 submit=""
 dirForPLUM=""
-dependency=""
+dependency_in=""
 actual_only=0
 potential_only=0
 nproc=160
@@ -111,8 +111,7 @@ do
             pot_step=$1
             ;;
         -d | --dependency)  shift
-            dependency="-d $1"
-            dependency_pot="-d $1"
+            dependency_in="-d $1"
             ;;
         *)
             echo "$script: illegal option $1"
@@ -351,6 +350,7 @@ function do_setup {
     fi
 
     lsf_setup_1run.sh ${topinsfile} "$(get_ins_files)" ${gridlist} ${inputmodule} ${nproc} ${arch} ${walltime} -p "${this_prefix}" ${state_path} ${submit} ${ppfudev} ${dependency} ${reservation} --lpjg_topdir $HOME/lpj-guess_git-svn_20190828 ${mem_spec}
+
 }
 
 pushdq () {
@@ -537,9 +537,9 @@ if [[ ${do_hist} -eq 1 ]]; then
     
         if [[ ${do_fu_only} -eq 0 ]]; then
             # Set up dependency, if any
-            dependency=
+            dependency="${dependency_in}"
             if [[ ${previous_act_jobnum} != "" ]]; then
-                dependency="-d ${previous_act_jobnum}"
+                dependency+=" -d ${previous_act_jobnum}"
             fi
         fi
             
@@ -603,13 +603,13 @@ for thisSSP in ${ssp_list}; do
     this_prefix="${prefix}_${thisSSP}"
 
     # Set up dependency for actual ssp run
-    dependency=""
+    dependency="${dependency_in}"
     if [[ "${submit}" != "" && ${do_hist} -eq 1 ]]; then
         r=-1
         for this_jobname in ${arr_job_name[@]}; do
             r=$((r+1))
             if [[ "${this_jobname}" == "act-hist" ]]; then
-                dependency="-d ${arr_job_num[r]} --dependency-name 'act-hist'"
+                dependency+=" -d ${arr_job_num[r]} --dependency-name 'act-hist'"
                 break
             fi
         done
@@ -692,9 +692,9 @@ for thisSSP in ${ssp_list}; do
                 . lsf_get_state_path_thisSSP.sh
     
                 # Set up dependency, if any
-                dependency=
+                dependency="${dependency_in}"
                 if [[ ${previous_act_jobnum} != "" ]]; then
-                    dependency="-d ${previous_act_jobnum}"
+                    dependency+=" -d ${previous_act_jobnum}"
                 fi
             fi
             
