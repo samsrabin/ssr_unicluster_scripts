@@ -142,14 +142,14 @@ for y1 in ${y1_list[@]}; do
     i=$((i+1))
 
     is_resuming=0
-    restart_year=${y1}
+    pot_restart_year=${y1}
     y0=${y1}
     save_state=${list_pot_save_state[i]}
     if [[ ${thisSSP} != "hist" ]]; then
         is_resuming=${list_future_is_resuming[i]}
         if [[ ${is_resuming} -eq 1 ]]; then
             y0=${list_pot_y0_future[i]}
-            restart_year=${future_y1}
+            pot_restart_year=${future_y1}
         fi
     fi
 
@@ -228,7 +228,7 @@ for y1 in ${y1_list[@]}; do
 
 #    echo $thisdir
 #    echo $state_path_thisSSP
-#    echo $restart_year
+#    echo $pot_restart_year
 #    echo $this_jobname
 #    continue
 
@@ -259,8 +259,8 @@ for y1 in ${y1_list[@]}; do
         # Fill template runDir
         sed -i "s/UUUU/${yN}/" main.ins    # lasthistyear
         # restarting
-        sed -i "s/^\!restart_year VVVV/restart_year ${restart_year}/g" main.ins
-        sed -i "s/VVVV/${restart_year}/" main.ins
+        sed -i "s/^\!restart_year VVVV/restart_year ${pot_restart_year}/g" main.ins
+        sed -i "s/VVVV/${pot_restart_year}/" main.ins
         sed -i "s/firstoutyear 1850/firstoutyear ${y1}/" main.ins    # firstoutyear
         sed -i "s/restart 0/restart 1/g" main.ins
         # saving state
