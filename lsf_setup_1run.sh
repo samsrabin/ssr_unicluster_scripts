@@ -102,6 +102,7 @@ linked_restart_dir_array=()
 pp_y1=
 pp_yN=
 lpjg_topdir=$HOME/lpj-guess_git-svn_20190828
+delete_state_year=
 # Handle possible neither/both specs here
 mem_per_node_default=90000 # MB
 mem_per_node=-1 # MB
@@ -154,6 +155,9 @@ do
         --fu_only)  do_finishup_only=1
             ;;
         --submit)  submit=1
+            ;;
+        --delete-state-year)  shift
+            delete_state_year=$1
             ;;
         -h    | --help )          help
             exit
@@ -509,6 +513,14 @@ if [[ ${do_finishup_only} -eq 0 ]]; then
     #############################################
     # Create script that will start the MPI run #
     #############################################
+
+    if [[ ${delete_state_year} != "" ]]; then
+        mpirun_script="${scripts_dir}/lsf_mpi_run_guess_on_tmp.sh"
+        mpirun_call="\"${mpirun_script}\" $rundir_top/$binary \"${state_path_relative}\" \"${state_path_absolute}\" ${delete_state_year} -parallel -input $input_module ${insfile}"
+    else
+        mpirun_script="${scripts_dir}/mpi_run_guess_on_tmp.sh"
+        mpirun_call="\"${mpirun_script}\" $rundir_top/$binary \"${state_path_relative}\" \"${state_path_absolute}\" -parallel -input $input_module ${insfile}"
+    fi
     
     cat<<EOL > submit.sh 
 #!/bin/bash
@@ -564,7 +576,7 @@ echo " "
 cd $rundir_top 
 date +%F\ %H:%M:%S > $rundir_top/RUN_INPROGRESS
 echo \$(date) \$PWD job $SLURM_JOBID started >> ~/lpj-model-runs.txt
-mpirun \$mpirun_options -n $nprocess ${scripts_dir}/mpi_run_guess_on_tmp.sh $rundir_top/$binary "${state_path_relative}" "${state_path_absolute}" -parallel -input $input_module ${insfile}
+mpirun \$mpirun_options -n $nprocess ${mpirun_call}
 LASTERR=\$?
 rm $rundir_top/RUN_INPROGRESS
 [[ \$LASTERR != 0 ]] && date +%F\ %H:%M:%S > $rundir_top/RUN_FAILED

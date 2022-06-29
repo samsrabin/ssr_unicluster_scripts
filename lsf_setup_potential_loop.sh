@@ -354,6 +354,11 @@ for y1 in ${y1_list[@]}; do
     sed -i "s@DIRFORPLUM@${dirForPLUM}@g" postproc.sh
 
     # Actually set up and even submit, if being called from within setup_all.sh
+    if [[ ${pot_restart_year} -le ${hist_y1} || ( ${pot_restart_year} -eq ${future_y1} && ${is_resuming} -eq 0  ) ]]; then
+        delete_state_arg=
+    else
+        delete_state_arg="--delete-state-year ${pot_restart_year}"
+    fi
     if [[ ${actually_setup} -eq 1 ]]; then
         if [[ ${yN} -le ${hist_yN} ]]; then
             this_prefix="${prefix}_hist"

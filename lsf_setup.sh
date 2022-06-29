@@ -15,6 +15,7 @@ walltime_minutes_max=4320
 round_walltime_to_next=30        # minutes
 walltime_pot_minutes_minimum=90  # 160 processes, Unicluster
 walltime_pot_minutes_peryr=3.0   # 160 processes, Unicluster
+hist_y1=1850
 future_y1=2015
 maxNstates=3
 future_yN=2100 # Because last year of emulator output is 2084
@@ -349,7 +350,7 @@ function do_setup {
         [[ "${state_path}" == "get_param.sh_FAILED" ]] && exit 1
     fi
 
-    lsf_setup_1run.sh ${topinsfile} "$(get_ins_files)" ${gridlist} ${inputmodule} ${nproc} ${arch} ${walltime} -p "${this_prefix}" ${state_path} ${submit} ${ppfudev} ${dependency} ${reservation} --lpjg_topdir $HOME/lpj-guess_git-svn_20190828 ${mem_spec}
+    lsf_setup_1run.sh ${topinsfile} "$(get_ins_files)" ${gridlist} ${inputmodule} ${nproc} ${arch} ${walltime} -p "${this_prefix}" ${state_path} ${submit} ${ppfudev} ${dependency} ${reservation} --lpjg_topdir $HOME/lpj-guess_git-svn_20190828 ${mem_spec} ${delete_state_arg}
 
 }
 
@@ -547,6 +548,7 @@ if [[ ${do_hist} -eq 1 ]]; then
         state_path=""
         this_prefix="${prefix}_hist"
         ispot=0
+        delete_state_arg=
         do_setup ${walltime_hist} ${ispot}
         
         if [[ ${do_fu_only} -eq 0 ]]; then
@@ -700,6 +702,7 @@ for thisSSP in ${ssp_list}; do
             
             # Set up run
             ispot=0
+            delete_state_arg=
             do_setup ${walltime_fut} ${ispot}
 
             # Set up dirForPLUM
