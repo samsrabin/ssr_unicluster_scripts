@@ -517,28 +517,7 @@ for thisSSP in ${ssp_list}; do
     fi # If doing future hist
 
     if [[ ${actual_only} -eq 0 ]]; then
-        echo "#########################"
-        echo "### potential/${thisSSP} ###"
-        echo "#########################"
-        set " "
-    
-        runset_workdir="$(get_equiv_workdir.sh "$PWD")"
-        mkdir -p potential
-        cd potential
-        save_years=""
-
-        # Set up dirForPLUM
-        if [[ "${dirForPLUM}" == "" ]]; then
-            dirForPLUM=${runset_workdir}/outputs/outForPLUM-$(date "+%Y-%m-%d-%H%M%S")
-            mkdir -p ${dirForPLUM}
-            echo "Top-level output directory: $dirForPLUM"
-            echo " "
-        fi
-
-        . lsf_setup_potential_loop.sh ${thisSSP} ${future_y1} ${future_yN}
-        echo " "
-        echo " "
-        cd ..
+        . lsf_setup_potential_loop.sh
     else
         save_years=""
     fi

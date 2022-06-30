@@ -1,109 +1,22 @@
 #!/bin/bash
 set -e
 
+echo "#########################"
+echo "### potential/${thisSSP} ###"
+echo "#########################"
+set " "
 
-###################
-# Process input arguments
-###################
+runset_workdir="$(get_equiv_workdir.sh "$PWD")"
+mkdir -p potential
+cd potential
+save_years=""
 
-
-#############################################################################################
-# Function-parsing code from https://gist.github.com/neatshell/5283811
-
-script="lsf_setup_potential_loop.sh"
-#Declare the number of mandatory args
-margs=3
-
-# Common functions - BEGIN
-function example {
-echo -e "example: $script ssp126 2015 2089\n"
-}
-
-function usage {
-echo " "
-echo -e "usage: $script \$thisSSP \$future_y1 \$future_yN\n"
-}
-
-function help {
-usage
-echo -e "OPTIONAL:"
-}
-
-# Ensures that the number of passed args are at least equals
-# to the declared number of mandatory args.
-# It also handles the special case of the -h or --help arg.
-function margs_precheck {
-if [ $2 ] && [ $1 -lt $margs ]; then
-   if [ $2 == "--help" ] || [ $2 == "-h" ]; then
-      help
-      exit
-   else
-      usage
-      example
-      exit 1 # error
-   fi
-fi
-}
-
-# Ensures that all the mandatory args are not empty
-function margs_check {
-if [ $# -lt $margs ]; then
-   usage
-   example
-   exit 1 # error
-fi
-}
-# Common functions - END
-
-# SSR: Process positional arguments
-# Which SSP?
-if [[ "$1" == "" ]]; then
-    echo "lsf_setup_potential_loop.sh: You must provide thisSSP, future_y1, and future_yN"
-    exit 1
-fi
-thisSSP=$1
-shift
-# Years of the future period
-if [[ "$1" == "" ]]; then
-    echo "lsf_setup_potential_loop.sh: You must provide thisSSP, future_y1, and future_yN"
-    exit 1
-fi
-future_y1=$1
-shift
-if [[ "$1" == "" ]]; then
-    echo "lsf_setup_potential_loop.sh: You must provide thisSSP, future_y1, and future_yN"
-    exit 1
-fi
-future_yN=$1
-shift
-
-
-# Set default values for non-positional arguments
-# (none)
-
-while [ "$1" != "" ];
-do
-   case $1 in
-      -h   | --help )        help
-         exit
-         ;;
-      *)
-         echo "$script: illegal option $1"
-         usage
-         example
-         exit 1 # error
-         ;;
-   esac
-   shift
-done
-
-# How many years are we discarding at the beginning of the potential run?
-if [[ ${Nyears_getready} == "" ]]; then
-    Nyears_getready=5
-fi
-# How many years are we averaging over at the end of the potential run?
-if [[ ${Nyears_pot} == "" ]]; then
-    Nyears_pot=5
+# Set up dirForPLUM
+if [[ "${dirForPLUM}" == "" ]]; then
+    dirForPLUM=${runset_workdir}/outputs/outForPLUM-$(date "+%Y-%m-%d-%H%M%S")
+    mkdir -p ${dirForPLUM}
+    echo "Top-level output directory: $dirForPLUM"
+    echo " "
 fi
 
 
@@ -384,3 +297,13 @@ for y1 in ${y1_list[@]}; do
     popd 1>/dev/null
 
 done
+
+
+##############
+### Finish ###
+##############
+
+
+echo " "
+echo " "
+cd ..
