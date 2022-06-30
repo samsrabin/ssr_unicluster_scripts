@@ -102,6 +102,7 @@ linked_restart_dir_array=()
 pp_y1=
 pp_yN=
 lpjg_topdir=$HOME/lpj-guess_git-svn_20190828
+delete_state_year=
 # Handle possible neither/both specs here
 mem_per_node_default=90000 # MB
 mem_per_node=-1 # MB
@@ -154,6 +155,9 @@ do
         --fu_only)  do_finishup_only=1
             ;;
         --submit)  submit=1
+            ;;
+        --delete-state-year)  shift
+            delete_state_year=$1
             ;;
         -h    | --help )          help
             exit
@@ -509,6 +513,11 @@ if [[ ${do_finishup_only} -eq 0 ]]; then
     #############################################
     # Create script that will start the MPI run #
     #############################################
+
+    delete_state_text=""
+    if [[ ${delete_state_year} != "" ]]; then
+        delete_state_text="set +e; rm \"${state_path_absolute}/${delete_state_year}\"/*.state"
+    fi
     
     cat<<EOL > submit.sh 
 #!/bin/bash
@@ -568,6 +577,8 @@ mpirun \$mpirun_options -n $nprocess ${scripts_dir}/mpi_run_guess_on_tmp.sh $run
 LASTERR=\$?
 rm $rundir_top/RUN_INPROGRESS
 [[ \$LASTERR != 0 ]] && date +%F\ %H:%M:%S > $rundir_top/RUN_FAILED
+
+${delete_state_text}
 
 exit 0
 
