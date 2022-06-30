@@ -137,7 +137,22 @@ function get_symbol() {
                 was_it_canceled=$(check_sacct ${latest_job} "CANCEL")
                 timed_out=$(check_sacct ${latest_job} "TIMEOUT")
                 status=$(echo ${matching_jobs} | cut -d' ' -f4)
-                if [[ "${status}" == "PENDING" ]]; then
+
+                # Get job stdout file info
+                file_stdout="guess_x.o${latest_job}"
+                if [[ ${force_update} -eq 1 ]]; then
+                    if compgen -G "${file_stdout}.*" > /dev/null; then
+                        rm "${file_stdout}".*
+                    fi
+                fi
+
+                # Sometimes you want to manually mark a run as successful
+                if [[ -e "MANUAL.${file_stdout}.ok" ]]; then
+                    if [[ ${force_update} -eq 1 ]]; then
+                        echo "WARNING: MANUAL.${file_stdout}.ok exists and is not cleared by -f/--force-update. Delete this file manually if you really want to update this run's result."
+                    fi
+                    symbol="${symbol_ok}"
+                elif [[ "${status}" == "PENDING" ]]; then
                     if [[ $(echo ${matching_jobs} | grep "Dependency" | wc -l) -gt 0 ]]; then
                         symbol="${symbol_pend_depend}"
                     else
@@ -165,12 +180,6 @@ function get_symbol() {
 
                     # Otherwise, check if simulation began
                 else
-                    file_stdout="guess_x.o${latest_job}"
-                    if [[ ${force_update} ]]; then
-                        if compgen -G "${file_stdout}.*" > /dev/null; then
-                            rm "${file_stdout}".*
-                        fi
-                    fi
                     # If not, assume it was canceled before beginning.
                     if [[ ! -e "${file_stdout}" ]]; then
                         was_it_canceled=$(check_sacct ${latest_job} "CANCEL")
@@ -263,8 +272,20 @@ function get_symbol() {
 
                     # Otherwise, check if simulation began
                 else
+                    # Get job stdout file info
                     file_stdout="job_finish.${latest_job}.log"
-                    if [[ ! -e "${file_stdout}" ]]; then
+                    if [[ ${force_update} -eq 1 ]]; then
+                        if compgen -G "${file_stdout}.*" > /dev/null; then
+                            rm "${file_stdout}".*
+                        fi
+                    fi
+                    # Sometimes you want to manually mark a run as successful
+                    if [[ -e "MANUAL.${file_stdout}.ok" ]]; then
+                        if [[ ${force_update} -eq 1 ]]; then
+                            echo "WARNING: MANUAL.${file_stdout}.ok exists and is not cleared by -f/--force-update. Delete this file manually if you really want to update this run's result."
+                        fi
+                        symbol="${symbol_ok}"
+                    elif [[ ! -e "${file_stdout}" ]]; then
                         was_it_canceled=$(check_sacct ${latest_job} "CANCEL")
                         if [[ ${was_it_canceled} -lt 0 ]]; then
                             symbol="${symbol_unknown2}"

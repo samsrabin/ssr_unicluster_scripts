@@ -77,9 +77,14 @@ fi
 echo "+++Concatenating log (and state) files..."
 for ((idx=1;idx<=${nruns};idx++)) 
 do 
-  echo run${idx} guess.log
-  echo "+++run${idx}/guess.log" >> $outdir/guess_runs.log
-  cat run${idx}/guess.log >> $outdir/guess_runs.log
+  if [[ -e guess.log ]]; then
+      echo run${idx} guess.log
+      echo "+++run${idx}/guess.log" >> $outdir/guess_runs.log
+      cat run${idx}/guess.log >> $outdir/guess_runs.log
+  else
+      echo run${idx} guess.log MISSING
+      echo "+++run${idx}/guess.log MISSING" >> $outdir/guess_runs.log
+  fi
   if [[ -e run${idx}/state.log ]]; then
       cat run${idx}/state.log >> $outdir/state_runs.log
   fi
