@@ -64,7 +64,7 @@ else
     ispot=0
     . lsf_get_state_path_thisSSP.sh
 
-    # Set up dependency, if any
+    # Set up dependency for next actual run, if any
     dependency="${dependency_in}"
     if [[ ${previous_act_jobnum} != "" ]]; then
         dependency+=" -d ${previous_act_jobnum}"

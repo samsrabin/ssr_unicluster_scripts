@@ -317,6 +317,42 @@ echo "       y0:" ${list_pot_y0_future[@]}
 echo "    Begin:" ${list_pot_y1_future[@]}
 echo "      End:" ${list_pot_yN_future[@]}
 
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+# Risk of filling up scratch space if saving too many states.
+# Avoid this by splitting run into groups of at most maxNstates states.
+
+# Historical states
+
+# First, get the state(s) that happen during spinup, and split them from states
+# in the transient period.
+firsthistyear="$(get_param.sh template/${topinsfile} "firsthistyear")"
+hist_save_years_spin=""
+hist_save_years_trans="${hist_save_years}"
+for y in ${hist_save_years}; do
+    if [[ ${y} -gt ${firsthistyear} ]]; then
+        break
+    fi
+    hist_save_years_spin="${hist_save_years_spin} ${y}"
+    hist_save_years_trans=${hist_save_years_trans/${y}/}
+done
+
+# If running spinup period only, make sure to save a restart for firsthistyear
+separate_spinup=0
+if [[ $(echo ${hist_save_years_spin} | wc -w) -le $((maxNstates - 1)) ]]; then
+    separate_spinup=1
+    if [[ "$(echo ${hist_save_years_spin} | { grep "${firsthistyear}" || true; })" == "" ]]; then
+        hist_save_years_spin="${hist_save_years_spin} ${firsthistyear}"
+    fi
+fi
+# Now split each save_years list up as needed given maxNstates
+hist_save_years_lines="$(xargs -n ${maxNstates} <<< ${hist_save_years_spin})"$'\n'"$(xargs -n ${maxNstates} <<< ${hist_save_years_trans})"
+
+
+# Future states
+
+fut_save_years_lines="$(xargs -n ${maxNstates} <<< ${fut_save_years})"
+
 #############################################################################################
 
 # Set up function for getting ins files
@@ -404,6 +440,11 @@ arr_yN=()
 # Get job name prefix
 prefix="$(lsf_chain_shortname.sh $(basename ${PWD}) ${istest})"
 
+
+#########################################
+### Set up "actual" historical run(s) ###
+#########################################
+
 # Are we actually submitting historical period?
 if [[ $(echo ${ssp_list} | cut -f1 -d" ") == "hist" && ${potential_only} -eq 0 ]]; then
     do_hist=1
@@ -411,47 +452,22 @@ else
     do_hist=0
 fi
 
-# Set up "actual" historical run(s)
 thisSSP=""
 previous_act_jobnum=
 mkdir -p actual
 if [[ ${do_hist} -eq 1 ]]; then
-
-    # Risk of filling up scratch space if saving too many states.
-    # Avoid this by splitting run into groups of at most maxNstates states.
-    #
-    # First, get the state(s) that happen during spinup, and split them from states
-    # in the transient period.
-    firsthistyear="$(get_param.sh template/${topinsfile} "firsthistyear")"
-    hist_save_years_spin=""
-    hist_save_years_trans="${hist_save_years}"
-    for y in ${hist_save_years}; do
-        if [[ ${y} -gt ${firsthistyear} ]]; then
-            break
-        fi
-        hist_save_years_spin="${hist_save_years_spin} ${y}"
-        hist_save_years_trans=${hist_save_years_trans/${y}/}
-    done
-
-    # If running spinup period only, make sure to save a restart for firsthistyear
-    separate_spinup=0
-    if [[ $(echo ${hist_save_years_spin} | wc -w) -le $((maxNstates - 1)) ]]; then
-        separate_spinup=1
-        if [[ "$(echo ${hist_save_years_spin} | { grep "${firsthistyear}" || true; })" == "" ]]; then
-            hist_save_years_spin="${hist_save_years_spin} ${firsthistyear}"
-        fi
-    fi
-    # Now split each save_years list up as needed given maxNstates
-    hist_save_years_lines="$(xargs -n ${maxNstates} <<< ${hist_save_years_spin})"$'\n'"$(xargs -n ${maxNstates} <<< ${hist_save_years_trans})"
-
-    # Now set up each group of states.
     act_restart_year=
+
+    # Set up/start a run for each set of save years
     while IFS= read -r save_years; do
-
         . lsf_1_acthist.sh
-
     done <<< ${hist_save_years_lines}
 fi
+
+
+#####################################################
+# Transition from historical period to SSP period ###
+#####################################################
 
 # If we're not doing any potential runs...
 if [[ ${actual_only} -eq 1 ]]; then
@@ -466,36 +482,34 @@ if [[ ${actual_only} -eq 1 ]]; then
 fi
 
 
-# Set up SSP actual and potential runs
+################################################
+### Set up SSP actual and all potential runs ###
+################################################
+
 for thisSSP in ${ssp_list}; do
     if [[ "${thisSSP}" != "hist" && "${thisSSP:0:3}" != "ssp" ]]; then
         thisSSP="ssp${thisSSP}"
     fi
     this_prefix="${prefix}_${thisSSP}"
 
-    # Set up dependency for actual ssp run
-    dependency="${dependency_in}"
-    if [[ "${submit}" != "" && ${do_hist} -eq 1 ]]; then
-        r=-1
-        for this_jobname in ${arr_job_name[@]}; do
-            r=$((r+1))
-            if [[ "${this_jobname}" == "act-hist" ]]; then
-                dependency+=" -d ${arr_job_num[r]} --dependency-name 'act-hist'"
-                break
-            fi
-        done
-    fi
-
     if [[ ${potential_only} -eq 0 && ${do_future_act} -eq 1 && ${thisSSP} != "hist" ]]; then
-
-        # Risk of filling up scratch space if saving too many states.
-        # Avoid this by splitting run into groups of at most maxNstates states.
-        fut_save_years_lines="$(xargs -n ${maxNstates} <<< ${fut_save_years})"
-
-        # Now set up each group of states.
         pushdq "actual"
-        while IFS= read -r save_years; do
 
+        # Set up dependency for first actual ssp run
+        dependency="${dependency_in}"
+        if [[ "${submit}" != "" && ${do_hist} -eq 1 ]]; then
+            r=-1
+            for this_jobname in ${arr_job_name[@]}; do
+                r=$((r+1))
+                if [[ "${this_jobname}" == "act-hist" ]]; then
+                    dependency+=" -d ${arr_job_num[r]} --dependency-name 'act-hist'"
+                    break
+                fi
+            done
+        fi
+
+        # Set up/start a run for each set of save years
+        while IFS= read -r save_years; do
             . lsf_1_actfut.sh
 
         done <<< ${fut_save_years_lines}
