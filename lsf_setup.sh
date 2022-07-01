@@ -394,9 +394,11 @@ function do_setup {
         echo "Gridlist file ${gridlist} not found"
         exit 1
     fi
-    if [[ ${do_fu_only} -eq 0 && "${state_path}" == "" ]]; then
-        state_path=$(get_state_path)
-        [[ "${state_path}" == "get_param.sh_FAILED" ]] && exit 1
+    if [[ "${state_path}" == "" ]]; then
+        echo "Make sure state_path is defined before calling do_setup"
+        exit 1
+    elif [[ "${state_path}" != "-s "* && "${state_path}" != "--state-path-absolute "* ]]; then
+        state_path="-s ${state_path}"
     fi
 
     lsf_setup_1run.sh ${topinsfile} "$(get_ins_files)" ${gridlist} ${inputmodule} ${nproc} ${arch} ${walltime} -p "${this_prefix}" ${state_path} ${submit} ${ppfudev} ${dependency} ${reservation} --lpjg_topdir $HOME/lpj-guess_git-svn_20190828 ${mem_spec} ${delete_state_arg}

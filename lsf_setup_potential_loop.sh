@@ -123,6 +123,7 @@ for y1 in ${y1_list[@]}; do
             state_path_thisSSP=${state_path_absolute}_${thisPot}
             . lsf_setup_statedir_pot.sh
         fi
+        state_path="${state_path_thisSSP}"
         cd potential
     fi
 

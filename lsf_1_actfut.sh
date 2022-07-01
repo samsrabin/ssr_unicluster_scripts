@@ -53,16 +53,9 @@ else
     set " "
 
     # Set up state directory for this SSP, if needed
-    state_path_absolute="$(get_equiv_workdir.sh "../..")"
-    if [[ ${istest} -eq 1 ]]; then
-        state_path_absolute="${state_path_absolute}_test"
-    fi
-    state_path_absolute=${state_path_absolute}/actual/states
-    state_path_thisSSP="${state_path_absolute}_${thisSSP}"
+    state_path="$(cd ..; lsf_get_rundir_top.sh ${istest} 0)/states_${thisSSP}"
+    state_path_thisSSP="${state_path}"
     . lsf_setup_statedir.sh
-
-    ispot=0
-    . lsf_get_state_path_thisSSP.sh
 
     # Set up dependency for next actual run, if any
     dependency="${dependency_in}"
