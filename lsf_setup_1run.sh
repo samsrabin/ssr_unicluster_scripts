@@ -177,7 +177,7 @@ margs_check $insfile "$extra_insfiles" $gridlist $input_module $nprocess $arch $
 
 # Parse dependency
 if [[ "${dependency_tmp}" != "" ]]; then
-    dependency="#SBATCH"
+    dependency="#SBATCH -d afterany"
     for d in ${dependency_tmp}; do
         if [[ "${d}" == "LATEST" ]]; then
             d=$(awk 'END {print $NF}' ~/submitted_jobs.log)
@@ -185,7 +185,7 @@ if [[ "${dependency_tmp}" != "" ]]; then
         else
             echo "Depending on job ${d}"
         fi
-        dependency+=" -d afterany:$d"
+        dependency+=":$d"
     done
 fi
 if [[ "${dependency_name}" != "" ]]; then
