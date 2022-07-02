@@ -57,16 +57,18 @@ else
     state_path_thisSSP="${state_path}"
     . lsf_setup_statedir.sh
 
-    # Set up dependency for next actual run, if any
-    dependency="${dependency_in}"
-    if [[ ${previous_act_jobnum} != "" ]]; then
-        dependency+=" -d ${previous_act_jobnum}"
-    fi
+    ispot=0
+fi
+
+# Delete restart files?
+if [[ ${act_restart_year} -le ${hist_y1} || ${act_restart_year} -eq ${future_y1} ]]; then
+    delete_state_arg=
+else
+    delete_state_arg="--delete-state-year ${act_restart_year}"
 fi
 
 # Set up run
 ispot=0
-delete_state_arg=
 do_setup ${walltime_fut} ${ispot}
 
 # Set up dirForPLUM

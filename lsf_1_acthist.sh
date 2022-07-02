@@ -101,19 +101,20 @@ mkdir -p ${dirForPLUM}
 echo "Top-level output directory: $dirForPLUM"
 echo " "
 
-if [[ ${do_fu_only} -eq 0 ]]; then
-    # Set up dependency, if any
-    dependency="${dependency_in}"
-    if [[ ${previous_act_jobnum} != "" ]]; then
-        dependency+=" -d ${previous_act_jobnum}"
+# Delete restart files?
+if [[ ${act_restart_year} -le ${hist_y1} || ${act_restart_year} -eq ${future_y1} ]]; then
+    delete_state_arg=
+else
+    delete_state_arg="--delete-state-year ${act_restart_year}"
+    if [[ "${latest_pot_jobnum}" != "" ]]; then
+        delete_state_arg+=" --delete-state-year-if-thisjob-ok ${latest_pot_jobnum}"
     fi
 fi
-    
+
 # Submit historical run or finishup
 state_path="$(cd ..; lsf_get_rundir_top.sh ${istest} 0)/states"
 this_prefix="${prefix}_hist"
 ispot=0
-delete_state_arg=
 do_setup ${walltime_hist} ${ispot}
 
 if [[ ${do_fu_only} -eq 0 ]]; then

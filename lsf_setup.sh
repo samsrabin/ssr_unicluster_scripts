@@ -179,7 +179,7 @@ if [[ ${istest} -eq 1 ]]; then
         ppfudev="--dev --fu"
     fi
     reservation=""
-    maxNstates=999
+#    maxNstates=999
 else
     topinsfile=${realinsfile}
     if [[ $do_fu_only -eq 1 ]]; then
@@ -350,8 +350,11 @@ hist_save_years_lines="$(xargs -n ${maxNstates} <<< ${hist_save_years_spin})"$'\
 
 
 # Future states
-
 fut_save_years_lines="$(xargs -n ${maxNstates} <<< ${fut_save_years})"
+
+# Combined
+save_years_lines="${hist_save_years_lines}
+${fut_save_years_lines}"
 
 #############################################################################################
 
@@ -454,82 +457,83 @@ else
     do_hist=0
 fi
 
-thisSSP=""
+# We don't need hist in the SSP list anymore
+if [[ ${do_hist} -eq 1 ]]; then
+    ssp_list="$(echo ${ssp_list} | sed "s/hist//")"
+fi
+
 previous_act_jobnum=
 mkdir -p actual
-if [[ ${do_hist} -eq 1 ]]; then
-    act_restart_year=
+act_restart_year=
 
-    # Set up/start a run for each set of save years
-    while IFS= read -r save_years; do
-        . lsf_1_acthist.sh
-    done <<< ${hist_save_years_lines}
-fi
+# Set up/start a run for each set of save years
+while IFS= read -r save_years; do
 
+    # First year in this this determines whether we're in the historical
+    # period or not
+    first_save_year=$(echo ${save_years} | cut -d" " -f1)
+    echo first_save_year $first_save_year
 
-#####################################################
-# Transition from historical period to SSP period ###
-#####################################################
+    if [[ ${first_save_year} -le ${hist_yN} ]]; then
 
-# If we're not doing any potential runs...
-if [[ ${actual_only} -eq 1 ]]; then
-    # If the only period was hist, we're done
-    if [[ "${ssp_list}" == "hist" ]]; then
-        ssp_list=""
-
-    # Otherwise, if first period was hist, remove it
-    else
-        ssp_list="${ssp_list/hist /}"
-    fi
-fi
-
-
-################################################
-### Set up SSP actual and all potential runs ###
-################################################
-
-for thisSSP in ${ssp_list}; do
-    if [[ "${thisSSP}" != "hist" && "${thisSSP:0:3}" != "ssp" ]]; then
-        thisSSP="ssp${thisSSP}"
-    fi
-    this_prefix="${prefix}_${thisSSP}"
-
-    if [[ ${potential_only} -eq 0 && ${do_future_act} -eq 1 && ${thisSSP} != "hist" ]]; then
-        pushdq "actual"
-
-        # Set up dependency for first actual ssp run
-        dependency="${dependency_in}"
-        if [[ "${submit}" != "" && ${do_hist} -eq 1 ]]; then
-            r=-1
-            for this_jobname in ${arr_job_name[@]}; do
-                r=$((r+1))
-                if [[ "${this_jobname}" == "act-hist" ]]; then
-                    dependency+=" -d ${arr_job_num[r]} --dependency-name 'act-hist'"
-                    break
-                fi
-            done
+        # Sanity check
+        if [[ ${do_hist} == 0 ]]; then
+            echo "do_hist 0 but save_years ${save_years}"
+            exit 1
         fi
 
-        # Set up/start a run for each set of save years
-        while IFS= read -r save_years; do
-            . lsf_1_actfut.sh
+        # Set up/submit actual historical run(s)
+        if [[ "${dependency_on_latest_potset}" != "" ]]; then
+            dependency="${dependency_on_latest_potset}"
+        else
+            dependency="${dependency_in}"
+            if [[ ${previous_act_jobnum} != "" ]]; then
+                dependency+=" -d ${previous_act_jobnum}"
+            fi
+        fi # if this is the first future-actual
+        thisSSP=""
+        . lsf_1_acthist.sh
 
-        done <<< ${fut_save_years_lines}
-        popdq
-    fi # If doing future hist
-
-    if [[ ${actual_only} -eq 0 ]]; then
+        # Set up/submit potential historical run(s)
+        thisSSP="hist"
         . lsf_setup_potential_loop.sh
+
     else
-        save_years=""
-    fi
+        for thisSSP in ${ssp_list}; do
+            if [[ "${thisSSP}" != "hist" && "${thisSSP:0:3}" != "ssp" ]]; then
+                thisSSP="ssp${thisSSP}"
+            fi
+            this_prefix="${prefix}_${thisSSP}"
 
-    echo arr_job_name ${arr_job_name[@]}
-    echo arr_job_num ${arr_job_num[@]}
-    echo arr_y1 ${arr_y1[@]}
-    echo arr_yN ${arr_yN[@]}
+            if [[ ${potential_only} -eq 0 && ${do_future_act} -eq 1 ]]; then
+                pushdq "actual"
+                if [[ "${dependency_on_latest_potset}" != "" ]]; then
+                    dependency="${dependency_on_latest_potset}"
+                else
+                    dependency="${dependency_in}"
+                    if [[ ${previous_act_jobnum} != "" ]]; then
+                        dependency+=" -d ${previous_act_jobnum}"
+                    fi
+                fi # if this is the first future-actual
 
-done # Loop through SSPs
+echo dependency a ${dependency}
+
+                . lsf_1_actfut.sh
+                popdq
+            fi # if doing future-actual
+
+            if [[ ${actual_only} -eq 0 ]]; then
+                . lsf_setup_potential_loop.sh
+            fi
+        done # loop through SSPs
+    fi # whether in historical or future period
+done <<< ${save_years_lines}
+
+
+echo arr_job_name ${arr_job_name[@]}
+echo arr_job_num ${arr_job_num[@]}
+echo arr_y1 ${arr_y1[@]}
+echo arr_yN ${arr_yN[@]}
 
 squeue -o "%10i %.7P %.35j %.10T %.10M %.9l %.6D %.16R %E" -S JOBID | sed "s/unfulfilled/unf/g"
 

@@ -103,6 +103,7 @@ pp_y1=
 pp_yN=
 lpjg_topdir=$HOME/lpj-guess_git-svn_20190828
 delete_state_year=
+delete_state_year_if_thisjob_ok=
 # Handle possible neither/both specs here
 mem_per_node_default=90000 # MB
 mem_per_node=-1 # MB
@@ -158,6 +159,9 @@ do
             ;;
         --delete-state-year)  shift
             delete_state_year=$1
+            ;;
+        --delete-state-year-if-thisjob-ok)  shift
+            delete_state_year_if_thisjob_ok=$1
             ;;
         -h    | --help )          help
             exit
@@ -516,7 +520,11 @@ if [[ ${do_finishup_only} -eq 0 ]]; then
 
     delete_state_text=""
     if [[ ${delete_state_year} != "" ]]; then
-        delete_state_text="set +e; rm \"${state_path_absolute}/${delete_state_year}\"/*.state"
+        delete_state_text="set +e; "
+        if [[ "${delete_state_year_if_thisjob_ok}" != "" ]]; then
+            delete_state_text+="[[ \$(sacct -n -j ${delete_state_year_if_thisjob_ok} | grep \"${delete_state_year_if_thisjob_ok} \" | grep \"COMPLETED\" | wc -l) -eq 1 ]] && "
+        fi
+        delete_state_text+="rm \"${state_path_absolute}/${delete_state_year}\"/*.state"
     fi
     
     cat<<EOL > submit.sh 

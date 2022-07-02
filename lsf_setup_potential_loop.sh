@@ -9,7 +9,6 @@ set " "
 runset_workdir="$(get_equiv_workdir.sh "$PWD")"
 mkdir -p potential
 cd potential
-save_years=""
 
 # Set up dirForPLUM
 if [[ "${dirForPLUM}" == "" ]]; then
@@ -36,6 +35,11 @@ else
     yN_list=(${list_pot_yN_future[@]})
 fi
 
+# This string will be used for actual runs that we want
+# to make wait until after the completion of this set of
+# potential runs.
+dependency_on_latest_potset="${dependency_in}"
+
 ###################
 # Loop through periods
 ###################
@@ -53,6 +57,10 @@ fi
 i=-1
 for y1 in ${y1_list[@]}; do
     i=$((i+1))
+
+    if [[ "${save_years}" != *"${y1}"* ]]; then
+        continue
+    fi
 
     is_resuming=0
     pot_restart_year=${y1}
@@ -268,7 +276,7 @@ for y1 in ${y1_list[@]}; do
     sed -i "s@DIRFORPLUM@${dirForPLUM}@g" postproc.sh
 
     # Actually set up and even submit, if being called from within setup_all.sh
-    if [[ ${pot_restart_year} -le ${hist_y1} || ( ${pot_restart_year} -eq ${future_y1} && ${is_resuming} -eq 0  ) ]]; then
+    if [[ ( ${pot_restart_year} -le ${hist_y1} || ( ${pot_restart_year} -eq ${future_y1} && ${is_resuming} -eq 0  ) || ${act_restart_year} -eq ${y1} ) && ${y1} -ne $(echo "${fut_save_years}" | awk '{print $NF}') ]]; then
         delete_state_arg=
     else
         delete_state_arg="--delete-state-year ${pot_restart_year}"
@@ -286,7 +294,10 @@ for y1 in ${y1_list[@]}; do
     if [[ ${do_fu_only} -eq 0 ]]; then
         arr_job_name+=("${this_jobname}")
         if [[ "${submit}" != "" ]]; then
-            arr_job_num+=($(get_latest_run))
+            this_jobnum=$(get_latest_run)
+            arr_job_num+=(${this_jobnum})
+            dependency_on_latest_potset+=" -d ${this_jobnum}"
+            latest_pot_jobnum=${this_jobnum}
         fi
         arr_y1+=(${y1})
         arr_yN+=(${yN})
