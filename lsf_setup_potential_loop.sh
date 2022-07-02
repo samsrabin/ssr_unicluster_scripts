@@ -38,7 +38,16 @@ fi
 # This string will be used for actual runs that we want
 # to make wait until after the completion of this set of
 # potential runs.
-dependency_on_latest_potset="${dependency_in}"
+if [[ ${potential_only} -eq 1 ]]; then
+    if [[ "${dependency_on_latest_potset}" != "" ]]; then
+        dependency="${dependency_on_latest_potset}"
+        dependency_on_latest_potset=""
+    else
+        dependency="${dependency_in}"
+    fi
+else
+    dependency_on_latest_potset="${dependency_in}"
+fi
 
 ###################
 # Loop through periods
@@ -212,43 +221,45 @@ for y1 in ${y1_list[@]}; do
         fi
 
         # Set up dependency (or not)
-        dependency="${dependency_in}"
-        r=-1
-        if [[ ${is_resuming} -eq 1 ]]; then
-            dep_jobname_prefix="${thisPot}-hist"
-        else
-            dep_jobname_prefix="act-${thisSSP}"
-        fi
-        if [[ "${submit}" != "" ]]; then
-            for dep_jobnum in ${arr_job_num[@]}; do
-                r=$((r+1))
-                dep_jobname=${arr_job_name[r]}
-                if [[ ${is_resuming} -eq 1 && ${dep_jobname} == "${dep_jobname_prefix}"* ]]; then
-                    dependency+=" -d ${dep_jobnum} --dependency-name ${dep_jobname}"
-                elif [[ ${is_resuming} -eq 0 ]]; then
+        if [[ ${potential_only} -eq 0 ]]; then
+            dependency="${dependency_in}"
+            r=-1
+            if [[ ${is_resuming} -eq 1 ]]; then
+                dep_jobname_prefix="${thisPot}-hist"
+            else
+                dep_jobname_prefix="act-${thisSSP}"
+            fi
+            if [[ "${submit}" != "" ]]; then
+                for dep_jobnum in ${arr_job_num[@]}; do
+                    r=$((r+1))
                     dep_jobname=${arr_job_name[r]}
-                    dep_yN=${arr_yN[r]}
-                    if [[ ${dep_jobname} == "${dep_jobname_prefix}"* && ${dep_yN} -ge $((y1 - 1)) ]]; then
+                    if [[ ${is_resuming} -eq 1 && ${dep_jobname} == "${dep_jobname_prefix}"* ]]; then
                         dependency+=" -d ${dep_jobnum} --dependency-name ${dep_jobname}"
-                        break
+                    elif [[ ${is_resuming} -eq 0 ]]; then
+                        dep_jobname=${arr_job_name[r]}
+                        dep_yN=${arr_yN[r]}
+                        if [[ ${dep_jobname} == "${dep_jobname_prefix}"* && ${dep_yN} -ge $((y1 - 1)) ]]; then
+                            dependency+=" -d ${dep_jobnum} --dependency-name ${dep_jobname}"
+                            break
+                        fi
                     fi
-                fi
-            done
-        else # not submitting
-            for dep_jobname in ${arr_job_name[@]}; do
-                r=$((r+1))
-                if [[ ${is_resuming} -eq 1 && ${dep_jobname} == "${dep_jobname_prefix}"* ]]; then
-                    echo "If submitting, would depend on job ${dep_jobname}"
-                    break
-                elif [[ ${is_resuming} -eq 0 ]]; then
-                    dep_yN=${arr_yN[r]}
-                    if [[ ${dep_jobname} == "${dep_jobname_prefix}"* && ${dep_yN} -ge $((y1 - 1)) ]]; then
+                done
+            else # not submitting
+                for dep_jobname in ${arr_job_name[@]}; do
+                    r=$((r+1))
+                    if [[ ${is_resuming} -eq 1 && ${dep_jobname} == "${dep_jobname_prefix}"* ]]; then
                         echo "If submitting, would depend on job ${dep_jobname}"
                         break
+                    elif [[ ${is_resuming} -eq 0 ]]; then
+                        dep_yN=${arr_yN[r]}
+                        if [[ ${dep_jobname} == "${dep_jobname_prefix}"* && ${dep_yN} -ge $((y1 - 1)) ]]; then
+                            echo "If submitting, would depend on job ${dep_jobname}"
+                            break
+                        fi
                     fi
-                fi
-            done
-        fi
+                done
+            fi # whether submitting
+        fi # if not potential_only
 
     else # do_fu_only
 

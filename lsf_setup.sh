@@ -339,22 +339,24 @@ done
 
 # If running spinup period only, make sure to save a restart for firsthistyear
 separate_spinup=0
-if [[ $(echo ${hist_save_years_spin} | wc -w) -le $((maxNstates - 1)) ]]; then
+if [[ $(echo ${hist_save_years_spin} | wc -w) -le $((maxNstates - 1)) && ${potential_only} -eq 0 ]]; then
     separate_spinup=1
     if [[ "$(echo ${hist_save_years_spin} | { grep "${firsthistyear}" || true; })" == "" ]]; then
         hist_save_years_spin="${hist_save_years_spin} ${firsthistyear}"
     fi
 fi
-# Now split each save_years list up as needed given maxNstates
-hist_save_years_lines="$(xargs -n ${maxNstates} <<< ${hist_save_years_spin})"$'\n'"$(xargs -n ${maxNstates} <<< ${hist_save_years_trans})"
 
-
-# Future states
-fut_save_years_lines="$(xargs -n ${maxNstates} <<< ${fut_save_years})"
-
-# Combined
-save_years_lines="${hist_save_years_lines}
+# Split each save_years list up as needed given maxNstates
+if [[ ${potential_only} -eq 0 ]]; then
+    hist_save_years_lines="$(xargs -n ${maxNstates} <<< ${hist_save_years_spin})"$'\n'"$(xargs -n ${maxNstates} <<< ${hist_save_years_trans})"
+    fut_save_years_lines="$(xargs -n ${maxNstates} <<< ${fut_save_years})"
+    save_years_lines="${hist_save_years_lines}
 ${fut_save_years_lines}"
+else
+    save_years_lines="${list_pot_y1_hist[@]}
+${list_pot_y1_future[@]}"
+fi
+
 
 #############################################################################################
 
@@ -451,7 +453,7 @@ prefix="$(lsf_chain_shortname.sh $(basename ${PWD}) ${istest})"
 #########################################
 
 # Are we actually submitting historical period?
-if [[ $(echo ${ssp_list} | cut -f1 -d" ") == "hist" && ${potential_only} -eq 0 ]]; then
+if [[ $(echo ${ssp_list} | cut -f1 -d" ") == "hist" ]]; then
     do_hist=1
 else
     do_hist=0
@@ -472,7 +474,6 @@ while IFS= read -r save_years; do
     # First year in this this determines whether we're in the historical
     # period or not
     first_save_year=$(echo ${save_years} | cut -d" " -f1)
-    echo first_save_year $first_save_year
 
     if [[ ${first_save_year} -le ${hist_yN} ]]; then
 
@@ -483,21 +484,24 @@ while IFS= read -r save_years; do
         fi
 
         # Set up/submit actual historical run(s)
-        if [[ "${dependency_on_latest_potset}" != "" ]]; then
-            dependency="${dependency_on_latest_potset}"
-        else
-            dependency="${dependency_in}"
-            if [[ ${previous_act_jobnum} != "" ]]; then
-                dependency+=" -d ${previous_act_jobnum}"
-            fi
-        fi # if this is the first future-actual
-        thisSSP=""
-        . lsf_1_acthist.sh
+        if [[ ${potential_only} -eq 0 ]]; then
+            if [[ "${dependency_on_latest_potset}" != "" ]]; then
+                dependency="${dependency_on_latest_potset}"
+            else
+                dependency="${dependency_in}"
+                if [[ ${previous_act_jobnum} != "" ]]; then
+                    dependency+=" -d ${previous_act_jobnum}"
+                fi
+            fi # if this is the first future-actual
+            thisSSP=""
+            . lsf_1_acthist.sh
+        fi
 
         # Set up/submit potential historical run(s)
-        thisSSP="hist"
-        . lsf_setup_potential_loop.sh
-
+        if [[ ${actual_only} -eq 0 ]]; then
+            thisSSP="hist"
+            . lsf_setup_potential_loop.sh
+        fi
     else
         for thisSSP in ${ssp_list}; do
             if [[ "${thisSSP}" != "hist" && "${thisSSP:0:3}" != "ssp" ]]; then
