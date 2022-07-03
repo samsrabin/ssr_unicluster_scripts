@@ -21,8 +21,6 @@ maxNstates=3
 future_yN=2100 # Because last year of emulator output is 2084
 Nyears_getready=2
 
-firstpotyear=$((future_y1 - Nyears_getready - 2*Nyears_pot))
-
 #############################################################################################
 # Function-parsing code from https://gist.github.com/neatshell/5283811
 
@@ -194,6 +192,25 @@ else
     fi
 fi
 
+# Are we actually submitting historical period?
+if [[ $(echo ${ssp_list} | cut -f1 -d" ") == "hist" ]]; then
+    do_hist=1
+else
+    do_hist=0
+fi
+
+# We don't need hist in the SSP list anymore
+if [[ ${do_hist} -eq 1 ]]; then
+    ssp_list="$(echo ${ssp_list} | sed "s/hist//")"
+fi
+
+# Future period?
+if [[ "${ssp_list/ /}" == "" ]]; then
+    do_future=0
+else
+    do_future=1
+fi
+
 # Get info for last XXXXpast_YYYYall_LU.txt
 first_LUyear_past=$((first_pot_y1 - Nyears_getready))
 last_LUyear_past=${first_LUyear_past}
@@ -230,7 +247,7 @@ if [[ ${yN} -gt ${pot_yN} ]]; then
 fi
 i=0
 list_pot_y0_future=()
-while [[ "${ssp_list}" == *"hist"* ]] && [[ ${y1} -le ${pot_yN} ]] && [[ ${y1} -le ${last_pot_y1} ]] && [[ ${yN} -lt ${future_y1} ]]; do
+while [[ ${do_hist} -eq 1 ]] && [[ ${y1} -le ${pot_yN} ]] && [[ ${y1} -le ${last_pot_y1} ]] && [[ ${yN} -lt ${future_y1} ]]; do
     list_pot_y1_hist+=(${y1})
 
     if [[ ${yN} -ge ${future_y1} ]]; then
@@ -260,7 +277,7 @@ while [[ ${y1} -le ${pot_yN} ]] && [[ ${y1} -le ${last_pot_y1} ]] && [[ ${y1} -l
     fi
 
     if [[ ${y1} -lt ${future_y1} ]]; then
-        if [[ "${ssp_list}" == *"hist"* ]]; then
+        if [[ ${do_hist} -eq 1 ]]; then
             list_pot_y1_hist+=(${y1})
             list_pot_yN_hist+=(${hist_yN})
         fi
@@ -283,7 +300,7 @@ done
 hist_save_years=
 fut_save_years=
 if [[ ${potential_only} -eq 0 ]]; then
-    if [[ "${ssp_list}" == *"hist"* ]]; then
+    if [[ ${do_hist} -eq 1 ]]; then
         hist_save_years="${list_pot_y1_hist[@]}"
     fi
     added_future_y1=0
@@ -304,18 +321,28 @@ if [[ ${potential_only} -eq 0 ]]; then
     done
 
     echo "Saving states in actual runs at beginning of years:"
-    echo "    Historical runs:" $hist_save_years
-    echo "        Future runs:" $fut_save_years
+    if [[ ${do_hist} -eq 1 ]]; then
+        echo "    Historical runs:" $hist_save_years
+    fi
+    if [[ ${do_future} -eq 1 ]]; then
+        echo "        Future runs:" $fut_save_years
+    fi
 else
     echo "No actual runs."
 fi
-echo "Historical potential runs:"
-echo "    Begin:" ${list_pot_y1_hist[@]}
-echo "      End:" ${list_pot_yN_hist[@]}
-echo "Future potential runs:"
-echo "       y0:" ${list_pot_y0_future[@]}
-echo "    Begin:" ${list_pot_y1_future[@]}
-echo "      End:" ${list_pot_yN_future[@]}
+if [[ ${actual_only} -eq 0 ]]; then
+    if [[ ${do_hist} -eq 1 ]]; then
+        echo "Historical potential runs:"
+        echo "    Begin:" ${list_pot_y1_hist[@]}
+        echo "      End:" ${list_pot_yN_hist[@]}
+    fi
+    if [[ ${do_future} -eq 1 ]]; then
+        echo "Future potential runs:"
+        echo "       y0:" ${list_pot_y0_future[@]}
+        echo "    Begin:" ${list_pot_y1_future[@]}
+        echo "      End:" ${list_pot_yN_future[@]}
+    fi
+fi
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -350,13 +377,24 @@ fi
 if [[ ${potential_only} -eq 0 ]]; then
     hist_save_years_lines="$(xargs -n ${maxNstates} <<< ${hist_save_years_spin})"$'\n'"$(xargs -n ${maxNstates} <<< ${hist_save_years_trans})"
     fut_save_years_lines="$(xargs -n ${maxNstates} <<< ${fut_save_years})"
-    save_years_lines="${hist_save_years_lines}
+    if [[ $((do_hist + do_future)) -eq 2 ]]; then
+        save_years_lines="${hist_save_years_lines}
 ${fut_save_years_lines}"
+    elif [[ ${do_hist} -eq 1 ]]; then
+        save_years_lines="${hist_save_years_lines}"
+    elif [[ ${do_future} -eq 1 ]]; then
+        save_years_lines="${fut_save_years_lines}"
+    fi
 else
-    save_years_lines="${list_pot_y1_hist[@]}
+    if [[ $((do_hist + do_future)) -eq 2 ]]; then
+        save_years_lines="${list_pot_y1_hist[@]}
 ${list_pot_y1_future[@]}"
+    elif [[ ${do_hist} -eq 1 ]]; then
+        save_years_lines="${list_pot_y1_hist[@]}"
+    elif [[ ${do_future} -eq 1 ]]; then
+        save_years_lines="${list_pot_y1_future[@]}"
+    fi
 fi
-
 
 #############################################################################################
 
@@ -451,18 +489,6 @@ prefix="$(lsf_chain_shortname.sh $(basename ${PWD}) ${istest})"
 #########################################
 ### Set up "actual" historical run(s) ###
 #########################################
-
-# Are we actually submitting historical period?
-if [[ $(echo ${ssp_list} | cut -f1 -d" ") == "hist" ]]; then
-    do_hist=1
-else
-    do_hist=0
-fi
-
-# We don't need hist in the SSP list anymore
-if [[ ${do_hist} -eq 1 ]]; then
-    ssp_list="$(echo ${ssp_list} | sed "s/hist//")"
-fi
 
 previous_act_jobnum=
 mkdir -p actual
