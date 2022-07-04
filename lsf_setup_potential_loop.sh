@@ -285,6 +285,14 @@ for y1 in ${y1_list[@]}; do
         exit 1
     fi
     sed -i "s@DIRFORPLUM@${dirForPLUM}@g" postproc.sh
+    sed -i "s@THISPOT@${thisPot}@g" postproc.sh
+    sed -i "s@THISSSP@${thisSSP}@g" postproc.sh
+    if [[ ${is_resuming} -eq 0 ]]; then
+        sed -i "s@THISY1@$((y1 + Nyears_getready))@g" postproc.sh
+    else
+        sed -i "s@THISY1@${y1}@g" postproc.sh
+    fi
+    sed -i "s@THISYN@${yN}@g" postproc.sh
 
     # Actually set up and even submit, if being called from within setup_all.sh
     if [[ ( ${pot_restart_year} -le ${hist_y1} || ( ${pot_restart_year} -eq ${future_y1} && ${is_resuming} -eq 0  ) || ${act_restart_year} -eq ${y1} ) && ${y1} -ne $(echo "${fut_save_years}" | awk '{print $NF}') ]]; then

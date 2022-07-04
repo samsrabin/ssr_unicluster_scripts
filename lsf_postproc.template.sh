@@ -6,10 +6,10 @@ echo $PWD > this_directory.txt
 dirForPLUM="DIRFORPLUM"
 cd "${thisDir}"
 
-thisSSP=$(echo $PWD | rev | cut -d"/" -f3 | rev)
-thisPot=$(echo $PWD | rev | cut -d"/" -f2 | rev)
-lastYear="-$(echo ${thisPot} | cut -d"-" -f2)"
-dirName="$(echo ${thisPot} | sed -E "s/_[0-9]+//")"
+thisSSP=THISSSP
+thisPot=THISPOT
+theseYears="THISY1-THISYN"
+dirName=${thisPot}_${theseYears}
 if [[ "${thisSSP}" != "hist" ]]; then
     dirName+="_${thisSSP}"
 fi
