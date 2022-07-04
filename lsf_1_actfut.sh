@@ -10,6 +10,10 @@ if [[ ${last_hist_year} -gt ${last_year_act_future} ]]; then
     do_break=1
 fi
 
+if [[ "${act_restart_year}" == "" ]]; then
+    act_restart_year=${future_y1}
+fi
+
 theseYears="${act_restart_year}-${lasthistyear}"
 thisDir="${thisSSP}_${theseYears}"
 echo "###############################"
@@ -37,7 +41,6 @@ else
     fi
 
     # Copy and fill template runDir
-    echo pwd $(pwd)
     cp -a ../template "${thisDir}"
     cd "${thisDir}"
     sed -i "s/UUUU/${lasthistyear}/" main.ins    # lasthistyear
@@ -49,6 +52,14 @@ else
     sed -iE "s/^\s*first_plut_year/\!first_plut_year/g" landcover.ins
     sed -i "s/restart 0/restart 1/g" main.ins
     sed -i "s/ssp585/${thisSSP}/g" main.ins
+
+    # Get gridlist
+    gridlist=$(get_param.sh ${topinsfile} "file_gridlist")
+    [[ "${gridlist}" == "get_param.sh_FAILED" ]] && exit 1
+    if [[ "${gridlist}" == "" ]]; then
+        echo "Unable to parse gridlist from ${topinsfile} and its dependencies"
+        exit 1
+    fi
 
     set " "
 
@@ -67,9 +78,17 @@ else
     delete_state_arg="--delete-state-year ${act_restart_year}"
 fi
 
-# Set up run
-ispot=0
-do_setup ${walltime_fut} ${ispot}
+# Set up rundir_top
+if [[ "${rundir_top}" == "" ]]; then
+    rundir_top=$(lsf_get_rundir_top.sh ${istest} 0)
+    if [[ "${rundir_top}" == "" ]]; then
+        echo "Error finding rundir_top; exiting."
+        exit 1
+    fi
+    if [[ ${do_fu_only} -eq 0 ]]; then
+        mkdir -p "${rundir_top}"
+    fi
+fi
 
 # Set up dirForPLUM
 if [[ "${dirForPLUM}" == "" ]]; then
@@ -78,6 +97,10 @@ fi
 mkdir -p ${dirForPLUM}
 echo "Top-level output directory: $dirForPLUM"
 echo " "
+
+# Set up run
+ispot=0
+do_setup ${walltime_fut} ${ispot}
 
 if [[ ${do_fu_only} -eq 0 ]]; then
 

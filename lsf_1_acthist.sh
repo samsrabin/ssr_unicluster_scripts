@@ -84,13 +84,15 @@ else
 fi # if do_fu_only else
 
 # Set up rundir_top
-rundir_top=$(lsf_get_rundir_top.sh ${istest} 0)
 if [[ "${rundir_top}" == "" ]]; then
-    echo "Error finding rundir_top; exiting."
-    exit 1
-fi
-if [[ ${do_fu_only} -eq 0 ]]; then
-    mkdir -p "${rundir_top}"
+    rundir_top=$(lsf_get_rundir_top.sh ${istest} 0)
+    if [[ "${rundir_top}" == "" ]]; then
+        echo "Error finding rundir_top; exiting."
+        exit 1
+    fi
+    if [[ ${do_fu_only} -eq 0 ]]; then
+        mkdir -p "${rundir_top}"
+    fi
 fi
 
 # Set up dirForPLUM

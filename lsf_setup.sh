@@ -302,8 +302,6 @@ while IFS= read -r save_years; do
                     fi
                 fi # if this is the first future-actual
 
-echo dependency a ${dependency}
-
                 . lsf_1_actfut.sh
                 popdq
             fi # if doing future-actual
