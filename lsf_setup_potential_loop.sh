@@ -67,10 +67,6 @@ i=-1
 for y1 in ${y1_list[@]}; do
     i=$((i+1))
 
-    if [[ "${save_years}" != *"${y1}"* ]]; then
-        continue
-    fi
-
     is_resuming=0
     pot_restart_year=${y1}
     y0=${y1}
@@ -81,6 +77,10 @@ for y1 in ${y1_list[@]}; do
             y0=${list_pot_y0_future[i]}
             pot_restart_year=${future_y1}
         fi
+    fi
+
+    if [[ "${save_years}" != *"${y1}"* || "${pot_years}" != *"${y0}"* ]]; then
+        continue
     fi
 
     # Does this run include the ssp period?

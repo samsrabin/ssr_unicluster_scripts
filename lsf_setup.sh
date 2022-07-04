@@ -281,8 +281,17 @@ while IFS= read -r save_years; do
 
         # Set up/submit potential historical run(s)
         if [[ ${actual_only} -eq 0 ]]; then
+            pot_years="${save_years}"
             thisSSP="hist"
             . lsf_setup_potential_loop.sh
+            save_years=${future_y1}
+            for thisSSP in ${ssp_list}; do
+                if [[ "${thisSSP}" != "hist" && "${thisSSP:0:3}" != "ssp" ]]; then
+                    thisSSP="ssp${thisSSP}"
+                fi
+                this_prefix="${prefix}_${thisSSP}"
+                . lsf_setup_potential_loop.sh
+            done
         fi
     else
         for thisSSP in ${ssp_list}; do
@@ -307,6 +316,7 @@ while IFS= read -r save_years; do
             fi # if doing future-actual
 
             if [[ ${actual_only} -eq 0 ]]; then
+                pot_years="${save_years}"
                 . lsf_setup_potential_loop.sh
             fi
         done # loop through SSPs
