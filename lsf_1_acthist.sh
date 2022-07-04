@@ -95,14 +95,6 @@ if [[ "${rundir_top}" == "" ]]; then
     fi
 fi
 
-# Set up dirForPLUM
-if [[ "${dirForPLUM}" == "" ]]; then
-    dirForPLUM=$(realpath ${rundir_top}/../..)/outputs/outForPLUM-$(date "+%Y-%m-%d-%H%M%S")
-fi
-mkdir -p ${dirForPLUM}
-echo "Top-level output directory: $dirForPLUM"
-echo " "
-
 # Delete restart files?
 if [[ ${act_restart_year} -le ${hist_y1} || ${act_restart_year} -eq ${future_y1} ]]; then
     delete_state_arg=

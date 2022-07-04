@@ -90,14 +90,6 @@ if [[ "${rundir_top}" == "" ]]; then
     fi
 fi
 
-# Set up dirForPLUM
-if [[ "${dirForPLUM}" == "" ]]; then
-    dirForPLUM=$(realpath ${rundir_top}/../..)/outputs/outForPLUM-$(date "+%Y-%m-%d-%H%M%S")
-fi
-mkdir -p ${dirForPLUM}
-echo "Top-level output directory: $dirForPLUM"
-echo " "
-
 # Set up run
 ispot=0
 do_setup ${walltime_fut} ${ispot}
