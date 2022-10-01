@@ -456,10 +456,11 @@ for g in ${gcmlist}; do
         else
             pot_run_names=""
         fi
+        cd actual
+        ssp_list="$(ls -d * | grep -v "states" | grep -oE "[a-z0-9]+_" | sed "s/_//g" | sort | uniq)"
+        cd ..
         popdq
         
-#        ssp_list="hist ssp126 ssp370 ssp585"
-        ssp_list="hist ssp126"
         s=0
         latest_job=""
         latest_actual_job="-1"
