@@ -192,7 +192,7 @@ echo "nnodes: ${nnodes}"
 echo "walltime: ${walltime}"
 
 lpjg_dir=${lpjg_topdir}/build_$arch
-#scripts_dir=/pfs/data1/home/kit/imk-ifu/lr8247/scripts
+#scripts_dir=$HOME/scripts
 scripts_dir=$HOME/scripts
 binary=guess
 ########################################################################
@@ -240,7 +240,7 @@ for ins in $insfile $extra_insfiles; do
 done
 
 # Copy postprocessing script to work
-cp /home/kit/imk-ifu/lr8247/scripts/start_isimip3_pp.sh $rundir_top/postproc.sh
+cp $HOME/scripts/start_isimip3_pp.sh $rundir_top/postproc.sh
 
 if [[ -e ./postproc.sh ]]; then
 	cp  ./postproc.sh $rundir_top
@@ -319,7 +319,7 @@ ${dependency}
 
 set -e
 
-#/home/kit/imk-ifu/lr8247/scripts_peter/module_gnu.sh
+#$HOME/scripts_peter/module_gnu.sh
 module unload \$(module -t list 2>&1 | grep "tools\|app\|io\|compiler\|mpi\|lib\|math\|devel\|numlib\|cae\|chem\|system")
 module load compiler/gnu mpi/impi
 module list

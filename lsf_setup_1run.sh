@@ -335,7 +335,7 @@ echo "finishup_partition: ${finishup_partition}"
 echo "finishup_nprocs: ${finishup_nprocs}"
 
 lpjg_dir=${lpjg_topdir}/build_$arch
-#scripts_dir=/pfs/data1/home/kit/imk-ifu/lr8247/scripts
+#scripts_dir=$HOME/scripts
 scripts_dir=$HOME/scripts
 binary=guess
 ########################################################################
@@ -548,8 +548,8 @@ set -e
 ##module unload \$(module -t list 2>&1 | grep "tools\|app\|io\|compiler\|mpi\|lib\|math\|devel\|numlib\|cae\|chem\|system")
 ##module load compiler/gnu mpi/openmpi
 ##module list
-#/home/kit/imk-ifu/lr8247/scripts_peter/module_gnu.sh
-source /home/kit/imk-ifu/lr8247/scripts_peter/module_gnu.sh
+#$HOME/scripts_peter/module_gnu.sh
+source $HOME/scripts_peter/module_gnu.sh
 
 # THIS NEEDS 2>&1
 echo "modules after calling module_gnu.sh:"

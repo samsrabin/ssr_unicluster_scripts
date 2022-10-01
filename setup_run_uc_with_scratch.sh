@@ -9,7 +9,7 @@ fi
 
 # Daniel: Change
 lpjg_topdir="$HOME/lpj-guess_git-svn_20190828"
-module_gnu="/home/kit/imk-ifu/lr8247/scripts_peter/module_gnu.sh"
+module_gnu="$HOME/scripts_peter/module_gnu.sh"
 
 #############################################################################################
 # Function-parsing code from https://gist.github.com/neatshell/5283811

@@ -232,7 +232,7 @@ echo "finishup_partition: ${finishup_partition}"
 echo "finishup_nprocs: ${finishup_nprocs}"
 
 lpjg_dir=${lpjg_topdir}/build_$arch
-#scripts_dir=/pfs/data1/home/kit/imk-ifu/lr8247/scripts
+#scripts_dir=$HOME/scripts
 scripts_dir=$HOME/scripts
 binary=guess
 ########################################################################
@@ -282,7 +282,7 @@ done
 
 # Copy postprocessing script to work
 if [[ ${do_postproc} -eq 1 ]]; then
-	cp /home/kit/imk-ifu/lr8247/scripts/start_isimip3_pp.sh $rundir_top/postproc.sh
+	cp $HOME/scripts/start_isimip3_pp.sh $rundir_top/postproc.sh
 	
 	if [[ -e ./postproc.sh ]]; then
 		cp  ./postproc.sh $rundir_top
