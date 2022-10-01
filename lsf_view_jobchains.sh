@@ -452,7 +452,7 @@ for g in ${gcmlist}; do
             else
                 hist_pot_run_names=""
             fi
-            future_pot_run_names="$(find potential/ssp* -type d -name "*pot_*" | cut -d"/" -f3 | grep -oE "[0-9]+pot" | sort | uniq)"
+            future_pot_run_names="$(find potential/ssp* -type d -name "*pot_*" 2>/dev/null | cut -d"/" -f3 | grep -oE "[0-9]+pot" | sort | uniq)"
         else
             pot_run_names=""
         fi
