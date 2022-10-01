@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-runset_ver="runs-2022-05"
+runset_ver="runs-2022-09"
 symbol_norun="--"            # No run started for this period within this job chain.
 symbol_runna=" "            # Run not applicable for this period (U+2002 EN SPACE)
 symbol_pend_depend="👀"      # Pending: waiting on dependency
@@ -406,7 +406,7 @@ function get_act_col_heads {
     echo "${act_col_heads}"
 }
 
-cd "/home/kit/imk-ifu/lr8247/landsymm/runs-forestonly/${runset_ver}"
+cd "$HOME/landsymm/runs-forestonly/${runset_ver}"
 
 tmpfile=.tmp.lsf_view_jobchains.$(date +%N)
 touch $tmpfile
