@@ -579,7 +579,7 @@ for g in ${gcmlist}; do
             done
             popdq
 
-            if [[ "${ssp}" != "hist" ]]; then
+            if [[ "${ssp}" != "hist" || "${ssp_list}" == "hist" ]]; then
                 echo ${thisline} >> $tmpfile
             fi
         done
