@@ -250,7 +250,7 @@ echo " "
 
 # Set up dirForPLUM
 thisbasename=$(g2p_get_basename.sh)
-rundir_top=$(get_rundir_top.sh ${istest})
+rundir_top=$(g2p_get_rundir_top.sh ${istest})
 if [[ "${rundir_top}" == "" ]]; then
     echo "Error finding rundir_top; exiting."
     exit 1
@@ -282,9 +282,7 @@ fi
 cd ..
 
 # If first period was hist, remove it
-if [[ ${do_hist} -eq 1 ]]; then
-    ssp_list="${ssp_list/hist /}"
-fi
+ssp_list="${ssp_list/hist /}"
 
 
 # Set up SSP actual and potential runs
@@ -332,7 +330,7 @@ for thisSSP in ${ssp_list}; do
     # I.e., -L flag
     # Would need to ensure that it's ONLY used for first part of future runs.
     state_path=""
-    state_path_absolute=$(get_state_path_absolute.sh "${rundir_top}" "${state_path_absolute}")
+    state_path_absolute=$(g2p_get_state_path_absolute.sh "${rundir_top}" "${state_path_absolute}")
     state_path_thisSSP="${state_path_absolute}_${thisSSP}"
     mkdir -p ${state_path_thisSSP}
     pushd ${state_path_thisSSP} 1>/dev/null

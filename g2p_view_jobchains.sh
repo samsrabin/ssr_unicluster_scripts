@@ -292,7 +292,7 @@ function check_jobs {
 
 }
 
-cd "/home/kit/imk-ifu/lr8247/g2p/runs/${remap_code_ver}"
+cd "$HOME/g2p/runs/${remap_code_ver}"
 
 tmpfile=.tmp.g2p_view_jobchains.$(date +%N)
 touch $tmpfile

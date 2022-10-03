@@ -17,7 +17,7 @@ elif [[ ! -e "${WORK}" ]]; then
 fi
 
 # Get name of this runset
-runsetname=$(get_runset_name.sh)
+runsetname=$(g2p_get_runset_name.sh)
 if [[ "${runsetname}" == "" ]]; then
     echo "runsetname is blank"
     exit 1
