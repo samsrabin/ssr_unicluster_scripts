@@ -259,21 +259,21 @@ function get_symbol() {
                 # JOBFIN
             else
                 latest_job=$(grep "job_finish" latest_submitted_jobs.log | awk 'END {print $NF}')
+                latest_run_job=$(grep "LPJ-GUESS run" latest_submitted_jobs.log | awk 'END {print $NF}')
 
-    # 2022-10-03: Commenting this out because it's broken now that potential and actual runs are mixed
-#                # If no run was started in this chain, then say so
-#                if [[ ${latest_job} == "" || ${latest_job} -lt ${latest_actual_job} ]]; then
-#                    fakefile=${latest_job}.fakelastactual_${latest_actual_job}
-#                    # Sometimes you rerun an actual job but you don't need to rerun the potentials.
-#                    if [[ -e $fakefile ]]; then
-#                        symbol="${symbol_ok}"
-#                        #... but sometimes you just never ran the potential.
-#                    else
-#                        symbol="${symbol_norun}"
-#                    fi
-#
-#                    # Otherwise, check if simulation began
-#                else
+                # If no run was started in this chain, then say so
+                if [[ ${latest_job} == "" || ${latest_job} -lt ${latest_run_job} ]]; then
+                    fakefile=${latest_job}.fakelastactual_${latest_run_job}
+                    # Sometimes you rerun an actual job but you don't need to rerun the potentials.
+                    if [[ -e $fakefile ]]; then
+                        symbol="${symbol_ok}"
+                        #... but sometimes you just never ran the potential.
+                    else
+                        symbol="${symbol_norun}"
+                    fi
+
+                    # Otherwise, check if simulation began
+                else
                     # Get job stdout file info
                     file_stdout="job_finish.${latest_job}.log"
                     if [[ ${force_update} -eq 1 ]]; then
@@ -327,7 +327,7 @@ function get_symbol() {
                             symbol="${symbol_failed}"
                         fi
                     fi # Does stdout file exist?
-#                fi # Was a run started in this chain?
+                fi # Was a run started in this chain?
             fi # Is it a simulation or jobfin?
 
             # There ARE matching jobs
