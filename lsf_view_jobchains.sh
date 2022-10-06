@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-runset_ver="runs-2022-09"
+runset_ver="runs-2022-10"
 symbol_norun="--"            # No run started for this period within this job chain.
 symbol_runna=" "            # Run not applicable for this period (U+2002 EN SPACE)
 symbol_pend_depend="👀"      # Pending: waiting on dependency
