@@ -109,7 +109,7 @@ fi
 state_path="$(cd ..; lsf_get_rundir_top.sh ${istest} 0)/states"
 this_prefix="${prefix}_hist"
 ispot=0
-do_setup ${walltime_hist} ${ispot}
+do_setup ${walltime_hist} ${ispot} ${delete_state_arg}
 
 if [[ ${do_fu_only} -eq 0 ]]; then
     arr_job_name+=("act-hist_${theseYears}")

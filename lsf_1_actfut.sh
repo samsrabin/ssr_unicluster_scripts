@@ -92,7 +92,7 @@ fi
 
 # Set up run
 ispot=0
-do_setup ${walltime_fut} ${ispot}
+do_setup ${walltime_fut} ${ispot} ${delete_state_arg}
 
 if [[ ${do_fu_only} -eq 0 ]]; then
 
