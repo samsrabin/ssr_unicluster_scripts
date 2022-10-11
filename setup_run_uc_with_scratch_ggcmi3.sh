@@ -455,7 +455,7 @@ module list
 export LD_LIBRARY_PATH=\$SOFTWARE/hdf5-1.12.1/lib:\$SOFTWARE/lib:\$LD_LIBRARY_PATH
 export HDF5_DISABLE_VERSION_CHECK=1
 
-diagnostics=0
+diagnostics=1
 mpirun_options=""
 if [[ \$diagnostics -eq 1 ]]; then
 	if [[ \$(which mpirun | grep "openmpi" | wc -l) -eq 1 ]]; then
@@ -466,6 +466,10 @@ if [[ \$diagnostics -eq 1 ]]; then
 		echo "mpirun \$(which mpirun) not recognized; will set no options for stdout/stderr printing"
 	fi
 fi
+
+# Trying to avoid these warnings:
+# common_ucx.c:162  Warning: UCX is unable to handle VM_UNMAP event. This may cause performance degradation or data corruption. Pls try adding --mca opal_common_ucx_opal_mem_hooks 1 to mpirun/oshrun command line to resolve this issue.
+mpirun_options+=" --mca opal_common_ucx_opal_mem_hooks 1"
 
 cd $rundir_top 
 date +%F\ %H:%M:%S > $rundir_top/RUN_INPROGRESS
