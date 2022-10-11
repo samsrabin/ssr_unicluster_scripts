@@ -348,27 +348,7 @@ fi
 cd $rundir_top
 
 # Clear existing run* directories
-set +e
-ls -d run*/ 1> /dev/null 2>&1
-result=$?
-set -e
-if [[ $result == 0 ]]; then
-    echo "Removing existing run*/ directories..."
-    empty_dir="empty_dir_$(date +%N)/"
-    mkdir $empty_dir
-    for d in $(ls -d run*/ | grep -E "^run[0-9]+/"); do
-        if [[ -d "${d}" ]]; then
-#            # Only try to remove contents if not empty
-#            if [[ ! -z "$(ls -A "${d}")" ]]; then
-#                rm $d/*
-#            fi
-#            rmdir $d
-            rsync -a --delete $empty_dir "${d}"/
-            rmdir "${d}"
-        fi
-    done
-    rmdir $empty_dir
-fi
+remove_existing_run_directories.sh
 
 # Create and fill run* directories
 echo "Creating and filling run*/ directories..."

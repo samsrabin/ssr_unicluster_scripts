@@ -271,17 +271,7 @@ fi
 cd $rundir_top
 
 # Clear existing run* directories
-set +e
-ls -d run*/ 1> /dev/null 2>&1
-result=$?
-set -e
-if [[ $result == 0 ]]; then
-	echo "Removing existing run*/ directories..."
-	for d in $(ls -d run*/ | grep -E "^run[0-9]+/"); do
-		rm $d/*
-		rmdir $d 
-	done
-fi
+remove_existing_run_directories.sh
 
 # Create and fill run* directories
 echo "Creating and filling run*/ directories..."
