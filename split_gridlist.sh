@@ -37,7 +37,7 @@ fi
 i=1
 for file in $files; do
     let "c=((1-1)*$nprocess+$i)"
-    mv $file run$c/${gridlist}_filename
+    mv $file run$c/${gridlist_filename}
     i=$((i+1))
 done
 
