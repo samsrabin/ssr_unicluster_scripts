@@ -1,10 +1,18 @@
-# Get lasthistyear
-echo save_years $save_years;
 if [[ "${act_restart_year}" == "" && ${separate_spinup} -eq 1 ]]; then
     lastsaveyear=${firsthistyear}
 else
     lastsaveyear=$(echo ${save_years} | awk '{print $NF}')
 fi
+
+# Possibly skip this run
+if [[ ( "${act_restart_year}" == "" && ${first_act_y1} -gt ${hist_y1} ) || ( "${act_restart_year}" != "" && ${act_restart_year} -lt ${first_act_y1} ) ]]; then
+    # Set up for next historical run or finishup, if any
+    act_restart_year=${lastsaveyear}
+    continue
+fi
+
+# Get lasthistyear
+echo save_years $save_years;
 lasthistyear=$((lastsaveyear - 1))
 firstsaveyear=$(echo ${save_years} | cut -d" " -f1)
 do_break=0

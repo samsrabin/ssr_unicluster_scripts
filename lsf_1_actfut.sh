@@ -1,6 +1,17 @@
+if [[ "${act_restart_year}" == "" ]]; then
+    act_restart_year=${future_y1}
+fi
+lastsaveyear=$(echo ${save_years} | awk '{print $NF}')
+
+# Possibly skip this run
+if [[ ${act_restart_year} -lt ${first_act_y1} ]]; then
+    # Set up for next historical run or finishup, if any
+    act_restart_year=${lastsaveyear}
+    continue
+fi
+
 # Get lasthistyear
 echo save_years $save_years;
-lastsaveyear=$(echo ${save_years} | awk '{print $NF}')
 lasthistyear=$((lastsaveyear - 1))
 do_break=0
 if [[ ${last_hist_year} -gt ${last_year_act_future} ]]; then
@@ -8,10 +19,6 @@ if [[ ${last_hist_year} -gt ${last_year_act_future} ]]; then
     echo "         Ignoring, and ending future run(s) in ${last_year_act_future}."
     lasthistyear=$((last_year_act_future))
     do_break=1
-fi
-
-if [[ "${act_restart_year}" == "" ]]; then
-    act_restart_year=${future_y1}
 fi
 
 theseYears="${act_restart_year}-${lasthistyear}"

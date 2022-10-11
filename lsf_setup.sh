@@ -47,6 +47,7 @@ ssp_list="hist ssp126 ssp370 ssp585"
 Nyears_pot=99999
 #Nyears_pot=100
 first_pot_y1=1850
+first_act_y1=${hist_y1}
 last_pot_y1=999999999
 pot_step=20
 pot_yN=2100
@@ -114,6 +115,9 @@ do
         --step-pot)  shift
             pot_step=$1
             ;;
+        --first-y1-act)  shift
+            first_act_y1=$1
+            ;;
         -d | --dependency)  shift
             dependency_in="-d $1"
             ;;
@@ -125,6 +129,11 @@ do
     esac
     shift
 done
+
+if [[ ${first_act_y1} -lt ${hist_y1} ]]; then
+    echo "--first-y1-act (${first_act_y1}) must be >= ${hist_y1}"
+    exit 1
+fi
 
 # Process memory specification
 . "${HOME}/scripts/process_slurm_mem_spec.sh"
