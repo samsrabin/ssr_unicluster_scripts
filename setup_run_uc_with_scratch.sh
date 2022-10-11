@@ -462,24 +462,8 @@ else
 	state_path_absolute=xyz
 fi
 
-# Split gridlist up into files for each process
-lines_per_run=$(wc -l $gridlist | awk '{ x = $1/'$nprocess'; d = (x == int(x)) ? x : int(x)+1; print d}')
-split -a 4 -l $lines_per_run $gridlist tmpSPLITGRID_
-files=$(ls tmpSPLITGRID_*)
-Nfiles=$(echo $files | wc -w)
-if [[ ${Nfiles} -ne ${nprocess} ]]; then
-    # Only falling back to this in order to preserve previous behavior when
-    # this problem doesn't arise
-    rm tmpSPLITGRID_*
-    split -a 4 -n r/$nprocess $gridlist tmpSPLITGRID_
-    files=$(ls tmpSPLITGRID_*)
-fi
-i=1
-for file in $files; do
-	let "c=((1-1)*$nprocess+$i)"
-	mv $file run$c/$gridlist_filename
-	i=$((i+1))
-done
+# Split gridlist up into files for each process; distribute to run*/ directories
+split_gridlist.sh ${gridlist} ${nprocess}
 
 # Set up reservation
 if [[ ${reservation} == "" ]]; then
