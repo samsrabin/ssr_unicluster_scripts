@@ -295,11 +295,11 @@ for y1 in ${y1_list[@]}; do
     sed -i "s@THISYN@${yN}@g" postproc.sh
 
     # Actually set up and even submit, if being called from within setup_all.sh
-#    if [[ ( ${pot_restart_year} -le ${hist_y1} || ( ${pot_restart_year} -eq ${future_y1} && ${is_resuming} -eq 0  ) || ${act_restart_year} -eq ${y1} ) && ${y1} -ne $(echo "${fut_save_years}" | awk '{print $NF}') ]]; then
-#        delete_state_arg=
-#    else
-#        delete_state_arg="--delete-state-year ${pot_restart_year}"
-#    fi
+    if [[ ( ${pot_restart_year} -le ${hist_y1} || ( ${pot_restart_year} -eq ${future_y1} && ${is_resuming} -eq 0  ) || ${act_restart_year} -eq ${y1} ) && ${y1} -ne $(echo "${fut_save_years}" | awk '{print $NF}') ]]; then
+        delete_state_arg=
+    else
+        delete_state_arg="--delete-state-year ${pot_restart_year}"
+    fi
     if [[ ${actually_setup} -eq 1 ]]; then
         if [[ ${yN} -le ${hist_yN} ]]; then
             this_prefix="${prefix}_hist"
@@ -307,7 +307,7 @@ for y1 in ${y1_list[@]}; do
             this_prefix="${prefix}_${thisSSP}"
         fi
         ispot=1
-        do_setup ${walltime_pot} ${ispot}
+        do_setup ${walltime_pot} ${ispot} ${delete_state_arg}
     fi
 
     if [[ ${do_fu_only} -eq 0 ]]; then
