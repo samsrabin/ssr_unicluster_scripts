@@ -214,6 +214,8 @@ for y1 in ${y1_list[@]}; do
         if [[ "${thisSSP}" == "hist" ]]; then
             sed -i "s/co2_histhistorical/co2_histssp585/g" main.ins
         fi
+        # number of patches
+        sed -i -E "s/npatch_secondarystand\s+[0-9]+/npatch_secondarystand 20/g" landcover.ins
     
         # Get gridlist for later
         if [[ "${gridlist}" == "" ]]; then
