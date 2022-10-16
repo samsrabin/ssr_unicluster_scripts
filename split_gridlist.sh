@@ -37,6 +37,10 @@ fi
 i=1
 for file in $files; do
     let "c=((1-1)*$nprocess+$i)"
+    if [[ $(wc -l $file | cut -d" " -f1) -eq 0 ]]; then
+        echo "Gridlist $file (run$c/${gridlist_filename}) has no gridcells!" >&2
+        exit 1
+    fi
     mv $file run$c/${gridlist_filename}
     i=$((i+1))
 done
