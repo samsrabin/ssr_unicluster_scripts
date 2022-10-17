@@ -79,7 +79,9 @@ for y1 in ${y1_list[@]}; do
         fi
     fi
 
-    if [[ "${save_years}" != *"${y1}"* || "${pot_years}" != *"${y0}"* ]]; then
+    if [[ ( "${save_years}" != *"${y1}"* || "${pot_years}" != *"${y0}"* ) && ( ${first_pot_y1} -ge ${first_save_year} || ${resume_pre2015pots} -eq 0 ) ]]; then
+        continue
+    elif [[ ${resume_pre2015pots} -eq 1 && ${y0} -ge ${first_save_year} ]]; then
         continue
     fi
 

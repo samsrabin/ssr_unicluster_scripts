@@ -260,6 +260,11 @@ previous_act_jobnum=
 mkdir -p actual
 act_restart_year=
 
+did_resume_pre2015pots=()
+for thisSSP in ${ssp_list}; do
+    did_resume_pre2015pots+=(0)
+done
+
 # Set up/start a run for each set of save years
 while IFS= read -r save_years; do
 
@@ -293,22 +298,27 @@ while IFS= read -r save_years; do
         if [[ ${actual_only} -eq 0 ]]; then
             pot_years="${save_years}"
             thisSSP="hist"
+            resume_pre2015pots=0
             . lsf_setup_potential_loop.sh
             save_years=${future_y1}
-            for thisSSP in ${ssp_list}; do
-                if [[ "${thisSSP}" != "hist" && "${thisSSP:0:3}" != "ssp" ]]; then
-                    thisSSP="ssp${thisSSP}"
-                fi
-                this_prefix="${prefix}_${thisSSP}"
-                . lsf_setup_potential_loop.sh
-            done
         fi
     else
+
+        s=-1
         for thisSSP in ${ssp_list}; do
+            s=$((s + 1))
             if [[ "${thisSSP}" != "hist" && "${thisSSP:0:3}" != "ssp" ]]; then
                 thisSSP="ssp${thisSSP}"
             fi
             this_prefix="${prefix}_${thisSSP}"
+
+            # Start 2015-resuming potential runs, if needed
+            first_pot_y1=$(echo ${list_pot_y1_future} | cut -d" " -f1)
+            if [[ ${first_pot_y1} -lt ${first_save_year} && ${did_resume_pre2015pots[s]} == 0 && ${thisSSP} != "hist" ]]; then
+                resume_pre2015pots=1
+                . lsf_setup_potential_loop.sh
+                did_resume_pre2015pots[s]=1
+            fi
 
             if [[ ${potential_only} -eq 0 && ${do_future_act} -eq 1 ]]; then
                 pushdq "actual"
@@ -327,6 +337,7 @@ while IFS= read -r save_years; do
 
             if [[ ${actual_only} -eq 0 ]]; then
                 pot_years="${save_years}"
+                resume_pre2015pots=0
                 . lsf_setup_potential_loop.sh
             fi
         done # loop through SSPs
