@@ -496,7 +496,7 @@ for g in ${gcmlist}; do
             if [[ $s -eq 1 ]]; then
                 thisline="${thischain_name} "
             elif [[ $s -gt 2 ]]; then
-                thisline=" :"
+                thisline="${histspacing}"
             fi
 
             # Get actual periods
@@ -584,11 +584,15 @@ for g in ${gcmlist}; do
             if [[ "${ssp}" != "hist" || "${ssp_list}" == "hist" ]]; then
                 echo ${thisline} >> $tmpfile
             fi
+            if [[ "${ssp}" == "hist" ]]; then
+                histline="${thisline}"
+                histspacing="$(echo ${thisline} | sed "s/\S/@/g")"
+            fi
         done
     done
 done
 
-cat $tmpfile | column --table --table-columns RUNSET,${hist_col_heads},SSP,${future_col_heads} -s ": "
+cat $tmpfile | column --table --table-columns RUNSET,${hist_col_heads},SSP,${future_col_heads} -s ": " | sed "s/@/ /g"
 
 rm $tmpfile
 
