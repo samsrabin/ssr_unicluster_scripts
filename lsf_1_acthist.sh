@@ -109,7 +109,10 @@ if [[ ${act_restart_year} -le ${hist_y1} || ${act_restart_year} -eq ${future_y1}
 else
     delete_state_arg="--delete-state-year ${act_restart_year}"
     if [[ "${latest_pot_jobnum}" != "" ]]; then
+        echo "WILL DELETE ${act_restart_year} STATE IF POTENTIAL JOB ${latest_pot_jobnum} FINISHED OK"
         delete_state_arg+=" --delete-state-year-if-thisjob-ok ${latest_pot_jobnum}"
+    else
+        echo "WILL DELETE ${act_restart_year} STATE"
     fi
 fi
 

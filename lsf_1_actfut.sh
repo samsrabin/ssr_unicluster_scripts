@@ -82,6 +82,7 @@ fi
 if [[ ${act_restart_year} -le ${hist_y1} || ${act_restart_year} -eq ${future_y1} ]]; then
     delete_state_arg=
 else
+    echo "WILL DELETE ${act_restart_year} STATE"
     delete_state_arg="--delete-state-year ${act_restart_year}"
 fi
 
