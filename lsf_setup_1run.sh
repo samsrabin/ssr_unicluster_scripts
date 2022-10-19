@@ -496,7 +496,7 @@ if [[ ${do_finishup_only} -eq 0 ]]; then
         if [[ "${delete_state_year_if_thisjob_ok}" != "" ]]; then
             delete_state_text+="[[ \$(sacct -n -j ${delete_state_year_if_thisjob_ok} | grep \"${delete_state_year_if_thisjob_ok} \" | grep \"COMPLETED\" | wc -l) -eq 1 ]] && "
         fi
-        delete_state_text+="rm \"${state_path_absolute}/${delete_state_year}\"/*.state"
+        delete_state_text+="rm \"${state_path_absolute}/${delete_state_year}\"/*.state; set -e"
     fi
     
     cat<<EOL > submit.sh 
