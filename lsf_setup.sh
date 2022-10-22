@@ -314,7 +314,7 @@ while IFS= read -r save_years; do
 
             # Start 2015-resuming potential runs, if needed
             first_pot_y1=$(echo ${list_pot_y1_future} | cut -d" " -f1)
-            if [[ ${first_pot_y1} -lt ${first_save_year} && ${did_resume_pre2015pots[s]} == 0 && ${thisSSP} != "hist" ]]; then
+            if [[ (${first_pot_y1} -lt ${first_save_year} || ${potential_only} -eq 1 ) && ${did_resume_pre2015pots[s]} == 0 && ${thisSSP} != "hist" ]]; then
                 resume_pre2015pots=1
                 . lsf_setup_potential_loop.sh
                 did_resume_pre2015pots[s]=1

@@ -56,11 +56,6 @@ fi
 if [[ "${topinsfile}" != "" && "${inputmodule}" != "" && "${nproc}" != "" && "${arch}" != "" && "${prefix}" != "" ]]; then
     actually_setup=1
 else
-#    echo topinsfile $topinsfile
-#    echo inputmodule $inputmodule
-#    echo nproc $nproc
-#    echo arch $arch
-#    echo prefix $prefix
     actually_setup=0
 fi
 i=-1
@@ -79,7 +74,7 @@ for y1 in ${y1_list[@]}; do
         fi
     fi
 
-    if [[ ( "${save_years}" != *"${y1}"* || "${pot_years}" != *"${y0}"* ) && ( ${first_pot_y1} -ge ${first_save_year} || ${resume_pre2015pots} -eq 0 ) ]]; then
+    if [[ ( "${save_years}" != *"${y1}"* || "${pot_years}" != *"${y0}"* ) && ( ( ${first_pot_y1} -ge ${first_save_year} && ${potential_only} -ne 1 ) || ${resume_pre2015pots} -eq 0 ) ]]; then
         continue
     elif [[ ${resume_pre2015pots} -eq 1 && ${y0} -ge ${first_save_year} ]]; then
         continue
