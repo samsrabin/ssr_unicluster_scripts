@@ -4,6 +4,7 @@
 
 # Set up script
 echo "dir_in = '$PWD' ;" > postproc.m
+echo "main_insfile = 'main.ins' ;" >> postproc.m
 cat $HOME/GGCMI/matlab-ggcmi3/out/isimip3_pp_parent.m >> postproc.m
 
 # Run script
