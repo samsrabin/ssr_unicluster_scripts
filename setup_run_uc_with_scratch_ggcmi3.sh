@@ -198,7 +198,7 @@ fi
 rundir_top=$workdir/$(pwd | sed "s@/pfs/data5/home@/home@" | sed "s@${HOME}/@@")
 if [[ ${dev} -eq 1 ]]; then
 	rundir_top_new="${rundir_top}_test"
-	state_path_absolute=$(echo ${state_path_absolute} | sed "s@/states/@/states_test/@")
+	state_path_absolute=$(echo ${state_path_absolute} | sed "s@/states@/states_test@")
 	if [[ "${linked_restart_dir}" != "" ]]; then
 		linked_restart_dir=$(echo ${linked_restart_dir} | sed "s@/states/@/states_test/@")
 	fi
