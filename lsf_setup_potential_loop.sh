@@ -96,12 +96,12 @@ for y1 in ${y1_list[@]}; do
     fi
 
     # Name this one (e.g. 1850pot)
-    first_plut_year=$((y1+Nyears_getready))
     if [[ ${is_resuming} -eq 1 ]]; then
-        thisPot=$((y0 + Nyears_getready))pot
+        first_plut_year=$((y0+Nyears_getready))
     else
-        thisPot=${first_plut_year}pot
+        first_plut_year=$((y1+Nyears_getready))
     fi
+    thisPot=${first_plut_year}pot
 
     # Get walltime
     if [[ ${istest} -eq 1 ]]; then
