@@ -262,7 +262,11 @@ act_restart_year=
 
 did_resume_pre2015pots=()
 for thisSSP in ${ssp_list}; do
-    did_resume_pre2015pots+=(0)
+    if [[ ${first_pot_y1} -le ${future_y1} ]]; then
+        did_resume_pre2015pots+=(0)
+    else
+        did_resume_pre2015pots+=(-1)
+    fi
 done
 
 # Set up/start a run for each set of save years
