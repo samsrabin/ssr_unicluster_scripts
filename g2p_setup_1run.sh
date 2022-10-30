@@ -246,7 +246,7 @@ if [[ ${dev} -eq 1 ]]; then
         done
     fi
 fi
-state_path_absolute=$(g2p_get_state_path_absolute.sh "${rundir_top}" "${state_path_absolute}")
+state_path_absolute=$(g2p_get_state_path_absolute.sh "${rundir_top}" "${state_path_absolute}" ${dev})
 
 # End function-parsing code
 #############################################################################################
