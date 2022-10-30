@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+cd /home/kit/imk-ifu/xg4606/GGCMI/runs_2022-09/isimip3b
+
 gcm_long=$1
 if [[ "${gcm_long}" == "" ]]; then
 	echo "You must provide gcm_long (e.g., MRI-ESM2-0)"
