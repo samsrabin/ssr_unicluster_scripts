@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-cd /home/kit/imk-ifu/xg4606/GGCMI/runs_2022-09/isimip3b
+cd /home/kit/imk-ifu/xg4606/landsymm/runs-forestonly/runs-2022-10
 
 gcm_long=$1
 if [[ "${gcm_long}" == "" ]]; then
@@ -73,9 +73,11 @@ for d in $(ls -d ${gcm0_short}*/ | sed "s/${gcm0_short}_//"); do
 	if [[ -d ${newdir} ]]; then
 		rm -rf ${newdir}
 	fi
-	cp -r ${gcm0_short}_$d ${newdir}
+    mkdir -p ${newdir}/template
+	cp -a ${gcm0_short}_$d/template/* ${newdir}/template/
 	cd ${newdir}
-	echo "Duplicating into ${newdir}..."
+
+    echo "Copying template into ${newdir}..."
 
 #	echo "   gcm_long in main.ins"
 	for f in $(find . -name main.ins); do
@@ -116,30 +118,32 @@ for d in $(ls -d ${gcm0_short}*/ | sed "s/${gcm0_short}_//"); do
 	fi
 
 #	echo "   gcm_short in shell scripts"
-	for f in $(find . -name *sh); do 
+    pattern="${gcm0_short}"
+    for f in $(grep -l "${pattern}" $(find . -name "*sh")); do
 		has_linked_state=$(grep " \-L " $f | wc -l)
 		if [[ $has_linked_state -eq 0 ]]; then
 			continue
 		fi
 #		echo "      ${newdir}/$f"
 		md5sum_before=$(md5sum $f | cut -d " " -f1)
-		sed -i "s/${gcm0_short}/${gcm_short}/g" $f
+		sed -i "s/${pattern}/${gcm_short}/g" $f
 		md5sum_after=$(md5sum $f | cut -d " " -f1)
 		if [[ ${md5sum_before} == ${md5sum_after} ]]; then
-			echo "Error changing ${newdir}/$f from ${gcm0_short} to ${gcm_short}"
+			echo "Error changing ${newdir}/$f from ${pattern} to ${gcm_short}"
 			exit 1
 		fi
 	done
 
 #	echo "   gcm_tiny in shell scripts"
-	for f in $(find . -name *sh); do 
+    pattern="_${gcm0_tiny}_"
+    for f in $(grep -l "${pattern}" $(find . -name "*sh")); do
 		has_job_name=$(grep " \-p " $f | wc -l)
 		if [[ $has_job_name -eq 0 ]]; then
 			continue
 		fi
 #		echo "      ${newdir}/$f"
 		md5sum_before=$(md5sum $f | cut -d " " -f1)
-		sed -i "s/_${gcm0_tiny}_/_${gcm_tiny}_/g" $f
+		sed -i "s/${pattern}/_${gcm_tiny}_/g" $f
 		md5sum_after=$(md5sum $f | cut -d " " -f1)
 		if [[ ${md5sum_before} == ${md5sum_after} ]]; then
 			echo "Error changing gcm_tiny in ${newdir}/$f from ${gcm0_tiny} to ${gcm_tiny}"
