@@ -269,6 +269,15 @@ for thisSSP in ${ssp_list}; do
     fi
 done
 
+if [[ "${save_years_lines}" == "" ]]; then
+    if [[ ${actual_only} -eq 1 ]]; then
+        echo "-a/--actual only, but save_years_lines is empty" >&2
+    else
+        echo "If you only want potential runs, specify -p/--potential-only so that save_years_lines is correctly filled." >&2
+    fi
+    exit 1
+fi
+
 # Set up/start a run for each set of save years
 while IFS= read -r save_years; do
 
@@ -276,7 +285,7 @@ while IFS= read -r save_years; do
     # period or not
     first_save_year=$(echo ${save_years} | cut -d" " -f1)
 
-    if [[ ${first_save_year} -le ${hist_yN} ]]; then
+    if [[ ${first_save_year} != "" && ${first_save_year} -le ${hist_yN} ]]; then
 
         # Sanity check
         if [[ ${do_hist} == 0 ]]; then
@@ -303,6 +312,7 @@ while IFS= read -r save_years; do
             pot_years="${save_years}"
             thisSSP="hist"
             resume_pre2015pots=0
+            echo lsf_setup_potential_loop.sh A
             . lsf_setup_potential_loop.sh
             save_years=${future_y1}
         fi
@@ -318,8 +328,9 @@ while IFS= read -r save_years; do
 
             # Start 2015-resuming potential runs, if needed
             first_pot_y1=$(echo ${list_pot_y1_future} | cut -d" " -f1)
-            if [[ (${first_pot_y1} -lt ${first_save_year} || ${potential_only} -eq 1 ) && ${did_resume_pre2015pots[s]} == 0 && ${thisSSP} != "hist" ]]; then
+            if [[ ( ( ${first_save_year} != "" && ${first_pot_y1} -lt ${first_save_year} ) || ${potential_only} -eq 1 ) && ${did_resume_pre2015pots[s]} == 0 && ${thisSSP} != "hist" ]]; then
                 resume_pre2015pots=1
+                echo lsf_setup_potential_loop.sh B
                 . lsf_setup_potential_loop.sh
                 did_resume_pre2015pots[s]=1
             fi
@@ -339,9 +350,10 @@ while IFS= read -r save_years; do
                 popdq
             fi # if doing future-actual
 
-            if [[ ${actual_only} -eq 0 ]]; then
+            if [[ ${actual_only} -eq 0 && "${save_years}" != "" ]]; then
                 pot_years="${save_years}"
                 resume_pre2015pots=0
+                echo lsf_setup_potential_loop.sh C
                 . lsf_setup_potential_loop.sh
             fi
         done # loop through SSPs
