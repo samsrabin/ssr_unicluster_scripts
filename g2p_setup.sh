@@ -4,8 +4,8 @@ set -e
 reservation=""
 #reservation="-r landsymm-project"
 realinsfile="main.ins"
-#testinsfile="main_test2.ins"; testnproc=1
-testinsfile="main_test1_fast.ins"; testnproc=1
+testinsfile="main_test2.ins"; testnproc=1
+#testinsfile="main_test1_fast.ins"; testnproc=1
 #testinsfile="main_test2x2.ins"; testnproc=2
 #testinsfile="main_test160x3.ins"; testnproc=160
 inputmodule="cfx"
@@ -46,6 +46,7 @@ actual_only=0
 potential_only=0
 nproc=160
 ssp_list="hist ssp126 ssp370 ssp585"
+lpjg_topdir=$HOME/lpj-guess_git-svn_20190828
 # Handle possible neither/both specs here
 mem_per_node_default=90000 # MB
 mem_per_node=-1 # MB
@@ -94,6 +95,9 @@ do
             ;;
         --mem-per-cpu)  shift
             mem_per_cpu=$1
+            ;;
+        --lpjg_topdir)  shift
+            lpjg_topdir="$1"
             ;;
         -d | --dependency)  shift
             dependency="-d $1"
@@ -176,7 +180,7 @@ function do_setup {
         [[ "${state_path}" == "get_param.sh_FAILED" ]] && exit 1
     fi
     #croplist=$(grep "pft" $(ls -tr crop_n_pftlist.*.ins  | tail -n 1) | sed -E 's/pft\s+"([^".]+)"\s*\(/\1/g' | grep -v "ExtraCrop")
-    g2p_setup_1run.sh ${topinsfile} "$(get_ins_files)" ${gridlist} ${inputmodule} ${nproc} ${arch} ${walltime} -p "${prefix}" ${state_path} ${submit} ${ppfudev} ${dependency} ${reservation} --lpjg_topdir $HOME/trunk_fromPA_20161012 ${mem_spec}
+    g2p_setup_1run.sh ${topinsfile} "$(get_ins_files)" ${gridlist} ${inputmodule} ${nproc} ${arch} ${walltime} -p "${prefix}" ${state_path} ${submit} ${ppfudev} ${dependency} ${reservation} --lpjg_topdir "${lpjg_topdir}" ${mem_spec}
 }
 
 #############################################################################################
