@@ -74,9 +74,19 @@ for y1 in ${y1_list[@]}; do
         fi
     fi
 
+#    echo save_years $save_years
+#    echo pot_years $pot_years
+#    echo y0 $y0
+#    echo y1 $y1
+#    echo first_pot_y1 $first_pot_y1
+#    echo first_save_year $first_save_year
+#    echo resume_pre2015pots $resume_pre2015pots
+
     if [[ ( "${save_years}" != *"${y1}"* || "${pot_years}" != *"${y0}"* ) && ( ( ${first_pot_y1} -ge ${first_save_year} && ${potential_only} -ne 1 ) || ${resume_pre2015pots} -eq 0 ) ]]; then
+#        echo skipping A
         continue
     elif [[ ${resume_pre2015pots} -eq 1 && ${y0} -ge ${first_save_year} ]]; then
+#        echo skipping B
         continue
     fi
 
@@ -191,28 +201,62 @@ for y1 in ${y1_list[@]}; do
         sed -i "s/VVVV/${pot_restart_year}/" main.ins
         sed -i "s/firstoutyear 1850/firstoutyear ${y1}/" main.ins    # firstoutyear
         sed -i "s/restart 0/restart 1/g" main.ins
-        # saving state
         sed -i "s/WWWW/\"${future_y1}\"/" main.ins    # save_years
-        if [[ ${y1} -ge ${future_y1} ]]; then
-            sed -i "s/save_state 1/save_state 0/g" main.ins
-        fi
-        # land use file
-        sed -i "s/XXXX/${y0}/" landcover.ins    # XXXXpast_YYYYall_LU.txt
-        sed -i "s/YYYY/$((y0 + 1))/" landcover.ins    # XXXXpast_YYYYall_LU.txt
-        # outputs
-        sed -i "s/do_plut 0/do_plut 1/g" landcover.ins
-        sed -i "s/ZZZZ/${first_plut_year}/" landcover.ins    # first_plut_year
-        # inputs
-        if [[ "${thisSSP}" == "hist" ]]; then
-            sed -i "s/ssp585/historical/g" main.ins
+        if [[ ${runtype} == "lsf" ]]; then
+            # saving state
+            if [[ ${y1} -ge ${future_y1} ]]; then
+                sed -i "s/save_state 1/save_state 0/g" main.ins
+            fi
+            # land use file
+            sed -i "s/XXXX/${y0}/" landcover.ins    # XXXXpast_YYYYall_LU.txt
+            sed -i "s/YYYY/$((y0 + 1))/" landcover.ins    # XXXXpast_YYYYall_LU.txt
+            # outputs
+            sed -i "s/do_plut 0/do_plut 1/g" landcover.ins
+            sed -i "s/ZZZZ/${first_plut_year}/" landcover.ins    # first_plut_year
+            # inputs
+            if [[ "${thisSSP}" == "hist" ]]; then
+                sed -i "s/ssp585/historical/g" main.ins
+            else
+                sed -i "s/ssp585/${thisSSP}/g" main.ins
+            fi
+            if [[ "${thisSSP}" == "hist" ]]; then
+                sed -i "s/co2_histhistorical/co2_histssp585/g" main.ins
+            fi
+            # number of patches
+            sed -i -E "s/npatch_secondarystand\s+[0-9]+/npatch_secondarystand 20/g" landcover.ins
+        elif [[ ${runtype} == "sai" ]]; then
+            # Need to add functionality to handle ensemble members
+            if [[ "${thisSSP}" == "ssp245" ]]; then
+                sed -i "s/timeseries-cmip6/CESM2-WACCM-SSP245/g" main.ins
+                sed -i "s/b.e21.BWHIST.f09_g17.CMIP6-historical-WACCM.001/b.e21.BWSSP245cmip6.f09_g17.CMIP6-SSP2-4.5-WACCM.001/g" main.ins
+                sed -i "s/18500101-20141231/20150101-21001231/g" main.ins
+            elif [[ "${thisSSP}" == "arise1.5" ]]; then
+                echo "arise isn't ready" >&2
+                exit 1
+                sed -i "s/timeseries-cmip6/ARISE-SAI-1.5/g" main.ins
+                sed -i "s/b.e21.BWHIST.f09_g17.CMIP6-historical-WACCM.001/b.e21.BW.f09_g17.SSP245-TSMLT-GAUSS-DEFAULT.001/g" main.ins
+                sed -i "s/18500101-20141231/20150101-21001231/g" main.ins
+            elif [[ "${thisSSP}" != "hist" ]]; then
+                echo "SSP ${thisSSP} not recognized for runtype ${runtype}" >&2
+                exit 1
+            fi
+            # Save state if this potential run will need to be resumed in a future climate
+            if [[ ${first_plut_year} -ge ${future_y1} && ${y1} -lt ${future_y1} ]]; then
+                sed -i "s/WWWW/${future_y1}/g" main.ins
+            else
+                sed -i "s/save_state 1/save_state 0/g" main.ins
+            fi
+            # Set up restart info
+            sed -i "s/restart 0/restart 1/g" main.ins
+#            #if [[ ${first_plut_year} -ge ${future_y1} && ${y1} -ge ${future_y1} && ${y1} -gt $((first_plut_year - Nyears_getready)) ]]; then
+#            if [[ ${first_plut_year} -ge ${future_y1} && ${y1} -gt $((first_plut_year - Nyears_getready)) ]]; then
+#                sed -i "s/VVVV/${future_y1}/g" main.ins
+#            else
+#                sed -i "s/VVVV/$((y1 - Nyears_getready
         else
-            sed -i "s/ssp585/${thisSSP}/g" main.ins
+            echo "rc_setup_potential_loop.sh doesn't know ins-file substitutions for runtype ${runtype}" >&2
+            exit 1
         fi
-        if [[ "${thisSSP}" == "hist" ]]; then
-            sed -i "s/co2_histhistorical/co2_histssp585/g" main.ins
-        fi
-        # number of patches
-        sed -i -E "s/npatch_secondarystand\s+[0-9]+/npatch_secondarystand 20/g" landcover.ins
     
         # Get gridlist for later
         if [[ "${gridlist}" == "" ]]; then

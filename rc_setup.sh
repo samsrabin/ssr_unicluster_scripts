@@ -4,9 +4,9 @@ set -e
 reservation=""
 #reservation="-r landsymm-project"
 realinsfile="main.ins"
-#testinsfile="main_test2.ins"; testnproc=1
-testinsfile="main_test1_fast.ins"; testnproc=1
-testinsfile="test3x40.ins"; testnproc=40
+testinsfile="main_test2.ins"; testnproc=1
+#testinsfile="main_test1_fast.ins"; testnproc=1
+#testinsfile="test3x40.ins"; testnproc=40
 #testinsfile="main_test2x2.ins"; testnproc=2
 #testinsfile="main_test160x3.ins"; testnproc=160
 inputmodule="cfx"
@@ -15,24 +15,53 @@ walltime_fut="48:00:00"  # Should take around ??? hours
 walltime_minutes_max=4320
 round_walltime_to_next=30        # minutes
 walltime_pot_minutes_minimum=90  # 160 processes, Unicluster
-walltime_pot_minutes_peryr=3.4   # 160 processes, Unicluster
 hist_y1=1850
 future_y1=2015
-maxNstates=3
-future_yN=2100 # Because last year of emulator output is 2084
-Nyears_getready=2
 
 #############################################################################################
 # Function-parsing code from https://gist.github.com/neatshell/5283811
 
-script="lsf_setup.sh"
+script="rc_setup.sh"
 function usage {
     echo " "
-    echo -e "usage: $script [-t]\n"
+    echo -e "usage: $script runtype [-t]\n"
 }
 
+# Get runtype and set default arguments
+runtype="$1"
+shift
+if [[ "${runtype}" == "" ]]; then
+    echo "You must provide runtype (lsf, lsa, or sai)." >&2
+    exit 1
+elif [[ "${runtype}" == "lsf" ]]; then
+    # LandSyMM forestry
+    arch="landsymm-dev-forestry"
+    first_pot_y1=1850
+    pot_step=20
+    Nyears_getready=2
+    Nyears_pot=99999
+    walltime_pot_minutes_peryr=3.4   # 160 processes, Unicluster
+elif [[ "${runtype}" == "lsa" || "${runtype}" -eq "sai" ]]; then
+    # LandSyMM agriculture (incl. SAI-LandSyMM)
+    arch="landsymm-dev-crops"
+    first_pot_y1=1955
+    pot_step=5
+    Nyears_pot=5
+    Nyears_getready=1
+    walltime_pot_minutes_peryr=3.4   # 2022-11-03: For now, assuming the same time as lsf
+else
+    echo "runtype must be either lsf, lsa, or sai." >&2
+    exit 1
+fi
+if [[ "${runtype}" -eq "sai" ]]; then
+    ssp_list="hist ssp245 arise1.5"
+else
+    ssp_list="hist ssp126 ssp370 ssp585"
+fi
+
+
 # Set default values for non-positional arguments
-arch="landsymm-dev-forestry"
+future_yN=2100
 istest=0
 arg_yes_fu=0
 arg_no_fu=0
@@ -43,14 +72,11 @@ dependency_in=""
 actual_only=0
 potential_only=0
 nproc=160
-ssp_list="hist ssp126 ssp370 ssp585"
-Nyears_pot=99999
 #Nyears_pot=100
-first_pot_y1=1850
 first_act_y1=${hist_y1}
 last_pot_y1=999999999
-pot_step=20
 pot_yN=2100
+maxNstates=3
 # Handle possible neither/both specs here
 mem_per_node_default=90000 # MB
 mem_per_node=-1 # MB
@@ -109,6 +135,9 @@ do
         --last-y1-pot)  shift
             last_pot_y1=$1
             ;;
+        --future-yN)  shift
+            future_yN=$1
+            ;;
         --yN-pot)  shift
             pot_yN=$1
             ;;
@@ -117,6 +146,9 @@ do
             ;;
         --first-y1-act)  shift
             first_act_y1=$1
+            ;;
+        --max-N-states)  shift
+            maxNstates=$1
             ;;
         -d | --dependency)  shift
             dependency_in="-d $1"
@@ -224,7 +256,7 @@ fi
 
 #############################################################################################
 
-. lsf_get_years.sh
+. rc_get_years.sh
 . lsf_helper_functions.sh
 
 #############################################################################################
@@ -236,7 +268,7 @@ echo " "
 while [[ ! -d template ]]; do
     cd ../
     if [[ "$PWD" == "/" ]]; then
-        echo "lsf_setup.sh must be called from a (subdirectory of a) directory that has a template/ directory"
+        echo "rc_setup.sh must be called from a (subdirectory of a) directory that has a template/ directory"
         exit 1
     fi
 done
@@ -304,7 +336,7 @@ while IFS= read -r save_years; do
                 fi
             fi # if this is the first future-actual
             thisSSP=""
-            . lsf_1_acthist.sh
+            . rc_1_acthist.sh
         fi
 
         # Set up/submit potential historical run(s)
@@ -312,8 +344,8 @@ while IFS= read -r save_years; do
             pot_years="${save_years}"
             thisSSP="hist"
             resume_pre2015pots=0
-            echo lsf_setup_potential_loop.sh A
-            . lsf_setup_potential_loop.sh
+            echo rc_setup_potential_loop.sh A
+            . rc_setup_potential_loop.sh
             save_years=${future_y1}
         fi
     else
@@ -321,7 +353,7 @@ while IFS= read -r save_years; do
         s=-1
         for thisSSP in ${ssp_list}; do
             s=$((s + 1))
-            if [[ "${thisSSP}" != "hist" && "${thisSSP:0:3}" != "ssp" ]]; then
+            if [[ ${runtype} != "sai" && "${thisSSP}" != "hist" && "${thisSSP:0:3}" != "ssp" ]]; then
                 thisSSP="ssp${thisSSP}"
             fi
             this_prefix="${prefix}_${thisSSP}"
@@ -330,8 +362,8 @@ while IFS= read -r save_years; do
             first_pot_y1=$(echo ${list_pot_y1_future} | cut -d" " -f1)
             if [[ ( ( ${first_save_year} != "" && ${first_pot_y1} -lt ${first_save_year} ) || ${potential_only} -eq 1 ) && ${did_resume_pre2015pots[s]} == 0 && ${thisSSP} != "hist" ]]; then
                 resume_pre2015pots=1
-                echo lsf_setup_potential_loop.sh B
-                . lsf_setup_potential_loop.sh
+                echo rc_setup_potential_loop.sh B
+                . rc_setup_potential_loop.sh
                 did_resume_pre2015pots[s]=1
             fi
 
@@ -353,8 +385,8 @@ while IFS= read -r save_years; do
             if [[ ${actual_only} -eq 0 && "${save_years}" != "" ]]; then
                 pot_years="${save_years}"
                 resume_pre2015pots=0
-                echo lsf_setup_potential_loop.sh C
-                . lsf_setup_potential_loop.sh
+                echo rc_setup_potential_loop.sh C
+                . rc_setup_potential_loop.sh
             fi
         done # loop through SSPs
     fi # whether in historical or future period

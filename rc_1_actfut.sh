@@ -54,11 +54,28 @@ else
     sed -iE "s/^\!restart_year VVVV/restart_year ${act_restart_year}/g" main.ins
     sed -i "s/VVVV/${act_restart_year}/" main.ins    # restart_year
     sed -i "s/WWWW/\"${fut_save_years}\"/" main.ins    # save_years
-    sed -i "s/XXXX/${last_LUyear_past}/" landcover.ins    # XXXXpast_YYYYall_LU.txt
-    sed -i "s/YYYY/${last_LUyear_all}/" landcover.ins    # XXXXpast_YYYYall_LU.txt
-    sed -iE "s/^\s*first_plut_year/\!first_plut_year/g" landcover.ins
-    sed -i "s/restart 0/restart 1/g" main.ins
-    sed -i "s/ssp585/${thisSSP}/g" main.ins
+    if [[ ${runtype} == "lsf" ]]; then
+        sed -i "s/XXXX/${last_LUyear_past}/" landcover.ins    # XXXXpast_YYYYall_LU.txt
+        sed -i "s/YYYY/${last_LUyear_all}/" landcover.ins    # XXXXpast_YYYYall_LU.txt
+        sed -iE "s/^\s*first_plut_year/\!first_plut_year/g" landcover.ins
+        sed -i "s/restart 0/restart 1/g" main.ins
+        sed -i "s/ssp585/${thisSSP}/g" main.ins
+    elif [[ ${runtype} == "sai" ]]; then
+        # Need to add functionality to handle ensemble members
+        if [[ "${thisSSP}" == "ssp245" ]]; then
+            sed -i "s/timeseries-cmip6/CESM2-WACCM-SSP245/g" main.ins
+            sed -i "s/b.e21.BWHIST.f09_g17.CMIP6-historical-WACCM.001/b.e21.BWSSP245cmip6.f09_g17.CMIP6-SSP2-4.5-WACCM.001/g" main.ins
+        elif [[ "${thisSSP}" == "arise1.5" ]]; then
+            sed -i "s/timeseries-cmip6/ARISE-SAI-1.5/g" main.ins
+            sed -i "s/b.e21.BWHIST.f09_g17.CMIP6-historical-WACCM.001/b.e21.BW.f09_g17.SSP245-TSMLT-GAUSS-DEFAULT.001/g" main.ins
+        else
+            echo "SSP ${thisSSP} not recognized for runtype ${runtype}" >&2
+            exit 1
+        fi
+    else
+        echo "rc_1_actfut.sh doesn't know ins-file substitutions for runtype ${runtype}" >&2
+        exit 1
+    fi
 
     # Get gridlist
     gridlist=$(get_param.sh ${topinsfile} "file_gridlist")

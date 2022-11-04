@@ -28,7 +28,9 @@ list_pot_y1_hist=()
 list_pot_y1_future=()
 list_pot_yN_hist=()
 list_pot_yN_future=()
-y1=${first_LUyear_past}
+#y1=${first_LUyear_past}
+y0=${first_LUyear_past}
+y1=$((first_LUyear_past + Nyears_getready))
 yN=$((y1 + Nyears_pot - 1))
 if [[ ${yN} -gt ${pot_yN} ]]; then
     yN=${pot_yN}
@@ -36,52 +38,58 @@ fi
 i=0
 list_pot_y0_future=()
 while [[ ${do_hist} -eq 1 ]] && [[ ${y1} -le ${pot_yN} ]] && [[ ${y1} -le ${last_pot_y1} ]] && [[ ${yN} -lt ${future_y1} ]]; do
-    list_pot_y1_hist+=(${y1})
+    list_pot_y1_hist+=(${y0})
 
     if [[ ${yN} -ge ${future_y1} ]]; then
         list_pot_yN_hist+=(${hist_yN})
         list_pot_y1_future+=(${future_y1})
         list_pot_yN_future+=(${yN})
-        list_pot_y0_future+=(${y1})
+        list_pot_y0_future+=(${y0})
         list_pot_save_state+=(1)
     else
         list_pot_yN_hist+=(${yN})
         list_pot_save_state+=(0)
     fi
 
+    y0=$((y0 + pot_step))
     y1=$((y1 + pot_step))
-    yN=$((y1 + Nyears_pot - 1))
+    yN=$((yN + pot_step))
     if [[ ${yN} -gt ${pot_yN} ]]; then
         yN=${pot_yN}
     fi
 done
+
 h=-1
 list_future_is_resuming=()
 while [[ ${y1} -le ${pot_yN} ]] && [[ ${y1} -le ${last_pot_y1} ]] && [[ ${y1} -lt ${future_yN} ]]; do
     list_pot_save_state+=(0)
-    yN=$((y1 + Nyears_pot - 1))
     if [[ ${yN} -gt ${pot_yN} ]]; then
         yN=${pot_yN}
     fi
+    if [[ ${yN} -gt ${future_yN} ]]; then
+        yN=${future_yN}
+    fi
 
-    if [[ ${y1} -lt ${future_y1} ]]; then
+    if [[ ${y0} -lt ${future_y1} ]]; then
         if [[ ${do_hist} -eq 1 ]]; then
-            list_pot_y1_hist+=(${y1})
+            list_pot_y1_hist+=(${y0})
             list_pot_yN_hist+=(${hist_yN})
         fi
         list_pot_y1_future+=(${future_y1})
         list_pot_yN_future+=(${yN})
         list_future_is_resuming+=(1)
         h=$((h+1))
-        list_pot_y0_future+=(${y1})
+        list_pot_y0_future+=(${y0})
     else
-        list_pot_y1_future+=(${y1})
+        list_pot_y1_future+=(${y0})
         list_pot_yN_future+=(${yN})
         list_future_is_resuming+=(0)
         list_pot_y0_future+=(9999)
     fi
 
+    y0=$((y0 + pot_step))
     y1=$((y1 + pot_step))
+    yN=$((yN + pot_step))
 done
 
 # Generate lists of states to save in historical and future periods
