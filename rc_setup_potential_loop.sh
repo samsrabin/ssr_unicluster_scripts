@@ -88,6 +88,8 @@ for y1 in ${y1_list[@]}; do
     elif [[ ${resume_pre2015pots} -eq 1 && ${y0} -ge ${first_save_year} ]]; then
 #        echo skipping B
         continue
+#    elif [[ ${runtype} == "sai" && ${thisSSP} == "arise1.5" && ${y1} -lt ${future_y1} ]]; then
+#        continue
     fi
 
     # Does this run include the ssp period?
@@ -226,17 +228,13 @@ for y1 in ${y1_list[@]}; do
             sed -i -E "s/npatch_secondarystand\s+[0-9]+/npatch_secondarystand 20/g" landcover.ins
         elif [[ ${runtype} == "sai" ]]; then
             # Need to add functionality to handle ensemble members
-            if [[ "${thisSSP}" == "ssp245" ]]; then
-                sed -i "s/timeseries-cmip6/CESM2-WACCM-SSP245/g" main.ins
-                sed -i "s/b.e21.BWHIST.f09_g17.CMIP6-historical-WACCM.001/b.e21.BWSSP245cmip6.f09_g17.CMIP6-SSP2-4.5-WACCM.001/g" main.ins
-                sed -i "s/18500101-20141231/20150101-21001231/g" main.ins
-            elif [[ "${thisSSP}" == "arise1.5" ]]; then
-                echo "arise isn't ready" >&2
-                exit 1
+            if [[ "${thisSSP}" == "arise1.5" ]]; then
+                sed -i "s/CESM CMIP6 historical, ensemble member 1/CESM-WACCM ARISE-1.5, ensemble member 1/g" main.ins
                 sed -i "s/timeseries-cmip6/ARISE-SAI-1.5/g" main.ins
                 sed -i "s/b.e21.BWHIST.f09_g17.CMIP6-historical-WACCM.001/b.e21.BW.f09_g17.SSP245-TSMLT-GAUSS-DEFAULT.001/g" main.ins
-                sed -i "s/18500101-20141231/20150101-21001231/g" main.ins
-            elif [[ "${thisSSP}" != "hist" ]]; then
+                sed -i "s/18500101-20141231/20350101-20691230/g" main.ins
+                sed -i -e "/CESM-WACCM ssp245, ensemble member 1/,+6d" main.ins
+            elif [[ "${thisSSP}" != "hist" && "${thisSSP}" != "ssp245" ]]; then
                 echo "SSP ${thisSSP} not recognized for runtype ${runtype}" >&2
                 exit 1
             fi
@@ -248,11 +246,6 @@ for y1 in ${y1_list[@]}; do
             fi
             # Set up restart info
             sed -i "s/restart 0/restart 1/g" main.ins
-#            #if [[ ${first_plut_year} -ge ${future_y1} && ${y1} -ge ${future_y1} && ${y1} -gt $((first_plut_year - Nyears_getready)) ]]; then
-#            if [[ ${first_plut_year} -ge ${future_y1} && ${y1} -gt $((first_plut_year - Nyears_getready)) ]]; then
-#                sed -i "s/VVVV/${future_y1}/g" main.ins
-#            else
-#                sed -i "s/VVVV/$((y1 - Nyears_getready
         else
             echo "rc_setup_potential_loop.sh doesn't know ins-file substitutions for runtype ${runtype}" >&2
             exit 1

@@ -110,6 +110,9 @@ if [[ ${potential_only} -eq 0 ]]; then
                 added_future_y1=1
             fi
             continue
+        elif [[ ${y} -ge ${future_y1} && "${hist_save_years}" != *"$((future_y1 - 1))"* ]]; then
+            hist_save_years+=" ${future_y1}"
+            added_future_y1=1
         elif [[ ${y} -le ${future_y1} ]]; then
             continue
         fi

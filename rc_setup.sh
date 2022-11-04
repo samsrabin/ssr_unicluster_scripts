@@ -16,7 +16,6 @@ walltime_minutes_max=4320
 round_walltime_to_next=30        # minutes
 walltime_pot_minutes_minimum=90  # 160 processes, Unicluster
 hist_y1=1850
-future_y1=2015
 
 #############################################################################################
 # Function-parsing code from https://gist.github.com/neatshell/5283811
@@ -54,9 +53,11 @@ else
     exit 1
 fi
 if [[ "${runtype}" -eq "sai" ]]; then
-    ssp_list="hist ssp245 arise1.5"
+    ssp_list="hist arise1.5"
+    future_y1=2035
 else
     ssp_list="hist ssp126 ssp370 ssp585"
+    future_y1=2015
 fi
 
 
@@ -234,6 +235,12 @@ else
     fi
 fi
 
+# Make sure you didn't specify ssp245 here
+if [[ "${runtype}" == "sai" && "${ssp_list}" == *"ssp245"* ]]; then
+    echo "Do not specify ssp245 for runtype sai; it's lumped in with historical period." >&2
+    exit 1
+fi
+
 # Are we actually submitting historical period?
 if [[ $(echo ${ssp_list} | cut -f1 -d" ") == "hist" ]]; then
     do_hist=1
@@ -378,7 +385,7 @@ while IFS= read -r save_years; do
                     fi
                 fi # if this is the first future-actual
 
-                . lsf_1_actfut.sh
+                . rc_1_actfut.sh
                 popdq
             fi # if doing future-actual
 
