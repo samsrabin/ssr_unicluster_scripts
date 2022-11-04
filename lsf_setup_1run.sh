@@ -247,6 +247,10 @@ if [[ $PWD == *calibration* ]]; then
 else
     runsetname=$(lsf_get_basename.sh)
 fi
+if [[ "${runsetname}" == "" ]]; then
+    echo "lsf_setup_1run.sh: runsetname is blank"
+    exit 1
+fi
 
 # Get directories, modifying paths if testing
 if [[ "${whichrun}" == "pot" ]]; then

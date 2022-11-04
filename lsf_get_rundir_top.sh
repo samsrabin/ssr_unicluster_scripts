@@ -42,7 +42,7 @@ fi
 # Get name of this runset
 runsetname=$(lsf_get_runset_name.sh)
 if [[ "${runsetname}" == "" ]]; then
-    echo "runsetname is blank"
+    echo "lsf_get_rundir_top.sh: runsetname is blank"
     exit 1
 fi
 
