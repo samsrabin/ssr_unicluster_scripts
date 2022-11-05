@@ -6,20 +6,8 @@ echo "### potential/${thisSSP} ###"
 echo "#########################"
 set " "
 
-runset_workdir="$(get_equiv_workdir.sh "$PWD")"
-if [[ ${istest} -eq 1 ]]; then
-    runset_workdir+="_test"
-fi
 mkdir -p potential
 cd potential
-
-# Set up dirForPLUM
-if [[ "${dirForPLUM}" == "" ]]; then
-    dirForPLUM=${runset_workdir}/outputs/outForPLUM-$(date "+%Y-%m-%d-%H%M%S")
-    mkdir -p ${dirForPLUM}
-    echo "Top-level output directory: $dirForPLUM"
-    echo " "
-fi
 
 
 ###################
