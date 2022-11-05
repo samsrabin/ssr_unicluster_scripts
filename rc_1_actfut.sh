@@ -112,8 +112,11 @@ else
         pp_y1_list=""
         pp_yN_list=""
         for i in ${!list_pot_y1_future[@]}; do
+            this_pot_y0=${list_pot_y0_future[i]}
             this_pot_y1=${list_pot_y1_future[i]}
-            this_pot_y1=$((this_pot_y1 + Nyears_getready))
+            if [[ ${this_pot_y1} -lt ${this_pot_y0} ]]; then
+                this_pot_y1=$((this_pot_y1 + Nyears_getready))
+            fi
             this_pot_yN=${list_pot_yN_future[i]}
             if [[ ${this_pot_y1} -ge ${firstrunyear} && ${this_pot_y1} -le ${lasthistyear} ]]; then
                 if [[ ${this_pot_yN} -gt ${lasthistyear} ]]; then
