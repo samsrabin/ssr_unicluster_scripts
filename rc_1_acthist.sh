@@ -11,10 +11,41 @@ if [[ ( "${act_restart_year}" == "" && ${first_act_y1} -gt ${hist_y1} ) || ( "${
     continue
 fi
 
+# Get first year in this run
+if [[ "${act_restart_year}" == "" ]]; then
+    firstyear_thisrun="spin"
+else
+    firstyear_thisrun=${act_restart_year}
+fi
+
 # Get lasthistyear
 echo save_years $save_years;
 lasthistyear=$((lastsaveyear - 1))
 firstsaveyear=$(echo ${save_years} | cut -d" " -f1)
+
+# Extend run to reach end of last potential period, if needed
+if [[ ${runtype} == "lsa" || ${runtype} == "sai" ]]; then
+    if [[ "${firstyear_thisrun}" == "spin" ]]; then                                                               firstrunyear=${hist_y1}
+    else
+        firstrunyear=${act_restart_year}
+    fi
+    pp_y1_list=""
+    pp_yN_list=""
+    for i in ${!list_pot_y1_hist[@]}; do
+        this_pot_y1=${list_pot_y1_hist[i]}
+        this_pot_y1=$((this_pot_y1 + Nyears_getready))
+        this_pot_yN=${list_pot_yN_hist[i]}
+        if [[ ${this_pot_y1} -ge ${firstrunyear} && ${this_pot_y1} -le ${lasthistyear} ]]; then
+            if [[ ${this_pot_yN} -gt ${lasthistyear} ]]; then
+                echo "This actual run (${firstrunyear}-${lasthistyear}) finishes in the middle of a potential-run period (${this_pot_y1}-${this_pot_yN}) and would thus cause problems in averaging. Extending to ${this_pot_yN} to avoid this issue."
+                lasthistyear=${this_pot_yN}
+                break
+            fi
+        fi
+    done
+fi
+
+# Tweak lasthistyear, if needed (?)
 do_break=0
 if [[ ${last_hist_year} -gt ${last_year_act_hist} ]]; then
     echo "Warning: Some historical-period save_year (${lastsaveyear}) implies a run outside historical period (${last_year_act_hist})."
@@ -24,11 +55,6 @@ do_break=1
 fi
 
 # Set up directory
-if [[ "${act_restart_year}" == "" ]]; then
-    firstyear_thisrun="spin"
-else
-    firstyear_thisrun=${act_restart_year}
-fi
 theseYears="${firstyear_thisrun}-${lasthistyear}"
 dir_acthist="actual/hist_${theseYears}"
 
