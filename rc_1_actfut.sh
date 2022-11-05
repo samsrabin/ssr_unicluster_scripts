@@ -54,7 +54,7 @@ else
     sed -i "s/restart 0/restart 1/g" main.ins
     sed -iE "s/^\!restart_year VVVV/restart_year ${act_restart_year}/g" main.ins
     sed -i "s/VVVV/${act_restart_year}/" main.ins    # restart_year
-    sed -i "s/WWWW/\"${fut_save_years}\"/" main.ins    # save_years
+    sed -i "s/WWWW/\"${fut_save_years/ ${fake_save_year}/}\"/" main.ins    # save_years
     if [[ ${runtype} == "lsf" ]]; then
         sed -i "s/XXXX/${last_LUyear_past}/" landcover.ins    # XXXXpast_YYYYall_LU.txt
         sed -i "s/YYYY/${last_LUyear_all}/" landcover.ins    # XXXXpast_YYYYall_LU.txt
@@ -74,6 +74,40 @@ else
         fi
     else
         echo "rc_1_actfut.sh doesn't know ins-file substitutions for runtype ${runtype}" >&2
+        exit 1
+    fi
+
+    # Set up postprocessing
+    postproc_template="$HOME/scripts/${runtype}_postproc.template.act.sh"
+    if [[ ${runtype} == "lsa" || ${runtype} == "sai" ]]; then
+        if [[ "${firstyear_thisrun}" == "spin" ]]; then
+            firstrunyear=${hist_y1}
+        else
+            firstrunyear=${act_restart_year}
+        fi
+        pp_y1_list=""
+        pp_yN_list=""
+        for i in ${!list_pot_y1_future[@]}; do
+            this_pot_y1=${list_pot_y1_future[i]}
+            this_pot_y1=$((this_pot_y1 + Nyears_getready))
+            this_pot_yN=${list_pot_yN_future[i]}
+            if [[ ${this_pot_y1} -ge ${firstrunyear} && ${this_pot_y1} -le ${lasthistyear} ]]; then
+                if [[ ${this_pot_yN} -gt ${lasthistyear} ]]; then
+                    echo "This actual run (${firstrunyear}-${lasthistyear}) finishes in the middle of a potential-run period (${this_pot_y1}-${this_pot_yN}) and would thus cause problems in averaging." >&2
+                    exit 1
+                fi
+                echo "Will postprocess ${this_pot_y1}-${this_pot_yN}"
+                pp_y1_list+=" ${this_pot_y1}"
+                pp_yN_list+=" ${this_pot_yN}"
+            fi
+        done
+        if [[ ! ( ${lasthistyear} -lt ${first_pot_y1} || "${pp_y1_list}" == "" ) ]]; then
+            cp "${postproc_template}" postproc.sh
+            sed -i "s/QQQQ/${pp_y1_list}/g" postproc.sh
+            sed -i "s/RRRR/${pp_yN_list}/g" postproc.sh
+        fi
+    elif [[ ${runtype} != "lsf" ]]; then
+        echo "rc_1_actfut.sh doesn't know how to handle postproc for runtype ${runtype}" >&2
         exit 1
     fi
 

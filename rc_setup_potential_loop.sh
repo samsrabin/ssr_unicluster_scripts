@@ -88,8 +88,6 @@ for y1 in ${y1_list[@]}; do
     elif [[ ${resume_pre2015pots} -eq 1 && ${y0} -ge ${first_save_year} ]]; then
 #        echo skipping B
         continue
-#    elif [[ ${runtype} == "sai" && ${thisSSP} == "arise1.5" && ${y1} -lt ${future_y1} ]]; then
-#        continue
     fi
 
     # Does this run include the ssp period?
@@ -308,27 +306,36 @@ for y1 in ${y1_list[@]}; do
         pushdq ${thisdir}
     fi
 
-    # Copy over template script
-    postproc_template="$HOME/scripts/lsf_postproc.template.sh"
-    if [[ ! -f ${postproc_template} ]]; then
-       echo "postproc_template file not found: ${postproc_template}"
-       exit 1
-    fi
-    cp ${postproc_template} postproc.sh
-    # Replace placeholder(s)
-    if [[ "${dirForPLUM}" == "" ]]; then
-        echo "dirForPLUM unspecified"
+    # Deal with postproc script
+    postproc_template="$HOME/scripts/${runtype}_postproc.template.pot.sh"
+    if [[ ${runtype} == "lsa" || ${runtype} == "sai" ]]; then
+        cp "${postproc_template}" postproc.sh
+        sed -i "s/QQQQ/${first_plut_year}/g" postproc.sh
+        sed -i "s/UUUU/${lasthistyear}/g" postproc.sh
+    elif [[ ${runtype} == "lsf" ]]; then
+        if [[ ! -f ${postproc_template} ]]; then
+           echo "postproc_template file not found: ${postproc_template}"
+           exit 1
+        fi
+        cp "${postproc_template}" postproc.sh
+        # Replace placeholder(s)
+        if [[ "${dirForPLUM}" == "" ]]; then
+            echo "dirForPLUM unspecified"
+            exit 1
+        fi
+        sed -i "s@DIRFORPLUM@${dirForPLUM}@g" postproc.sh
+        sed -i "s@THISPOT@${thisPot}@g" postproc.sh
+        sed -i "s@THISSSP@${thisSSP}@g" postproc.sh
+        if [[ ${is_resuming} -eq 0 ]]; then
+            sed -i "s@THISY1@$((y1 + Nyears_getready))@g" postproc.sh
+        else
+            sed -i "s@THISY1@${y1}@g" postproc.sh
+        fi
+        sed -i "s@THISYN@${yN}@g" postproc.sh
+    else
+        echo "rc_setup_potential_loop.sh doesn't know how to handle postproc for runtype ${runtype}" >&2
         exit 1
     fi
-    sed -i "s@DIRFORPLUM@${dirForPLUM}@g" postproc.sh
-    sed -i "s@THISPOT@${thisPot}@g" postproc.sh
-    sed -i "s@THISSSP@${thisSSP}@g" postproc.sh
-    if [[ ${is_resuming} -eq 0 ]]; then
-        sed -i "s@THISY1@$((y1 + Nyears_getready))@g" postproc.sh
-    else
-        sed -i "s@THISY1@${y1}@g" postproc.sh
-    fi
-    sed -i "s@THISYN@${yN}@g" postproc.sh
 
     # Actually set up and even submit, if being called from within setup_all.sh
     if [[ ( ${pot_restart_year} -le ${hist_y1} || ( ${pot_restart_year} -eq ${future_y1} && ${is_resuming} -eq 0  ) || ${act_restart_year} -eq ${y1} || ${pot_restart_year} -eq ${future_y1} ) && ${y1} -ne $(echo "${fut_save_years}" | awk '{print $NF}') ]]; then

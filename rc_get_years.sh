@@ -143,6 +143,33 @@ if [[ ${actual_only} -eq 0 ]]; then
     fi
 fi
 
+# Add a fake "save year" if needed to ensure that actual runs extend through the end of the potential runs
+fake_save_year=
+if [[ ${runtype} != "lsf" ]]; then
+    last_act_year=-9999
+    for y in ${hist_save_years} ${fut_save_years}; do
+        if [[ ${y} -gt ${last_act_year} ]]; then
+            last_act_year=$((y - 1))
+        fi
+    done
+    last_pot_year=-9999
+    for y in ${list_pot_yN_hist} ${list_pot_yN_future}; do
+        if [[ ${y} -gt ${last_pot_year} ]]; then
+            last_pot_year=${y}
+        fi
+    done
+    last_needed_save_year=$((last_pot_year + 1))
+    if [[ ${last_act_year} -lt ${last_pot_year} ]]; then
+        if [[ "${fut_save_years}" != "" ]]; then
+            fut_save_years+=" ${last_needed_save_year}"
+        else
+            hist_save_years+=" ${last_needed_save_year}"
+        fi
+        echo "Extending last actual run through ${last_pot_year} to cover the last potential period."
+        fake_save_year=${last_needed_save_year}
+    fi
+fi
+
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 # Risk of filling up scratch space if saving too many states.
