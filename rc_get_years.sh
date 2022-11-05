@@ -59,6 +59,12 @@ while [[ ${do_hist} -eq 1 ]] && [[ ${y1} -le ${pot_yN} ]] && [[ ${y1} -le ${last
     fi
 done
 
+if [[ ${do_hist} -eq 0 ]]; then
+    y0=$((future_y1 - Nyears_getready))
+    y1=${future_y1}
+    yN=$((y1 + Nyears_pot - 1))
+fi
+
 h=-1
 list_future_is_resuming=()
 while [[ ${y1} -le ${pot_yN} ]] && [[ ${y1} -le ${last_pot_y1} ]] && [[ ${y1} -lt ${future_yN} ]]; do
