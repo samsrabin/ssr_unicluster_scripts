@@ -153,7 +153,7 @@ if [[ ${runtype} != "lsf" ]]; then
         fi
     done
     last_pot_year=-9999
-    for y in ${list_pot_yN_hist} ${list_pot_yN_future}; do
+    for y in ${list_pot_yN_hist[@]} ${list_pot_yN_future[@]}; do
         if [[ ${y} -gt ${last_pot_year} ]]; then
             last_pot_year=${y}
         fi
