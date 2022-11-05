@@ -54,7 +54,7 @@ else
     exit 1
 fi
 if [[ "${runtype}" -eq "sai" ]]; then
-    ssp_list="hist arise1.5"
+    ssp_list="hist ssp245 arise1.5"
     future_y1=2035
 else
     ssp_list="hist ssp126 ssp370 ssp585"
@@ -244,12 +244,6 @@ else
     if [[ $do_fu -eq 0 ]]; then
         ppfudev="--no_fu"
     fi
-fi
-
-# Make sure you didn't specify ssp245 here
-if [[ "${runtype}" == "sai" && "${ssp_list}" == *"ssp245"* ]]; then
-    echo "Do not specify ssp245 for runtype sai; it's lumped in with historical period." >&2
-    exit 1
 fi
 
 # Are we actually submitting historical period?
