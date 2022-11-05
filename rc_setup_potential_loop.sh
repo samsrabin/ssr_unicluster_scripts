@@ -7,6 +7,9 @@ echo "#########################"
 set " "
 
 runset_workdir="$(get_equiv_workdir.sh "$PWD")"
+if [[ ${istest} -eq 1 ]]; then
+    runset_workdir+="_test"
+fi
 mkdir -p potential
 cd potential
 
