@@ -24,18 +24,8 @@ gzip postproc/QQQQ-UUUU/gsirrigation_plantyear.out
 gzip postproc/QQQQ-UUUU/yield_plantyear.out
 
 # Save run outputs to directory for PLUM
-thisDir="${PWD}"
-while [[ ! -d outputs/ ]]; do
-	cd ../
-	if [[ "$PWD" == "/" ]]; then
-		echo "Could not find an outputs directory in this directory tree"
-		exit 1
-	fi
-done
-cd outputs/
-dirForPLUM=${PWD}/$(ls -d outForPLUM-* | tail -n 1)
-rsync -ahm "${thisDir}/postproc/QQQQ-UUUU" ${dirForPLUM}/
-cd "${thisDir}"
+dirForPLUM=DIRFORPLUM
+rsync -ahm "postproc/QQQQ-UUUU" ${dirForPLUM}/
 
 # Save run info to directory for PLUM
 tarfile=${dirForPLUM}/QQQQ-UUUU/runinfo_pot.tar

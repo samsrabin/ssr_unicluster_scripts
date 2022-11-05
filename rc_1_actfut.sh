@@ -105,6 +105,11 @@ else
             cp "${postproc_template}" postproc.sh
             sed -i "s/QQQQ/${pp_y1_list}/g" postproc.sh
             sed -i "s/RRRR/${pp_yN_list}/g" postproc.sh
+            if [[ "${dirForPLUM}" == "" ]]; then
+                echo "dirForPLUM unspecified"
+                exit 1
+            fi
+            sed -i "s@DIRFORPLUM@${dirForPLUM}@g" postproc.sh
         fi
     elif [[ ${runtype} != "lsf" ]]; then
         echo "rc_1_actfut.sh doesn't know how to handle postproc for runtype ${runtype}" >&2

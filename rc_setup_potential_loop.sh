@@ -311,7 +311,12 @@ for y1 in ${y1_list[@]}; do
     if [[ ${runtype} == "lsa" || ${runtype} == "sai" ]]; then
         cp "${postproc_template}" postproc.sh
         sed -i "s/QQQQ/${first_plut_year}/g" postproc.sh
-        sed -i "s/UUUU/${lasthistyear}/g" postproc.sh
+        sed -i "s/UUUU/${yN}/g" postproc.sh
+        if [[ "${dirForPLUM}" == "" ]]; then
+            echo "dirForPLUM unspecified"
+            exit 1
+        fi
+        sed -i "s@DIRFORPLUM@${dirForPLUM}@g" postproc.sh
     elif [[ ${runtype} == "lsf" ]]; then
         if [[ ! -f ${postproc_template} ]]; then
            echo "postproc_template file not found: ${postproc_template}"

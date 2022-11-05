@@ -5,17 +5,7 @@ PATH=$PATH:~/software/guess_utilities_1.3/bin
 
 echo $PWD > this_directory.txt
 
-thisDir="${PWD}"
-while [[ ! -d outputs/ ]]; do
-   cd ../
-   if [[ "$PWD" == "/" ]]; then
-      echo "Could not find an outputs directory in this directory tree"
-      exit 1
-   fi
-done
-cd outputs/
-dirForPLUM=${PWD}/$(ls -d outForPLUM-* | tail -n 1)
-cd "${thisDir}"
+dirForPLUM=DIRFORPLUM
 
 pp_y1_array=( QQQQ )
 pp_yN_array=( RRRR )
