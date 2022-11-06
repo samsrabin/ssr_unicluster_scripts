@@ -303,6 +303,7 @@ for y1 in ${y1_list[@]}; do
         cp "${postproc_template}" postproc.sh
         sed -i "s/QQQQ/${first_plut_year}/g" postproc.sh
         sed -i "s/UUUU/${yN}/g" postproc.sh
+        sed -i "s/THISSSP/${thisSSP}/g" postproc.sh
         if [[ "${dirForPLUM}" == "" ]]; then
             echo "dirForPLUM unspecified"
             exit 1

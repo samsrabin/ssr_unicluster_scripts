@@ -3,37 +3,51 @@ set -e
 
 PATH=$PATH:~/software/guess_utilities_1.3/bin
 
+pp_y1=QQQQ
+pp_yN=UUUU
+
+# Special thing for SAI runs
+if [[ ${pp_y1} -ge 2015 && ${pp_yN} -lt 2035 ]]; then
+    suffix="ssp245"
+elif [[ ( ${pp_y1} -lt 2015 && ${pp_yN} -lt 2015 ) || ${pp_y1} -ge 2035 ]]; then
+    suffix="THISSSP"
+else
+    suffix="???"
+fi
+
+thisDir=${pp_y1}-${pp_yN}_${suffix}
+
 echo $PWD > this_directory.txt
 
-mkdir -p postproc/QQQQ-UUUU
+mkdir -p postproc/${thisDir}
 echo "   tslicing anpp..."
-tslice anpp.out -o postproc/QQQQ-UUUU/anpp.out -f QQQQ -t UUUU -tab -fast
+tslice anpp.out -o postproc/${thisDir}/anpp.out -f ${pp_y1} -t ${pp_yN} -tab -fast
 echo "   tslicing gsirrigation..."
-tslice gsirrigation_st.out -o postproc/QQQQ-UUUU/gsirrigation.out -f QQQQ -t UUUU -tab -fast
+tslice gsirrigation_st.out -o postproc/${thisDir}/gsirrigation.out -f ${pp_y1} -t ${pp_yN} -tab -fast
 echo "   tslicing yield..."
-tslice yield_st.out -o postproc/QQQQ-UUUU/yield.out -f QQQQ -t UUUU -tab -fast
+tslice yield_st.out -o postproc/${thisDir}/yield.out -f ${pp_y1} -t ${pp_yN} -tab -fast
 echo "   tslicing gsirrigation_plantyear..."
-tslice gsirrigation_plantyear_st.out -o postproc/QQQQ-UUUU/gsirrigation_plantyear.out -f QQQQ -t UUUU -tab -fast
+tslice gsirrigation_plantyear_st.out -o postproc/${thisDir}/gsirrigation_plantyear.out -f ${pp_y1} -t ${pp_yN} -tab -fast
 echo "   tslicing yield_plantyear..."
-tslice yield_plantyear_st.out -o postproc/QQQQ-UUUU/yield_plantyear.out -f QQQQ -t UUUU -tab -fast
+tslice yield_plantyear_st.out -o postproc/${thisDir}/yield_plantyear.out -f ${pp_y1} -t ${pp_yN} -tab -fast
 echo "   gzipping..."
-gzip postproc/QQQQ-UUUU/anpp.out
-gzip postproc/QQQQ-UUUU/gsirrigation.out
-gzip postproc/QQQQ-UUUU/yield.out
-gzip postproc/QQQQ-UUUU/gsirrigation_plantyear.out
-gzip postproc/QQQQ-UUUU/yield_plantyear.out
+gzip postproc/${thisDir}/anpp.out
+gzip postproc/${thisDir}/gsirrigation.out
+gzip postproc/${thisDir}/yield.out
+gzip postproc/${thisDir}/gsirrigation_plantyear.out
+gzip postproc/${thisDir}/yield_plantyear.out
 
 # Save run outputs to directory for PLUM
 dirForPLUM=DIRFORPLUM
-rsync -ahm "postproc/QQQQ-UUUU" ${dirForPLUM}/
+rsync -ahm "postproc/${thisDir}" ${dirForPLUM}/
 
 # Save run info to directory for PLUM
-tarfile=${dirForPLUM}/QQQQ-UUUU/runinfo_pot.tar
+tarfile=${dirForPLUM}/${thisDir}/runinfo_pot.tar
 tar -cf ${tarfile} *ins
 tar -rf ${tarfile} *txt
 tar -rf ${tarfile} *log
 
-#touch postproc/QQQQ-UUUU/done
+#touch postproc/${thisDir}/done
 ####declare -a CFTs=("CerealsC3" "CerealsC4" "Rice" "Oilcrops" "Pulses" "StarchyRoots")
 #declare -a CFTs=("CerealsC3s" "CerealsC3w" "CerealsC4" "Rice" "OilNfix" "OilOther" "Pulses" "StarchyRoots" "FruitAndVeg" "Sugarbeet" "Sugarcane")
 ####declare -a Nferts=("0" "0200" "1000")
