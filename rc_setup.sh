@@ -331,6 +331,8 @@ while IFS= read -r save_years; do
 
     if [[ ${first_save_year} != "" && ${first_save_year} -le ${hist_yN} ]]; then
 
+        thisSSP="hist"
+
         # Sanity check
         if [[ ${do_hist} == 0 ]]; then
             echo "do_hist 0 but save_years ${save_years}"
@@ -347,14 +349,12 @@ while IFS= read -r save_years; do
                     dependency+=" -d ${previous_act_jobnum}"
                 fi
             fi # if this is the first future-actual
-            thisSSP=""
             . rc_1_acthist.sh
         fi
 
         # Set up/submit potential historical run(s)
         if [[ ${actual_only} -eq 0 ]]; then
             pot_years="${save_years}"
-            thisSSP="hist"
             resume_pre2015pots=0
             echo rc_setup_potential_loop.sh A
             . rc_setup_potential_loop.sh
