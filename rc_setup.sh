@@ -323,6 +323,7 @@ if [[ "${save_years_lines}" == "" ]]; then
 fi
 
 # Set up/start a run for each set of save years
+N_future_periods=0
 while IFS= read -r save_years; do
 
     # First year in this this determines whether we're in the historical
@@ -361,9 +362,19 @@ while IFS= read -r save_years; do
             save_years=${future_y1}
         fi
     else
+        N_future_periods=$((N_future_periods + 1))
+        if [[ ${N_future_periods} -eq 1 && ${act_restart_year} != "" ]]; then
+            act_restart_year_eachSSP_array=()
+            for thisSSP in ${ssp_list}; do
+                act_restart_year_eachSSP_array+=( ${act_restart_year} )
+            done
+        fi
 
         s=-1
         for thisSSP in ${ssp_list}; do
+            if ${N_future_periods} -eq 1 ]]; then
+                act_restart_year=""
+            fi
             s=$((s + 1))
             if [[ ${runtype} != "sai" && "${thisSSP}" != "hist" && "${thisSSP:0:3}" != "ssp" ]]; then
                 thisSSP="ssp${thisSSP}"

@@ -1,5 +1,7 @@
 if [[ "${act_restart_year}" == "" ]]; then
     act_restart_year=${future_y1}
+else
+    act_restart_year=${act_restart_year_eachSSP_array[$s]}
 fi
 lastsaveyear=$(echo ${save_years} | awk '{print $NF}')
 
@@ -206,4 +208,4 @@ fi
 cd ..
 
 # Set up for next actual run, if needed
-act_restart_year=${lastsaveyear}
+act_restart_year_eachSSP_array[$s]=${lastsaveyear}
