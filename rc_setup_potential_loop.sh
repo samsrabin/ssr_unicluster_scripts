@@ -126,9 +126,6 @@ for y1 in ${y1_list[@]}; do
         rundir_top=placeholderneededinlsf_get_state_path_thisSSPdotsh
         cd ..
         state_path_absolute=${runset_workdir}
-        if [[ ${istest} -eq 1 ]]; then
-            state_path_absolute="${state_path_absolute}_test"
-        fi
         if [[ ${is_resuming} -eq 0 && ${y1} -gt ${hist_yN} ]]; then
             state_path_absolute=${state_path_absolute}/actual/states
             state_path_thisSSP="${state_path_absolute}_${thisSSP}"
