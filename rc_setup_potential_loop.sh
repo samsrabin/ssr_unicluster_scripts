@@ -236,6 +236,14 @@ for y1 in ${y1_list[@]}; do
             echo "rc_setup_potential_loop.sh doesn't know ins-file substitutions for runtype ${runtype}" >&2
             exit 1
         fi
+
+        if [[ ${runtype} != "lsf" ]]; then
+            # Make LPJ-GUESS use PFT-specific N fertilization instead of input file
+            sed -i "s/^param \"file_Nfert\".*/\param \"file_Nfert\" (str \"\")/g" crop.ins
+            # Set do_potyield to 1 and remove file_lucrop, which is thus unnecessary.
+            sed -i -E 's@param "file_lucrop".*$@param "file_lucrop" (str "")\ndo_potyield 1@g' landcover.ins
+        fi
+
     
         # Get gridlist for later
         if [[ "${gridlist}" == "" ]]; then
