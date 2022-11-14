@@ -493,8 +493,6 @@ EOL
 cat "${module_gnu}" >> submit.sh 
 
 cat<<EOL >> submit.sh
-#this requires a locally compiled netcdf with hdf5
-export LD_LIBRARY_PATH=\$SOFTWARE/hdf5-1.12.1/lib:\$SOFTWARE/lib:\$LD_LIBRARY_PATH
 export HDF5_DISABLE_VERSION_CHECK=1
 
 if [[ $(which mpirun | grep "openmpi" | wc -l) -eq 1 ]]; then

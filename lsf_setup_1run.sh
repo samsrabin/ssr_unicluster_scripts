@@ -531,8 +531,6 @@ source $HOME/scripts_peter/module_gnu.sh
 echo "modules after calling module_gnu.sh:"
 module list
 
-#this requires a locally compiled netcdf with hdf5
-export LD_LIBRARY_PATH=\$SOFTWARE/hdf5-1.12.1/lib:\$SOFTWARE/lib:\$LD_LIBRARY_PATH
 export HDF5_DISABLE_VERSION_CHECK=1
 
 diagnostics=1
