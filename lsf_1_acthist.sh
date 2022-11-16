@@ -116,6 +116,24 @@ else
     fi
 fi
 
+# Calculate walltime
+if [[ "${walltime_act_minutes_peryr}" != "" ]]; then
+    if [[ "${act_restart_year}" == "" ]]; then
+        walltime_act=${walltime_spin_minutes}
+    else
+        Nyears=$((lasthistyear - firstyear_thisrun + 1))
+        walltime_act=$(echo "$Nyears * $walltime_act_minutes_peryr" | bc)
+        walltime_act=$(echo "($walltime_act/$round_walltime_to_next+1)*$round_walltime_to_next" | bc)
+    fi
+    if [[ ${walltime_act} -lt ${walltime_act_minutes_minimum} ]]; then
+        walltime_act=${walltime_act_minutes_minimum}
+    elif [[ ${walltime_act} -gt ${walltime_minutes_max} ]]; then
+        echo "Warning: Requested walltime of ${walltime_act} minutes (${Nyears} yr, ${walltime_act_minutes_peryr} min/yr, rounding up to next ${round_walltime_to_next}) exceeds maximum ${walltime_minutes_max} minutes. Setting to ${walltime_minutes_max}."
+        walltime_act=${walltime_minutes_max}
+    fi
+    walltime_hist=${walltime_act}
+fi
+
 # Submit historical run or finishup
 state_path="$(cd ..; lsf_get_rundir_top.sh ${istest} 0)/states"
 this_prefix="${prefix}_hist"

@@ -10,12 +10,13 @@ testinsfile="test3x40.ins"; testnproc=40
 #testinsfile="main_test2x2.ins"; testnproc=2
 #testinsfile="main_test160x3.ins"; testnproc=160
 inputmodule="cfx"
-walltime_hist="48:00:00"
-walltime_fut="48:00:00"  # Should take around ??? hours
 walltime_minutes_max=4320
 round_walltime_to_next=30        # minutes
+walltime_act_minutes_minimum=90  # 160 processes, Unicluster
+walltime_act_minutes_peryr=10.0  # 160 processes, Unicluster, npatch=20, npatch_secondarystand=5
 walltime_pot_minutes_minimum=90  # 160 processes, Unicluster
 walltime_pot_minutes_peryr=3.4   # 160 processes, Unicluster
+walltime_spin_minutes=720
 hist_y1=1850
 future_y1=2015
 maxNstates=3
