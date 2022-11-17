@@ -372,7 +372,7 @@ while IFS= read -r save_years; do
 
         s=-1
         for thisSSP in ${ssp_list}; do
-            if ${N_future_periods} -eq 1 ]]; then
+            if [[ ${N_future_periods} -eq 1 ]]; then
                 act_restart_year=""
             fi
             s=$((s + 1))
