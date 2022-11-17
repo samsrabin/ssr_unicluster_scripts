@@ -46,7 +46,7 @@ elif [[ "${runtype}" == "lsa" || "${runtype}" -eq "sai" ]]; then
     first_pot_y1=1955
     pot_step=5
     Nyears_pot=5
-    Nyears_getready=1
+    Nyears_getready=2
     walltime_pot_minutes_peryr=3.4   # 2022-11-03: For now, assuming the same time as lsf
     walltime_pot_minutes_minimum=45  # 2022-11-04: A guess
 else
