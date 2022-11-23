@@ -172,15 +172,17 @@ fi
 # Process memory specification
 . "${HOME}/scripts/process_slurm_mem_spec.sh"
 
+# Get run set working directory
+runset_workdir="$(get_equiv_workdir.sh "$PWD")"
+if [[ ${istest} -eq 1 ]]; then
+    runset_workdir+="_test"
+fi
+
 # Set up dirForPLUM
 if [[ "${dirForPLUM}" != "" && ! -d "${dirForPLUM}" ]]; then
     echo "dirForPLUM does not exist: ${dirForPLUM}"
     exit 1
 elif [[ "${dirForPLUM}" == "" ]]; then
-    runset_workdir="$(get_equiv_workdir.sh "$PWD")"
-    if [[ ${istest} -eq 1 ]]; then
-        runset_workdir+="_test"
-    fi
     dirForPLUM=${runset_workdir}/outputs/outForPLUM-$(date "+%Y-%m-%d-%H%M%S")
     mkdir -p ${dirForPLUM}
     echo "Top-level output directory: $dirForPLUM"
