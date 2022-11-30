@@ -84,6 +84,7 @@ mem_per_node_default=90000 # MB
 mem_per_node=-1 # MB
 mem_per_cpu_default=500 # MB
 mem_per_cpu=-1 # MB
+reservation=""
 
 # Args while-loop
 while [ "$1" != "" ];
@@ -154,6 +155,9 @@ do
             ;;
         -d | --dependency)  shift
             dependency_in="-d $1"
+            ;;
+        -r | --reservation) shift
+            reservation="--reservation $1"
             ;;
         *)
             echo "$script: illegal option $1"
