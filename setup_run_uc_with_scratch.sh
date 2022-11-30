@@ -532,6 +532,10 @@ if [[ \$diagnostics -eq 1 ]]; then
     fi
 fi
 
+# Trying to avoid these warnings:
+# common_ucx.c:162  Warning: UCX is unable to handle VM_UNMAP event. This may cause performance degradation or data corruption. Pls try adding --mca opal_common_ucx_opal_mem_hooks 1 to mpirun/oshrun command line to resolve this issue.
+mpirun_options+=" --mca opal_common_ucx_opal_mem_hooks 1"
+
 cd $rundir_top 
 date +%F\ %H:%M:%S > $rundir_top/RUN_INPROGRESS
 echo \$(date) \$PWD job $SLURM_JOBID started >> ~/lpj-model-runs.txt
