@@ -388,8 +388,10 @@ while IFS= read -r save_years; do
             this_prefix="${prefix}_${thisSSP}"
 
             # Start 2015-resuming potential runs, if needed
-            first_pot_y1=$(echo ${list_pot_y1_future} | cut -d" " -f1)
-            if [[ ( ( ${first_save_year} != "" && ${first_pot_y1} -lt ${first_save_year} ) || ${potential_only} -eq 1 ) && ${did_resume_pre2015pots[s]} == 0 && ${thisSSP} != "hist" ]]; then
+            if [[ "${first_pot_y1}" == "" ]]; then
+                first_pot_y1=$(echo ${list_pot_y1_future} | cut -d" " -f1)
+            fi
+            if [[ ( ( ${first_save_year} != "" && ${first_pot_y1} -lt ${first_save_year} ) || ${potential_only} -eq 1 ) && ${did_resume_pre2015pots[s]} == 0 && ${thisSSP} != "hist" && ${actual_only} -eq 0 ]]; then
                 resume_pre2015pots=1
                 echo rc_setup_potential_loop.sh B
                 . rc_setup_potential_loop.sh

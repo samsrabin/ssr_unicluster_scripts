@@ -79,6 +79,8 @@ for y1 in ${y1_list[@]}; do
     elif [[ ${resume_pre2015pots} -eq 1 && ${y0} -ge ${first_save_year} ]]; then
 #        echo skipping B
         continue
+    elif [[ ${first_pot_y1} -gt ${y1} ]]; then
+        continue
     fi
 
     # Does this run include the ssp period?
