@@ -5,7 +5,7 @@ elif [[ $mem_per_node -gt 0 && $mem_per_cpu -gt 0 ]]; then
     mem_spec="--mem-per-cpu ${mem_per_cpu}"
     echo "Both --mem-per-cpu nor --mem-per-node specified; using '${mem_spec}'"
 elif [[ $mem_per_node -gt 0 ]]; then
-    mem_spec="--mem-per-node $mem_per_node"
+    mem_spec="--mem $mem_per_node"
 elif [[ $mem_per_cpu -gt 0 ]]; then
     mem_spec="--mem-per-cpu $mem_per_cpu"
 else

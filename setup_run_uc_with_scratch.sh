@@ -7,9 +7,17 @@ if [[ "$#" -eq "0" ]]; then
 	exit
 fi
 
-# Daniel: Change
-lpjg_topdir="$HOME/lpj-guess_git-svn_20190828"
 module_gnu="$HOME/scripts_peter/module_gnu.sh"
+
+# Get default LPJ-GUESS code location
+if [[ "${LPJG_TOPDIR}" == "" ]]; then
+    echo "Environment variable LPJG_TOPDIR is blank; will rely on --lpjg_topdir argument." >&2
+elif [[ ! -d "${LPJG_TOPDIR}" ]]; then
+    echo "LPJG_TOPDIR not found: ${LPJG_TOPDIR}" >&2
+    echo "Will rely on --lpjg_topdir argument." >&2
+else
+    lpjg_topdir="${LPJG_TOPDIR}"
+fi
 
 #############################################################################################
 # Function-parsing code from https://gist.github.com/neatshell/5283811
@@ -305,6 +313,16 @@ if [[ ${finishup_partition} == "multiple" ]]; then
 	finishup_nprocs=$((tasks_per_node + 1))
 fi
 
+if [[ "${lpjg_topdir}" == "" ]]; then
+    echo "You must specify --lpjg_topdir" >&2
+    echo "You could also do the following: export LPJG_TOPDIR=/path/to/lpj-guess/code" >&2
+    echo "either in this terminal or in ~/.bash_profile" >&2
+    exit 1
+elif [[ ! -d "${lpjg_topdir}" ]]; then
+    echo "lpjg_topdir not found: ${lpjg_topdir}" >&2
+    exit 1
+fi
+
 echo "queue: ${queue}"
 echo "nprocess: ${nprocess}"
 echo "nnodes: ${nnodes}"
@@ -511,6 +529,10 @@ if [[ \$diagnostics -eq 1 ]]; then
         echo "mpirun \$(which mpirun) not recognized; will set no options for stdout/stderr printing"
     fi
 fi
+
+# Trying to avoid these warnings:
+# common_ucx.c:162  Warning: UCX is unable to handle VM_UNMAP event. This may cause performance degradation or data corruption. Pls try adding --mca opal_common_ucx_opal_mem_hooks 1 to mpirun/oshrun command line to resolve this issue.
+mpirun_options+=" --mca opal_common_ucx_opal_mem_hooks 1"
 
 cd $rundir_top 
 date +%F\ %H:%M:%S > $rundir_top/RUN_INPROGRESS
