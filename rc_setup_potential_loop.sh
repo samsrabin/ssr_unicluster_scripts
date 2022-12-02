@@ -79,7 +79,8 @@ for y1 in ${y1_list[@]}; do
     elif [[ ${resume_pre2015pots} -eq 1 && ${y0} -ge ${first_save_year} ]]; then
 #        echo skipping B
         continue
-    elif [[ ${first_pot_y1} -gt ${y1} ]]; then
+    elif [[ ( ${resume_pre2015pots} -eq 1 && ${first_pot_y1} -gt ${y1} ) || ( ${resume_pre2015pots} -eq 0 && $((first_pot_y1 - Nyears_getready)) -gt ${y1} ) ]]; then
+#        echo skipping C
         continue
     fi
 
