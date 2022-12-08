@@ -343,7 +343,7 @@ for y1 in ${y1_list[@]}; do
     fi
 
     # Actually set up and even submit, if being called from within setup_all.sh
-    if [[ ( ${pot_restart_year} -le ${hist_y1} || ( ${pot_restart_year} -eq ${future_y1} && ${is_resuming} -eq 0  ) || ${act_restart_year} -eq ${y1} || ${pot_restart_year} -eq ${future_y1} ) && ${y1} -ne $(echo "${fut_save_years}" | awk '{print $NF}') ]]; then
+    if [[ ( ${pot_restart_year} -le ${hist_y1} || ${act_restart_year} -eq ${y1} || ${pot_restart_year} -eq ${future_y1} ) && ${y1} -ne $(echo "${fut_save_years}" | awk '{print $NF}') ]]; then
         delete_state_arg=
     else
         echo WILL DELETE ${pot_restart_year} STATE
