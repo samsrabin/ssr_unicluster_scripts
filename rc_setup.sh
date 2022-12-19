@@ -138,6 +138,9 @@ do
         --last-y1-pot)  shift
             last_pot_y1=$1
             ;;
+        --future-y1)  shift
+            future_y1=$1
+            ;;
         --future-yN)  shift
             future_yN=$1
             ;;
