@@ -215,17 +215,19 @@ for y1 in ${y1_list[@]}; do
             fi
             # number of patches
             sed -i -E "s/npatch_secondarystand\s+[0-9]+/npatch_secondarystand 20/g" landcover.ins
-        elif [[ ${runtype} == "sai" ]]; then
-            # Need to add functionality to handle ensemble members
-            if [[ "${thisSSP}" == "arise1.5" ]]; then
-                sed -i "s/CESM CMIP6 historical, ensemble member 1/CESM-WACCM ARISE-1.5, ensemble member 1/g" main.ins
-                sed -i "s/timeseries-cmip6/ARISE-SAI-1.5/g" main.ins
-                sed -i "s/b.e21.BWHIST.f09_g17.CMIP6-historical-WACCM.001/b.e21.BW.f09_g17.SSP245-TSMLT-GAUSS-DEFAULT.001/g" main.ins
-                sed -i "s/18500101-20141231/20350101-20691230/g" main.ins
-                sed -i -e "/CESM-WACCM ssp245, ensemble member 1/,+6d" main.ins
-            elif [[ "${thisSSP}" != "hist" && "${thisSSP}" != "ssp245" ]]; then
-                echo "SSP ${thisSSP} not recognized for runtype ${runtype}" >&2
-                exit 1
+        elif [[ ${runtype} == "sai" || ${runtype} == "lsa" ]]; then
+            if [[ ${runtype} == "sai" ]]; then
+                # Need to add functionality to handle ensemble members
+                if [[ "${thisSSP}" == "arise1.5" ]]; then
+                    sed -i "s/CESM CMIP6 historical, ensemble member 1/CESM-WACCM ARISE-1.5, ensemble member 1/g" main.ins
+                    sed -i "s/timeseries-cmip6/ARISE-SAI-1.5/g" main.ins
+                    sed -i "s/b.e21.BWHIST.f09_g17.CMIP6-historical-WACCM.001/b.e21.BW.f09_g17.SSP245-TSMLT-GAUSS-DEFAULT.001/g" main.ins
+                    sed -i "s/18500101-20141231/20350101-20691230/g" main.ins
+                    sed -i -e "/CESM-WACCM ssp245, ensemble member 1/,+6d" main.ins
+                elif [[ "${thisSSP}" != "hist" && "${thisSSP}" != "ssp245" ]]; then
+                    echo "SSP ${thisSSP} not recognized for runtype ${runtype}" >&2
+                    exit 1
+                fi
             fi
             # Save state if this potential run will need to be resumed in a future climate
             if [[ ${first_plut_year} -ge ${future_y1} && ${y1} -lt ${future_y1} ]]; then
