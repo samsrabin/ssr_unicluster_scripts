@@ -53,7 +53,7 @@ else
     echo "runtype must be either lsf, lsa, or sai." >&2
     exit 1
 fi
-if [[ "${runtype}" -eq "sai" ]]; then
+if [[ "${runtype}" == "sai" ]]; then
     ssp_list="hist ssp245 arise1.5"
     future_y1=2035
 else
