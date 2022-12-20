@@ -98,6 +98,20 @@ if [[ "${rundir_top}" == "" ]]; then
     fi
 fi
 
+# Calculate walltime
+if [[ "${walltime_act_minutes_peryr}" != "" ]]; then
+    Nyears=$((lasthistyear - act_restart_year + 1))
+    walltime_act=$(echo "$Nyears * $walltime_act_minutes_peryr" | bc)
+    walltime_act=$(echo "($walltime_act/$round_walltime_to_next+1)*$round_walltime_to_next" | bc)
+    if [[ ${walltime_act} -lt ${walltime_act_minutes_minimum} ]]; then
+        walltime_act=${walltime_act_minutes_minimum}
+    elif [[ ${walltime_act} -gt ${walltime_minutes_max} ]]; then
+        echo "Warning: Requested walltime of ${walltime_act} minutes (${Nyears} yr, ${walltime_act_minutes_peryr} min/yr, rounding up to next ${round_walltime_to_next}) exceeds maximum ${walltime_minutes_max} minutes. Setting to ${walltime_minutes_max}."
+        walltime_act=${walltime_minutes_max}
+    fi
+    walltime_fut="${walltime_act}"
+fi
+
 # Set up run
 ispot=0
 do_setup ${walltime_fut} ${ispot} ${delete_state_arg}

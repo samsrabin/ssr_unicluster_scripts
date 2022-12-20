@@ -441,8 +441,6 @@ set -e
 module unload \$(module -t list 2>&1 | grep "tools\|app\|io\|compiler\|mpi\|lib\|math\|devel\|numlib\|cae\|chem\|system")
 module load compiler/gnu mpi/openmpi
 module list
-#this requires a locally compiled netcdf with hdf5
-export LD_LIBRARY_PATH=\$SOFTWARE/hdf5-1.12.1/lib:\$SOFTWARE/lib:\$LD_LIBRARY_PATH
 export HDF5_DISABLE_VERSION_CHECK=1
 
 diagnostics=1

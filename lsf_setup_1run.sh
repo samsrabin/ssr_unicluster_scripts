@@ -247,6 +247,10 @@ if [[ $PWD == *calibration* ]]; then
 else
     runsetname=$(lsf_get_basename.sh)
 fi
+if [[ "${runsetname}" == "" ]]; then
+    echo "lsf_setup_1run.sh: runsetname is blank"
+    exit 1
+fi
 
 # Get directories, modifying paths if testing
 if [[ "${whichrun}" == "pot" ]]; then
@@ -527,8 +531,6 @@ source $HOME/scripts_peter/module_gnu.sh
 echo "modules after calling module_gnu.sh:"
 module list
 
-#this requires a locally compiled netcdf with hdf5
-export LD_LIBRARY_PATH=\$SOFTWARE/hdf5-1.12.1/lib:\$SOFTWARE/lib:\$LD_LIBRARY_PATH
 export HDF5_DISABLE_VERSION_CHECK=1
 
 diagnostics=1
@@ -544,6 +546,10 @@ if [[ \$diagnostics -eq 1 ]]; then
         echo "mpirun \$(which mpirun) not recognized; will set no options for stdout/stderr printing"
     fi
 fi
+
+# Trying to avoid these warnings:
+# common_ucx.c:162  Warning: UCX is unable to handle VM_UNMAP event. This may cause performance degradation or data corruption. Pls try adding --mca opal_common_ucx_opal_mem_hooks 1 to mpirun/oshrun command line to resolve this issue.
+mpirun_options+=" --mca opal_common_ucx_opal_mem_hooks 1"
 
 echo " "
 echo "mpirun_options:"

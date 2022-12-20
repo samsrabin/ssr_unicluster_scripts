@@ -4,36 +4,66 @@ set -e
 reservation=""
 #reservation="-r landsymm-project"
 realinsfile="main.ins"
-#testinsfile="main_test2.ins"; testnproc=1
-testinsfile="main_test1_fast.ins"; testnproc=1
-testinsfile="test3x40.ins"; testnproc=40
+testinsfile="main_test2.ins"; testnproc=1
+#testinsfile="main_test1_fast.ins"; testnproc=1
+#testinsfile="test3x40.ins"; testnproc=40
 #testinsfile="main_test2x2.ins"; testnproc=2
 #testinsfile="main_test160x3.ins"; testnproc=160
 inputmodule="cfx"
+walltime_hist="12:00:00"
+walltime_fut="12:00:00"  # Should take around ??? hours
 walltime_minutes_max=4320
 round_walltime_to_next=30        # minutes
-walltime_act_minutes_minimum=90  # 160 processes, Unicluster
-walltime_act_minutes_peryr=10.0  # 160 processes, Unicluster, npatch=20, npatch_secondarystand=5
-walltime_pot_minutes_minimum=90  # 160 processes, Unicluster
-walltime_pot_minutes_peryr=3.4   # 160 processes, Unicluster
-walltime_spin_minutes=720
 hist_y1=1850
-future_y1=2015
-maxNstates=3
-future_yN=2100 # Because last year of emulator output is 2084
-Nyears_getready=2
 
 #############################################################################################
 # Function-parsing code from https://gist.github.com/neatshell/5283811
 
-script="lsf_setup.sh"
+script="rc_setup.sh"
 function usage {
     echo " "
-    echo -e "usage: $script [-t]\n"
+    echo -e "usage: $script runtype [-t]\n"
 }
 
+# Get runtype and set default arguments
+runtype="$1"
+shift
+if [[ "${runtype}" == "" ]]; then
+    echo "You must provide runtype (lsf, lsa, or sai)." >&2
+    exit 1
+elif [[ "${runtype}" == "lsf" ]]; then
+    # LandSyMM forestry
+    arch="landsymm-dev-forestry"
+    first_pot_y1=1850
+    pot_step=20
+    Nyears_getready=2
+    Nyears_pot=99999
+    walltime_pot_minutes_peryr=3.4   # 160 processes, Unicluster
+    walltime_pot_minutes_minimum=90  # 160 processes, Unicluster
+elif [[ "${runtype}" == "lsa" || "${runtype}" -eq "sai" ]]; then
+    # LandSyMM agriculture (incl. SAI-LandSyMM)
+    arch="landsymm-dev-crops"
+    first_pot_y1=1955
+    pot_step=5
+    Nyears_pot=5
+    Nyears_getready=2
+    walltime_pot_minutes_peryr=3.4   # 2022-11-03: For now, assuming the same time as lsf
+    walltime_pot_minutes_minimum=45  # 2022-11-04: A guess
+else
+    echo "runtype must be either lsf, lsa, or sai." >&2
+    exit 1
+fi
+if [[ "${runtype}" == "sai" ]]; then
+    ssp_list="hist ssp245 arise1.5"
+    future_y1=2035
+else
+    ssp_list="hist ssp126 ssp370 ssp585"
+    future_y1=2015
+fi
+
+
 # Set default values for non-positional arguments
-arch="landsymm-dev-forestry"
+future_yN=2100
 istest=0
 arg_yes_fu=0
 arg_no_fu=0
@@ -44,83 +74,156 @@ dependency_in=""
 actual_only=0
 potential_only=0
 nproc=160
-ssp_list="hist ssp126 ssp370 ssp585"
-Nyears_pot=99999
 #Nyears_pot=100
-first_pot_y1=1850
 first_act_y1=${hist_y1}
 last_pot_y1=999999999
-pot_step=20
 pot_yN=2100
+maxNstates=3
 # Handle possible neither/both specs here
 mem_per_node_default=90000 # MB
 mem_per_node=-1 # MB
 mem_per_cpu_default=500 # MB
 mem_per_cpu=-1 # MB
+reservation=""
+
+# Get default LPJ-GUESS code location
+if [[ "${LPJG_TOPDIR}" == "" ]]; then
+    echo "Environment variable LPJG_TOPDIR is blank; will rely on --lpjg_topdir argument." >&2
+elif [[ ! -d "${LPJG_TOPDIR}" ]]; then
+    echo "LPJG_TOPDIR not found: ${LPJG_TOPDIR}" >&2
+    echo "Will rely on --lpjg_topdir argument." >&2
+else
+    lpjg_topdir="${LPJG_TOPDIR}"
+fi
 
 # Args while-loop
 while [ "$1" != "" ];
 do
     case $1 in
+
+        # Only submit "actual" runs
         -a  | --actual-only)
             actual_only=1
             ;;
+
+        # Number of processors to use
         -n  | --nproc) shift
             nproc="$1"
             ;;
+
+        # Only submit "potential" runs
         -p  | --potential-only)
             potential_only=1
             ;;
+
+        # Submit the runs instead of just setting up directories
         -s  | --submit)
             submit="--submit"
             ;;
+
+        # Do a "test" chain instead of the real thing. Uses $testinsfile instead of $realinsfile (see top of script)
         -t  | --test)
             istest=1
             ;;
+
+        # The name of the directory in $LPJG_TOPDIR (or --lpjg_topdir) where the guess executable can be found. Well, mostly. For --arch XXXX, the name of the directory should be build_XXXX.
         --arch) shift
             arch="$1"
             ;;
+
+        # Submit "finish-up" (postprocessing) scripts to run after each segment completes. That's the default behavior except for -t/--test runs.
         --fu)
             arg_yes_fu=1
             ;;
+
+        # Do not submit "finish-up" (postprocessing) scripts.
         --no-fu)
             arg_no_fu=1
             ;;
+
+        # ONLY submit "finish-up" (postprocessing) scripts.
         --fu-only)
             do_fu_only=1
             ;;
+
+        # Directory where you want files postprocessed for PLUM to go. This is useful if, for example, you did a chain with ssp-list "hist ssp126", and now you want to do --ssp-list "ssp585"—in the latter, you point --dirForPLUM to the postprocessing-output directory from the former.
         --dirForPLUM)  shift
             dirForPLUM="$1"
             ;;
+
+        # SSPs (also "hist" historical period) to run
         --ssp-list)  shift
             ssp_list="$1"
             ;;
+
+        # Memory to be used on each node.
         --mem-per-node)  shift
             mem_per_node=$1
             ;;
+
+        # Memory to be assigned to each CPU.
         --mem-per-cpu)  shift
             mem_per_cpu=$1
             ;;
+
+        # The number of years in each potential period (excluding Nyears_getready).
         --nyears-pot)  shift
             Nyears_pot=$1
             ;;
+
+        # The first year that any potential run should start with (excluding Nyears_getready).
         --first-y1-pot)  shift
             first_pot_y1=$1
             ;;
+
+        # The last year that any potential run should start with.
         --last-y1-pot)  shift
             last_pot_y1=$1
             ;;
+
+        # The first year in the future period.
+        --future-y1)  shift
+            future_y1=$1
+            ;;
+
+        # The last year in the future period.
+        --future-yN)  shift
+            future_yN=$1
+            ;;
+
+        # The last year that any potential run should end with.
         --yN-pot)  shift
             pot_yN=$1
             ;;
+
+        # The number of years between starts of consecutive potential runs.
         --step-pot)  shift
             pot_step=$1
             ;;
+
+        # The first year that should be run in "actual" runs. Default ${hist_y1}.
         --first-y1-act)  shift
             first_act_y1=$1
             ;;
+
+        # The maximum number of states to be saved per actual run. Higher values here increase the risk of weird errors related to disks running out of space or something.
+        --max-N-states)  shift
+            maxNstates=$1
+            ;;
+
+        # -d JOBNUM: Wait to submit the first run in this chain until JOBNUM completes.
         -d | --dependency)  shift
             dependency_in="-d $1"
+            ;;
+
+        # If you ask the admins nicely, they'll grant you a "reservation"---some nodes you get all to yourself. Specify "-r RESERVATION_NAME" (no quote marks) to use
+        -r | --reservation) shift
+            reservation="--reservation $1"
+            ;;
+
+        # Directory with your LPJ-GUESS codebase, where build_${arch} will be looked for
+        --lpjg_topdir )  shift
+            lpjg_topdir=$1
             ;;
         *)
             echo "$script: illegal option $1"
@@ -131,6 +234,16 @@ do
     shift
 done
 
+if [[ "${lpjg_topdir}" == "" ]]; then
+    echo "You must specify --lpjg_topdir" >&2
+    echo "You could also do the following: export LPJG_TOPDIR=/path/to/lpj-guess/code" >&2
+    echo "either in this terminal or in ~/.bash_profile" >&2
+    exit 1
+elif [[ ! -d "${lpjg_topdir}" ]]; then
+    echo "lpjg_topdir not found: ${lpjg_topdir}" >&2
+    exit 1
+fi
+
 if [[ ${first_act_y1} -lt ${hist_y1} ]]; then
     echo "--first-y1-act (${first_act_y1}) must be >= ${hist_y1}"
     exit 1
@@ -139,9 +252,21 @@ fi
 # Process memory specification
 . "${HOME}/scripts/process_slurm_mem_spec.sh"
 
+# Get run set working directory
+runset_workdir="$(get_equiv_workdir.sh "$PWD")"
+if [[ ${istest} -eq 1 ]]; then
+    runset_workdir+="_test"
+fi
+
+# Set up dirForPLUM
 if [[ "${dirForPLUM}" != "" && ! -d "${dirForPLUM}" ]]; then
     echo "dirForPLUM does not exist: ${dirForPLUM}"
     exit 1
+elif [[ "${dirForPLUM}" == "" ]]; then
+    dirForPLUM=${runset_workdir}/outputs/outForPLUM-$(date "+%Y-%m-%d-%H%M%S")
+    mkdir -p ${dirForPLUM}
+    echo "Top-level output directory: $dirForPLUM"
+    echo " "
 fi
 
 # Do finishup or no?
@@ -225,8 +350,8 @@ fi
 
 #############################################################################################
 
-. lsf_get_years.sh
-. lsf_helper_functions.sh
+. rc_get_years.sh
+. rc_helper_functions.sh
 
 #############################################################################################
 
@@ -237,11 +362,13 @@ echo " "
 while [[ ! -d template ]]; do
     cd ../
     if [[ "$PWD" == "/" ]]; then
-        echo "lsf_setup.sh must be called from a (subdirectory of a) directory that has a template/ directory"
+        echo "rc_setup.sh must be called from a (subdirectory of a) directory that has a template/ directory"
         exit 1
     fi
 done
 
+# Get name of runset
+runsetname="$(basename "$(realpath .)")"
 
 # Set up job arrays
 arr_job_name=()
@@ -280,6 +407,7 @@ if [[ "${save_years_lines}" == "" ]]; then
 fi
 
 # Set up/start a run for each set of save years
+N_future_periods=0
 while IFS= read -r save_years; do
 
     # First year in this this determines whether we're in the historical
@@ -287,6 +415,8 @@ while IFS= read -r save_years; do
     first_save_year=$(echo ${save_years} | cut -d" " -f1)
 
     if [[ ${first_save_year} != "" && ${first_save_year} -le ${hist_yN} ]]; then
+
+        thisSSP="hist"
 
         # Sanity check
         if [[ ${do_hist} == 0 ]]; then
@@ -304,35 +434,45 @@ while IFS= read -r save_years; do
                     dependency+=" -d ${previous_act_jobnum}"
                 fi
             fi # if this is the first future-actual
-            thisSSP=""
-            . lsf_1_acthist.sh
+            . rc_1_acthist.sh
         fi
 
         # Set up/submit potential historical run(s)
         if [[ ${actual_only} -eq 0 ]]; then
             pot_years="${save_years}"
-            thisSSP="hist"
             resume_pre2015pots=0
-            echo lsf_setup_potential_loop.sh A
-            . lsf_setup_potential_loop.sh
+            echo rc_setup_potential_loop.sh A
+            . rc_setup_potential_loop.sh
             save_years=${future_y1}
         fi
     else
+        N_future_periods=$((N_future_periods + 1))
+        if [[ ${N_future_periods} -eq 1 && ${act_restart_year} != "" ]]; then
+            act_restart_year_eachSSP_array=()
+            for thisSSP in ${ssp_list}; do
+                act_restart_year_eachSSP_array+=( ${act_restart_year} )
+            done
+        fi
 
         s=-1
         for thisSSP in ${ssp_list}; do
+            if [[ ${N_future_periods} -eq 1 ]]; then
+                act_restart_year=""
+            fi
             s=$((s + 1))
-            if [[ "${thisSSP}" != "hist" && "${thisSSP:0:3}" != "ssp" ]]; then
+            if [[ ${runtype} != "sai" && "${thisSSP}" != "hist" && "${thisSSP:0:3}" != "ssp" ]]; then
                 thisSSP="ssp${thisSSP}"
             fi
             this_prefix="${prefix}_${thisSSP}"
 
             # Start 2015-resuming potential runs, if needed
-            first_pot_y1=$(echo ${list_pot_y1_future} | cut -d" " -f1)
-            if [[ ( ( ${first_save_year} != "" && ${first_pot_y1} -lt ${first_save_year} ) || ${potential_only} -eq 1 ) && ${did_resume_pre2015pots[s]} == 0 && ${thisSSP} != "hist" ]]; then
+            if [[ "${first_pot_y1}" == "" ]]; then
+                first_pot_y1=$(echo ${list_pot_y1_future} | cut -d" " -f1)
+            fi
+            if [[ ( ( ${first_save_year} != "" && ${first_pot_y1} -lt ${first_save_year} ) || ${potential_only} -eq 1 ) && ${did_resume_pre2015pots[s]} == 0 && ${thisSSP} != "hist" && ${actual_only} -eq 0 ]]; then
                 resume_pre2015pots=1
-                echo lsf_setup_potential_loop.sh B
-                . lsf_setup_potential_loop.sh
+                echo rc_setup_potential_loop.sh B
+                . rc_setup_potential_loop.sh
                 did_resume_pre2015pots[s]=1
             fi
 
@@ -347,15 +487,15 @@ while IFS= read -r save_years; do
                     fi
                 fi # if this is the first future-actual
 
-                . lsf_1_actfut.sh
+                . rc_1_actfut.sh
                 popdq
             fi # if doing future-actual
 
             if [[ ${actual_only} -eq 0 && "${save_years}" != "" ]]; then
                 pot_years="${save_years}"
                 resume_pre2015pots=0
-                echo lsf_setup_potential_loop.sh C
-                . lsf_setup_potential_loop.sh
+                echo rc_setup_potential_loop.sh C
+                . rc_setup_potential_loop.sh
             fi
         done # loop through SSPs
     fi # whether in historical or future period

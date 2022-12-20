@@ -10,7 +10,7 @@ fi
 #############################################################################################
 # Function-parsing code from https://gist.github.com/neatshell/5283811
 
-script="g2p_setup_1run.sh"
+script="rc_setup_1run.sh"
 #Declare the number of mandatory args
 margs=7
 
@@ -32,10 +32,10 @@ echo -e "  -L --linked_restart_dir PATH Path to restart directory (.../state/YEA
 echo -e "  -p --prefix VAL  Add VAL to beginning of Slurm job names\n"
 echo -e "  -s --state_path_absolute VAL Absolute path to state directory, if path in ins-files can't be trusted\n"
 echo -e "  -r --reservation VAL Job reservation name\n"
-echo -e "  --pp Start postprocessing run. Default when --dev is not specified. To disable, do --no-pp\n"
 echo -e "  --no_fu Do not start finishup job\n"
-echo -e "  --no_pp Do not start postprocessing job\n"
-echo -e "  --dev                           Use one of the dev queues. Add --pp to also start a postprocessing job.\n"
+echo -e "  --fu DO start finishup job (which is off by default with --dev)\n"
+echo -e "  --fu_only ONLY start finishup job\n"
+echo -e "  --dev                           Use one of the dev queues. Add --fu to also start a postprocessing job.\n"
 echo -e "  --submit                      Go ahead and submit the job (and postprocessing, if applicable).\n"
 echo -e "  --lpjg_topdir The complete path to the directory containing the build dir.\n"
 echo -e "  -h,  --help                 Prints this help\n"
@@ -93,6 +93,7 @@ prefix=
 state_path_absolute=
 dev=0
 do_finishup=1
+do_finishup_only=0
 arg_yes_fu=
 arg_no_fu=
 submit=0
@@ -100,19 +101,33 @@ reservation=
 linked_restart_dir_array=()
 pp_y1=
 pp_yN=
-lpjg_topdir=$HOME/lpj-guess_git-svn_20190828
+delete_state_year=
+delete_state_year_if_thisjob_ok=
 # Handle possible neither/both specs here
 mem_per_node_default=90000 # MB
 mem_per_node=-1 # MB
 mem_per_cpu_default=1000 # MB
 mem_per_cpu=-1 # MB
 
+# Get default LPJ-GUESS code location
+if [[ "${LPJG_TOPDIR}" == "" ]]; then
+    echo "Environment variable LPJG_TOPDIR is blank; will rely on --lpjg_topdir argument." >&2
+elif [[ ! -d "${LPJG_TOPDIR}" ]]; then
+    echo "LPJG_TOPDIR not found: ${LPJG_TOPDIR}" >&2
+    echo "Will rely on --lpjg_topdir argument." >&2
+else
+    lpjg_topdir="${LPJG_TOPDIR}"
+fi
+
 # Args while-loop
 while [ "$1" != "" ];
 do
     case $1 in
         -d  | --dependency)  shift
-            dependency_tmp=$1
+            dependency_tmp+=" $1"
+            ;;
+        --dependency-name)  shift
+            dependency_name=$1
             ;;
         -L  | --linked_restart_dir)  shift
             linked_restart_dir_array+=($1)
@@ -147,7 +162,15 @@ do
             ;;
         --no_fu)  arg_no_fu=1
             ;;
+        --fu_only)  do_finishup_only=1
+            ;;
         --submit)  submit=1
+            ;;
+        --delete-state-year)  shift
+            delete_state_year=$1
+            ;;
+        --delete-state-year-if-thisjob-ok)  shift
+            delete_state_year_if_thisjob_ok=$1
             ;;
         -h    | --help )          help
             exit
@@ -165,21 +188,43 @@ done
 # Pass here your mandatory args for check
 margs_check $insfile "$extra_insfiles" $gridlist $input_module $nprocess $arch $walltime
 
+if [[ "${lpjg_topdir}" == "" ]]; then
+    echo "You must specify --lpjg_topdir" >&2
+    echo "You could also do the following: export LPJG_TOPDIR=/path/to/lpj-guess/code" >&2
+    echo "either in this terminal or in ~/.bash_profile" >&2
+    exit 1
+elif [[ ! -d "${lpjg_topdir}" ]]; then
+    echo "lpjg_topdir not found: ${lpjg_topdir}" >&2
+    exit 1
+fi
+
 # Parse dependency
-if [[ "${dependency_tmp}" == "LATEST" ]]; then
-    dependency_tmp=$(awk 'END {print $NF}' ${HOME}/submitted_jobs.log)
-    echo "Using latest submitted job (${dependency_tmp}) as dependency"
-    dependency="#SBATCH -d afterany:$dependency_tmp"
-elif [[ "${dependency_tmp}" != "" ]]; then
-    echo "Depending on job ${dependency_tmp}"
-    dependency="#SBATCH -d afterany:$dependency_tmp"
+if [[ "${dependency_tmp}" != "" ]]; then
+    dependency="#SBATCH -d afterany"
+    for d in ${dependency_tmp}; do
+        if [[ "${d}" == "LATEST" ]]; then
+            d=$(awk 'END {print $NF}' ~/submitted_jobs.log)
+            echo "Using latest submitted job (${d}) as dependency"
+        else
+            echo "Depending on job ${d}"
+        fi
+        dependency+=":$d"
+    done
+fi
+if [[ "${dependency_name}" != "" ]]; then
+    echo "I.e., depending on ${dependency_name}"
 fi
 
 # Process memory specification
 . "${HOME}/scripts/process_slurm_mem_spec.sh"
 
 # Do finishup or no?
-if [[ ${arg_no_fu} == "1" && ${arg_yes_fu} == "1" ]]; then
+if [[ ${do_finishup_only} -eq 1 ]]; then
+    if [[ ${arg_no_fu} == "1" ]]; then
+        echo "Both --fu_only and --no_fu specified; choose one."
+        exit 1
+    fi
+elif [[ ${arg_no_fu} == "1" && ${arg_yes_fu} == "1" ]]; then
     if [[ ${dev} -eq 1 ]]; then
         echo "Both --fu and --no_fu specified. Using dev default of NO finishup."
         do_finishup=0
@@ -206,24 +251,25 @@ elif [[ $PWD == *"/calibration"* ]]; then
     whichrun="cal"
 else
     echo "Can't parse this path to tell whether it's an actual or potential run"
+    echo pwd $PWD
     exit 1
 fi
 
 # Get name of this runset
-runsetname=$(g2p_get_runset_name.sh)
-if [[ "${runsetname}" == "" ]]; then
-    echo "runsetname is blank"
-    exit 1
-fi
-if [[ $PWD == *calibration* ]]; then
-    runsetname="calibration"
-else
-    runsetname=$(g2p_get_basename.sh)
-fi
+thisDir="$PWD"
+while [[ ! -d template ]]; do
+    cd ../
+    if [[ "$PWD" == "/" ]]; then
+        echo "rc_setup_1run.sh must be called from a (subdirectory of a) directory that has a template/ directory"
+        exit 1
+    fi
+done
+runsetname="$(basename "$(realpath .)")"
+cd "${thisDir}"
 
 # Get directories, modifying paths if testing
 if [[ "${whichrun}" == "pot" ]]; then
-    runid=$(echo $PWD | grep -oE "ssp[0-9]+/.*" | sed "s@/@_@")
+    runid=$(echo $PWD | grep -oE "[0-9]+pot.*" | sed -E "s/_[0-9]+-[0-9]+//" | sed "s/_ssp//")
 else
     runid=$(basename $PWD)
 fi
@@ -231,7 +277,7 @@ jobname=${runid}_$(date "+%Y%m%d%H%M%S")
 if [[ ${prefix} != "" ]]; then
     jobname=${prefix}_${jobname}
 fi
-rundir_top=$(g2p_get_rundir_top.sh ${dev})
+rundir_top=$(rc_get_rundir_top.sh ${dev} 0 "${runsetname}")
 if [[ "${rundir_top}" == "" ]]; then
     echo "Error finding rundir_top; exiting."
     exit 1
@@ -246,7 +292,7 @@ if [[ ${dev} -eq 1 ]]; then
         done
     fi
 fi
-state_path_absolute=$(g2p_get_state_path_absolute.sh "${rundir_top}" "${state_path_absolute}" ${dev})
+state_path_absolute=$(lsf_get_state_path_absolute.sh "${rundir_top}" "${state_path_absolute}")
 
 # End function-parsing code
 #############################################################################################
@@ -298,10 +344,12 @@ if [[ ${finishup_partition} == "multiple" ]]; then
     finishup_nprocs=$((tasks_per_node + 1))
 fi
 
-echo "queue: ${queue}"
-echo "nprocess: ${nprocess}"
-echo "nnodes: ${nnodes}"
-echo "walltime: ${walltime}"
+if [[ ${do_finishup_only} -eq 0 ]]; then
+    echo "queue: ${queue}"
+    echo "nprocess: ${nprocess}"
+    echo "nnodes: ${nnodes}"
+    echo "walltime: ${walltime}"
+fi
 echo "finishup_partition: ${finishup_partition}"
 echo "finishup_nprocs: ${finishup_nprocs}"
 
@@ -321,146 +369,156 @@ USER=$(whoami)
 
 mkdir -p "${rundir_top}"
 echo "rundir_top = ${rundir_top}"
-
-#======Copy ins, gridlist and executable
-
-rsync -a  $lpjg_dir/$binary $rundir_top
-
-# SSR 2017-05-30
-if [[ -e $lpjg_dir/latest_commit.txt ]]; then
-    rsync -a  $lpjg_dir/latest_commit.txt $rundir_top
-fi
-
-# SSR 2021-04-30
-if [[ -e $lpjg_dir/latest_cmake.txt ]]; then
-    rsync -a  $lpjg_dir/latest_cmake.txt $rundir_top
-fi
-
-cp $gridlist $rundir_top
-for ins in $insfile $extra_insfiles; do
-    cp $ins $rundir_top
-done
-
 if [[ -e postproc.sh ]]; then
     cp postproc.sh $rundir_top/
 fi
 
-cd $rundir_top
-
-# Clear existing run* directories
-remove_existing_run_directories.sh
-
-# Create and fill run* directories
-echo "Creating and filling run*/ directories..."
-include_list="--include=${insfile}"
-for f in ${extra_insfiles}; do
-    include_list="${include_list} --include=$f"
-done
-include_list="${include_list} --exclude=*"
-for ((b=1; b <= $nprocess ; b++)); do
-
-  let "c=((1-1)*$nprocess+$b)"
-
-  # Copy ins-files and info on latest commit associated with guess binary
-  if [[ $b -eq 1 ]]; then
-      run1_dir=run$c
-      mkdir $run1_dir
-      rsync -a ${include_list} * ${run1_dir}/
-  else
-      cp -r ${run1_dir} run$c
-  fi
-  if [[ -e latest_commit.txt ]]; then
-      cp latest_commit.txt run$c
-  fi
-
-done
-echo " "
-
-# Set up state directory
-state_path_relative=$(get_param.sh "${insfile}" state_path | sed 's@%Y@@' | sed "s@//@/@g")
-[[ "${state_path_relative}" == "get_param.sh_FAILED" ]] && exit 1
-if [[ "${state_path_relative}" != "" ]]; then
-#    mkdir -p run1/${state_path_relative}
-    echo "state_path_relative: ${state_path_relative}"
-    echo "state_path_absolute: ${state_path_absolute}"
-    mkdir -p "${state_path_absolute}"
-    if [[ "${linked_restart_dir_array}" != "" ]]; then
-        pushd "${state_path_absolute}" 1>/dev/null
-
-        for linked_restart_dir in ${linked_restart_dir_array[@]}; do
-            # Warn if linked directory doesn't exist. This isn't necessarily a problem---this job
-            # might depend on an earlier job that will generate the state directory to be linked.
-            if [[ ! -d "${linked_restart_dir}" ]]; then
-                echo "Warning: linked_restart_dir $linked_restart_dir does not exist. Linking anyway."
-            else
-                echo "linked_restart_dir: ${linked_restart_dir}"
-            fi
+if [[ ${do_finishup_only} -eq 0 ]]; then
     
-            # Remove existing link, if necessary.
-            lrd_basename=$(basename "${linked_restart_dir}")
-            if [[ -L $lrd_basename ]]; then
-                rm -f $lrd_basename
+    #======Copy ins, gridlist and executable
     
-            # Remove existing directory, if necessary. Require manual approval if not empty!
-            elif [[ -d $lrd_basename ]]; then
-                if [[ $(ls $lrd_basename | wc -l) -eq 0 ]]; then
-                    rmdir $lrd_basename
-                else
-                    echo " "
-                    echo "WARNING:"
-                    printf "${state_path_absolute}/${lrd_basename} already exists."
-                    REPLY=x
-                    #while [[ "$REPLY" !=~ ^[Yy]$ && "$REPLY" !=~ ^[Nn]$ ]]; do
-                    #while [[ "$REPLY" =~ ^[^YyNn]$ ]]; do
-                    while [[ $REPLY =~ ^[^YyNn]$ ]]; do
-                        printf "\n"
-                        read -p "Are you sure you want to delete it? Y/N: " -n 1 -r
-    #                  echo     # (optional) move to a new line
-                    done
-                    printf "\n"
-                    if [[ $REPLY =~ ^[Yy]$ ]]; then
-                        echo "Deleting."
-                        rm -rf $lrd_basename
-                    else
-                        echo "Exiting."
-                        exit 1
-                    fi
-                    echo " "
-                fi
-            fi
+    rsync -a  $lpjg_dir/$binary $rundir_top
     
-            # Make the link
-            ln -s "${linked_restart_dir}"
-        done
-        popd 1>/dev/null
+    # SSR 2017-05-30
+    if [[ -e $lpjg_dir/latest_commit.txt ]]; then
+        rsync -a  $lpjg_dir/latest_commit.txt $rundir_top
     fi
+    
+    # SSR 2021-04-30
+    if [[ -e $lpjg_dir/latest_cmake.txt ]]; then
+        rsync -a  $lpjg_dir/latest_cmake.txt $rundir_top
+    fi
+    
+    cp $gridlist $rundir_top
+    for ins in $insfile $extra_insfiles; do
+        cp $ins $rundir_top
+    done
+    
+    cd $rundir_top
+    
+    # Clear existing run* directories
+    remove_existing_run_directories.sh
+    
+    # Create and fill run* directories
+    echo "Creating and filling run*/ directories..."
+    include_list="--include=${insfile}"
+    for f in ${extra_insfiles}; do
+        include_list="${include_list} --include=$f"
+    done
+    include_list="${include_list} --exclude=*"
+    for ((b=1; b <= $nprocess ; b++)); do
+    
+      let "c=((1-1)*$nprocess+$b)"
+    
+      # Copy ins-files and info on latest commit associated with guess binary
+      if [[ $b -eq 1 ]]; then
+          run1_dir=run$c
+          mkdir $run1_dir
+          rsync -a ${include_list} * ${run1_dir}/
+      else
+          cp -r ${run1_dir} run$c
+      fi
+      if [[ -e latest_commit.txt ]]; then
+          cp latest_commit.txt run$c
+      fi
+    
+    done
     echo " "
-else
-    # No state path found; fill with value that mpi_run_guess_on_tmp.sh will interpret as dummy
-    state_path_relative=xyz
-    state_path_absolute=xyz
-fi
+    
+    # Set up state directory
+    state_path_relative=$(get_param.sh "${insfile}" state_path | sed 's@%Y@@' | sed "s@//@/@g")
+    [[ "${state_path_relative}" == "get_param.sh_FAILED" ]] && exit 1
+    if [[ "${state_path_relative}" != "" ]]; then
+    #    mkdir -p run1/${state_path_relative}
+        echo "state_path_relative: ${state_path_relative}"
+        echo "state_path_absolute: ${state_path_absolute}"
+        mkdir -p "${state_path_absolute}"
+        if [[ "${linked_restart_dir_array}" != "" ]]; then
+            pushd "${state_path_absolute}" 1>/dev/null
+    
+            for linked_restart_dir in ${linked_restart_dir_array[@]}; do
+                # Warn if linked directory doesn't exist. This isn't necessarily a problem---this job
+                # might depend on an earlier job that will generate the state directory to be linked.
+                if [[ ! -d "${linked_restart_dir}" ]]; then
+                    echo "Warning: linked_restart_dir $linked_restart_dir does not exist. Linking anyway."
+                else
+                    echo "linked_restart_dir: ${linked_restart_dir}"
+                fi
+        
+                # Remove existing link, if necessary.
+                lrd_basename=$(basename "${linked_restart_dir}")
+                if [[ -L $lrd_basename ]]; then
+                    rm -f $lrd_basename
+        
+                # Remove existing directory, if necessary. Require manual approval if not empty!
+                elif [[ -d $lrd_basename ]]; then
+                    if [[ $(ls $lrd_basename | wc -l) -eq 0 ]]; then
+                        rmdir $lrd_basename
+                    else
+                        echo " "
+                        echo "WARNING:"
+                        printf "${state_path_absolute}/${lrd_basename} already exists."
+                        REPLY=x
+                        #while [[ "$REPLY" !=~ ^[Yy]$ && "$REPLY" !=~ ^[Nn]$ ]]; do
+                        #while [[ "$REPLY" =~ ^[^YyNn]$ ]]; do
+                        while [[ $REPLY =~ ^[^YyNn]$ ]]; do
+                            printf "\n"
+                            read -p "Are you sure you want to delete it? Y/N: " -n 1 -r
+        #                  echo     # (optional) move to a new line
+                        done
+                        printf "\n"
+                        if [[ $REPLY =~ ^[Yy]$ ]]; then
+                            echo "Deleting."
+                            rm -rf $lrd_basename
+                        else
+                            echo "Exiting."
+                            exit 1
+                        fi
+                        echo " "
+                    fi
+                fi
+        
+                # Make the link
+                ln -s "${linked_restart_dir}"
+            done
+            popd 1>/dev/null
+        fi
+        echo " "
+    else
+        # No state path found; fill with value that mpi_run_guess_on_tmp.sh will interpret as dummy
+        state_path_relative=xyz
+        state_path_absolute=xyz
+    fi
+    
+    # Split gridlist up into files for each process; distribute to run*/ directories
+    split_gridlist.sh ${gridlist} ${nprocess}
+    
+    # Set up reservation
+    if [[ ${reservation} == "" ]]; then
+        reservation_txt_sbatch=""
+        reservation_txt=""
+        reservation_txt_fu=""
+    else
+        reservation_txt_sbatch="#SBATCH --reservation=${reservation}"
+        reservation_txt="--reservation=${reservation}"
+        reservation_txt_fu="-r ${reservation}"
+    fi
+    
+    
+    #############################################
+    # Create script that will start the MPI run #
+    #############################################
 
-# Split gridlist up into files for each process; distribute to run*/ directories
-split_gridlist.sh ${gridlist} ${nprocess}
-
-# Set up reservation
-if [[ ${reservation} == "" ]]; then
-    reservation_txt_sbatch=""
-    reservation_txt=""
-    reservation_txt_fu=""
-else
-    reservation_txt_sbatch="#SBATCH --reservation=${reservation}"
-    reservation_txt="--reservation=${reservation}"
-    reservation_txt_fu="-r ${reservation}"
-fi
-
-
-#############################################
-# Create script that will start the MPI run #
-#############################################
-
-cat<<EOL > submit.sh 
+    delete_state_text=""
+    if [[ ${delete_state_year} != "" ]]; then
+        delete_state_text="set +e; "
+        if [[ "${delete_state_year_if_thisjob_ok}" != "" ]]; then
+            delete_state_text+="[[ \$(sacct -n -j ${delete_state_year_if_thisjob_ok} | grep \"${delete_state_year_if_thisjob_ok} \" | grep \"COMPLETED\" | wc -l) -eq 1 ]] && "
+        fi
+        delete_state_text+="rm \"${state_path_absolute}/${delete_state_year}\"/*.state; set -e"
+    fi
+    
+    cat<<EOL > submit.sh 
 #!/bin/bash
 #SBATCH --partition $queue
 #SBATCH -N $nnodes
@@ -521,17 +579,19 @@ LASTERR=\$?
 rm $rundir_top/RUN_INPROGRESS
 [[ \$LASTERR != 0 ]] && date +%F\ %H:%M:%S > $rundir_top/RUN_FAILED
 
+${delete_state_text}
+
 exit 0
 
 EOL
-chmod +x submit.sh
-
-
-##########################################################
-# Create script that will submit jobs and postprocessing #
-##########################################################
-
-cat<<EOL > startguess.sh
+    chmod +x submit.sh
+    
+    
+    ##########################################################
+    # Create script that will submit jobs and postprocessing #
+    ##########################################################
+    
+    cat<<EOL > startguess.sh
 #!/bin/bash
 set -e
 
@@ -553,39 +613,82 @@ if [[ "\${jobID_finish}" == "" ]]; then
 fi
 echo "job_finish.sh: \$jobID_finish"
 echo "job_finish.sh: \$jobID_finish" >> latest_submitted_jobs.log
-echo " " >> ${HOME}/submitted_jobs.log
+echo " " >> ~/submitted_jobs.log
 EOL
 fi
 cat<<EOL >> startguess.sh
-cat latest_submitted_jobs.log >> ${HOME}/submitted_jobs.log
+cat latest_submitted_jobs.log >> ~/submitted_jobs.log
 exit 0
 EOL
-chmod +x startguess.sh
-
-
-####################################################
-# Either submit or print instructions for doing so #
-####################################################
-
-if [[ ${submit} -eq 1 ]]; then
-    echo "Submitting..."
-    pushd "${rundir_top}" 1>/dev/null 2>&1
-    source ~/scripts_peter/module_gnu.sh 1>/dev/null 2>&1
-    ./startguess.sh
-    popd 1>/dev/null 2>&1
-else
-    echo "To submit:"
-    echo "cd $rundir_top"
-    echo "source ~/scripts_peter/module_gnu.sh 1>/dev/null 2>&1"
-    echo "./startguess.sh"
+    chmod +x startguess.sh
     
-    if [[ ${dev} -eq 1 ]]; then
-        echo " "
-        echo "To submit interactively:"
+    
+    ####################################################
+    # Either submit or print instructions for doing so #
+    ####################################################
+    
+    if [[ ${submit} -eq 1 ]]; then
+        echo "Submitting..."
+        pushd "${rundir_top}" 1>/dev/null 2>&1
+        source ~/scripts_peter/module_gnu.sh 1>/dev/null 2>&1
+        ./startguess.sh
+        popd 1>/dev/null 2>&1
+    else
+        echo "To submit:"
         echo "cd $rundir_top"
         echo "source ~/scripts_peter/module_gnu.sh 1>/dev/null 2>&1"
-        echo "salloc --partition $queue -N $nnodes -n $nprocess --ntasks-per-core ${tasks_per_core} -t $walltime ${reservation_txt} submit.sh" 
+        echo "./startguess.sh"
+        
+        if [[ ${dev} -eq 1 ]]; then
+            echo " "
+            echo "To submit interactively:"
+            echo "cd $rundir_top"
+            echo "source ~/scripts_peter/module_gnu.sh 1>/dev/null 2>&1"
+            echo "salloc --partition $queue -N $nnodes -n $nprocess --ntasks-per-core ${tasks_per_core} -t $walltime ${reservation_txt} submit.sh" 
+        fi
     fi
+
+
+else # do_finishup_only
+
+    #################################################
+    # Create script that will submit postprocessing #
+    #################################################
+
+    pushd "${rundir_top}" 1>/dev/null 2>&1
+    
+    cat<<EOL > start_jobfinish.sh
+jobID_finish=\$(job_finish.sh -a ${finishup_partition} -t ${finishup_t_min} -p ${finishup_nprocs} -N ${jobname} ${reservation_txt_fu} | sed "s/Submitted batch job //")
+if [[ "\${jobID_finish}" == "" ]]; then
+    exit 1
+fi
+echo "job_finish.sh: \$jobID_finish"
+echo "job_finish.sh: \$jobID_finish" >> latest_submitted_jobs.log
+echo " " >> ~/submitted_jobs.log
+cat latest_submitted_jobs.log >> ~/submitted_jobs.log
+exit 0
+EOL
+    chmod +x start_jobfinish.sh
+
+
+    ####################################################
+    # Either submit or print instructions for doing so #
+    ####################################################
+
+    if [[ ${submit} -eq 1 ]]; then
+        echo "Submitting..."
+        source ~/scripts_peter/module_gnu.sh 1>/dev/null 2>&1
+        echo pwd $PWD
+        ./start_jobfinish.sh
+    else
+        echo "To submit:"
+        echo "cd $rundir_top"
+        echo "source ~/scripts_peter/module_gnu.sh 1>/dev/null 2>&1"
+        echo "./start_jobfinish.sh"
+    fi
+
+    popd 1>/dev/null 2>&1
+
 fi
 
 
