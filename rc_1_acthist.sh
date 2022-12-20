@@ -165,7 +165,7 @@ fi # if do_fu_only else
 
 # Set up rundir_top
 if [[ "${rundir_top}" == "" ]]; then
-    rundir_top=$(lsf_get_rundir_top.sh ${istest} 0)
+    rundir_top=$(rc_get_rundir_top.sh ${istest} 0 "${runsetname}")
     if [[ "${rundir_top}" == "" ]]; then
         echo "Error finding rundir_top; exiting."
         exit 1
@@ -189,7 +189,7 @@ else
 fi
 
 # Submit historical run or finishup
-state_path="$(cd ..; lsf_get_rundir_top.sh ${istest} 0)/states"
+state_path="$(cd ..; rc_get_rundir_top.sh ${istest} 0 "${runsetname}")/states"
 this_prefix="${prefix}_hist"
 ispot=0
 do_setup ${walltime_hist} ${ispot} ${delete_state_arg}

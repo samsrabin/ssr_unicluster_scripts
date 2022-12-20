@@ -10,7 +10,7 @@ fi
 #############################################################################################
 # Function-parsing code from https://gist.github.com/neatshell/5283811
 
-script="lsf_setup_1run.sh"
+script="rc_setup_1run.sh"
 #Declare the number of mandatory args
 margs=7
 
@@ -237,22 +237,16 @@ else
 fi
 
 # Get name of this runset
-if [[ "${runsetname}" == "" ]]; then
-    runsetname=$(lsf_get_runset_name.sh)
-    if [[ "${runsetname}" == "" ]]; then
-        echo "runsetname is blank"
+thisDir="$PWD"
+while [[ ! -d template ]]; do
+    cd ../
+    if [[ "$PWD" == "/" ]]; then
+        echo "rc_setup_1run.sh must be called from a (subdirectory of a) directory that has a template/ directory"
         exit 1
     fi
-    if [[ $PWD == *calibration* ]]; then
-        runsetname="calibration"
-    else
-        runsetname=$(lsf_get_basename.sh)
-    fi
-    if [[ "${runsetname}" == "" ]]; then
-        echo "lsf_setup_1run.sh: runsetname is blank"
-        exit 1
-    fi
-fi
+done
+runsetname="$(basename "$(realpath .)")"
+cd "${thisDir}"
 
 # Get directories, modifying paths if testing
 if [[ "${whichrun}" == "pot" ]]; then
@@ -264,7 +258,7 @@ jobname=${runid}_$(date "+%Y%m%d%H%M%S")
 if [[ ${prefix} != "" ]]; then
     jobname=${prefix}_${jobname}
 fi
-rundir_top=$(lsf_get_rundir_top.sh ${dev})
+rundir_top=$(rc_get_rundir_top.sh ${dev} 0 "${runsetname}")
 if [[ "${rundir_top}" == "" ]]; then
     echo "Error finding rundir_top; exiting."
     exit 1

@@ -16,11 +16,14 @@ elif [[ "${ispot}" != "0" && "${ispot}" != "1" ]]; then
     exit 1
 fi
 
+# Optional
+runsetname="$3"
+
 if [[ ${ispot} -eq 1 ]]; then
    while [[ ! -d template ]]; do
        cd ../
        if [[ "$PWD" == "/" ]]; then
-           echo "lsf_get_rundir_top.sh must be called from a (subdirectory of a) directory that has a template/ directory"
+           echo "rc_get_rundir_top.sh must be called from a (subdirectory of a) directory that has a template/ directory"
            exit 1
        fi
    done
@@ -40,10 +43,12 @@ elif [[ ! -e "${WORK}" ]]; then
 fi
 
 # Get name of this runset
-runsetname=$(lsf_get_runset_name.sh)
 if [[ "${runsetname}" == "" ]]; then
-    echo "lsf_get_rundir_top.sh: runsetname is blank"
-    exit 1
+   runsetname=$(lsf_get_runset_name.sh)
+   if [[ "${runsetname}" == "" ]]; then
+       echo "rc_get_rundir_top.sh: runsetname is blank"
+       exit 1
+   fi
 fi
 
 if [[ ${ispot} -eq 0 ]]; then

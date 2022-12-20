@@ -278,7 +278,7 @@ fi
 #############################################################################################
 
 . rc_get_years.sh
-. lsf_helper_functions.sh
+. rc_helper_functions.sh
 
 #############################################################################################
 
@@ -294,6 +294,8 @@ while [[ ! -d template ]]; do
     fi
 done
 
+# Get name of runset
+runsetname="$(basename "$(realpath .)")"
 
 # Set up job arrays
 arr_job_name=()

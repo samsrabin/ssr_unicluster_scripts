@@ -157,7 +157,7 @@ else
     set " "
 
     # Set up state directory for this SSP, if needed
-    state_path="$(cd ..; lsf_get_rundir_top.sh ${istest} 0)/states_${thisSSP}"
+    state_path="$(cd ..; rc_get_rundir_top.sh ${istest} 0 "${runsetname}")/states_${thisSSP}"
     state_path_thisSSP="${state_path}"
     . lsf_setup_statedir.sh
 
@@ -174,7 +174,7 @@ fi
 
 # Set up rundir_top
 if [[ "${rundir_top}" == "" ]]; then
-    rundir_top=$(lsf_get_rundir_top.sh ${istest} 0)
+    rundir_top=$(rc_get_rundir_top.sh ${istest} 0 "${runsetname}")
     if [[ "${rundir_top}" == "" ]]; then
         echo "Error finding rundir_top; exiting."
         exit 1
