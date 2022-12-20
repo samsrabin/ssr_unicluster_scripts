@@ -100,78 +100,128 @@ fi
 while [ "$1" != "" ];
 do
     case $1 in
+
+        # Only submit "actual" runs
         -a  | --actual-only)
             actual_only=1
             ;;
+
+        # Number of processors to use
         -n  | --nproc) shift
             nproc="$1"
             ;;
+
+        # Only submit "potential" runs
         -p  | --potential-only)
             potential_only=1
             ;;
+
+        # Submit the runs instead of just setting up directories
         -s  | --submit)
             submit="--submit"
             ;;
+
+        # Do a "test" chain instead of the real thing. Uses $testinsfile instead of $realinsfile (see top of script)
         -t  | --test)
             istest=1
             ;;
+
+        # The name of the directory in $LPJG_TOPDIR (or --lpjg_topdir) where the guess executable can be found. Well, mostly. For --arch XXXX, the name of the directory should be build_XXXX.
         --arch) shift
             arch="$1"
             ;;
+
+        # Submit "finish-up" (postprocessing) scripts to run after each segment completes. That's the default behavior except for -t/--test runs.
         --fu)
             arg_yes_fu=1
             ;;
+
+        # Do not submit "finish-up" (postprocessing) scripts.
         --no-fu)
             arg_no_fu=1
             ;;
+
+        # ONLY submit "finish-up" (postprocessing) scripts.
         --fu-only)
             do_fu_only=1
             ;;
+
+        # Directory where you want files postprocessed for PLUM to go. This is useful if, for example, you did a chain with ssp-list "hist ssp126", and now you want to do --ssp-list "ssp585"—in the latter, you point --dirForPLUM to the postprocessing-output directory from the former.
         --dirForPLUM)  shift
             dirForPLUM="$1"
             ;;
+
+        # SSPs (also "hist" historical period) to run
         --ssp-list)  shift
             ssp_list="$1"
             ;;
+
+        # Memory to be used on each node.
         --mem-per-node)  shift
             mem_per_node=$1
             ;;
+
+        # Memory to be assigned to each CPU.
         --mem-per-cpu)  shift
             mem_per_cpu=$1
             ;;
+
+        # The number of years in each potential period (excluding Nyears_getready).
         --nyears-pot)  shift
             Nyears_pot=$1
             ;;
+
+        # The first year that any potential run should start with (excluding Nyears_getready).
         --first-y1-pot)  shift
             first_pot_y1=$1
             ;;
+
+        # The last year that any potential run should start with.
         --last-y1-pot)  shift
             last_pot_y1=$1
             ;;
+
+        # The first year in the future period.
         --future-y1)  shift
             future_y1=$1
             ;;
+
+        # The last year in the future period.
         --future-yN)  shift
             future_yN=$1
             ;;
+
+        # The last year that any potential run should end with.
         --yN-pot)  shift
             pot_yN=$1
             ;;
+
+        # The number of years between starts of consecutive potential runs.
         --step-pot)  shift
             pot_step=$1
             ;;
+
+        # The first year that should be run in "actual" runs. Default ${hist_y1}.
         --first-y1-act)  shift
             first_act_y1=$1
             ;;
+
+        # The maximum number of states to be saved per actual run. Higher values here increase the risk of weird errors related to disks running out of space or something.
         --max-N-states)  shift
             maxNstates=$1
             ;;
+
+        # -d JOBNUM: Wait to submit the first run in this chain until JOBNUM completes.
         -d | --dependency)  shift
             dependency_in="-d $1"
             ;;
+
+        # If you ask the admins nicely, they'll grant you a "reservation"---some nodes you get all to yourself. Specify "-r RESERVATION_NAME" (no quote marks) to use
         -r | --reservation) shift
             reservation="--reservation $1"
             ;;
+
+        # Directory with your LPJ-GUESS codebase, where build_${arch} will be looked for
         --lpjg_topdir )  shift
             lpjg_topdir=$1
             ;;
