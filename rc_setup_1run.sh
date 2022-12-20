@@ -101,7 +101,6 @@ reservation=
 linked_restart_dir_array=()
 pp_y1=
 pp_yN=
-lpjg_topdir=$HOME/lpj-guess_git-svn_20190828
 delete_state_year=
 delete_state_year_if_thisjob_ok=
 # Handle possible neither/both specs here
@@ -109,6 +108,16 @@ mem_per_node_default=90000 # MB
 mem_per_node=-1 # MB
 mem_per_cpu_default=1000 # MB
 mem_per_cpu=-1 # MB
+
+# Get default LPJ-GUESS code location
+if [[ "${LPJG_TOPDIR}" == "" ]]; then
+    echo "Environment variable LPJG_TOPDIR is blank; will rely on --lpjg_topdir argument." >&2
+elif [[ ! -d "${LPJG_TOPDIR}" ]]; then
+    echo "LPJG_TOPDIR not found: ${LPJG_TOPDIR}" >&2
+    echo "Will rely on --lpjg_topdir argument." >&2
+else
+    lpjg_topdir="${LPJG_TOPDIR}"
+fi
 
 # Args while-loop
 while [ "$1" != "" ];
@@ -178,6 +187,16 @@ done
 
 # Pass here your mandatory args for check
 margs_check $insfile "$extra_insfiles" $gridlist $input_module $nprocess $arch $walltime
+
+if [[ "${lpjg_topdir}" == "" ]]; then
+    echo "You must specify --lpjg_topdir" >&2
+    echo "You could also do the following: export LPJG_TOPDIR=/path/to/lpj-guess/code" >&2
+    echo "either in this terminal or in ~/.bash_profile" >&2
+    exit 1
+elif [[ ! -d "${lpjg_topdir}" ]]; then
+    echo "lpjg_topdir not found: ${lpjg_topdir}" >&2
+    exit 1
+fi
 
 # Parse dependency
 if [[ "${dependency_tmp}" != "" ]]; then

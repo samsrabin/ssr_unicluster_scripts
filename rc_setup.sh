@@ -86,6 +86,16 @@ mem_per_cpu_default=500 # MB
 mem_per_cpu=-1 # MB
 reservation=""
 
+# Get default LPJ-GUESS code location
+if [[ "${LPJG_TOPDIR}" == "" ]]; then
+    echo "Environment variable LPJG_TOPDIR is blank; will rely on --lpjg_topdir argument." >&2
+elif [[ ! -d "${LPJG_TOPDIR}" ]]; then
+    echo "LPJG_TOPDIR not found: ${LPJG_TOPDIR}" >&2
+    echo "Will rely on --lpjg_topdir argument." >&2
+else
+    lpjg_topdir="${LPJG_TOPDIR}"
+fi
+
 # Args while-loop
 while [ "$1" != "" ];
 do
@@ -162,6 +172,9 @@ do
         -r | --reservation) shift
             reservation="--reservation $1"
             ;;
+        --lpjg_topdir )  shift
+            lpjg_topdir=$1
+            ;;
         *)
             echo "$script: illegal option $1"
             usage
@@ -170,6 +183,16 @@ do
     esac
     shift
 done
+
+if [[ "${lpjg_topdir}" == "" ]]; then
+    echo "You must specify --lpjg_topdir" >&2
+    echo "You could also do the following: export LPJG_TOPDIR=/path/to/lpj-guess/code" >&2
+    echo "either in this terminal or in ~/.bash_profile" >&2
+    exit 1
+elif [[ ! -d "${lpjg_topdir}" ]]; then
+    echo "lpjg_topdir not found: ${lpjg_topdir}" >&2
+    exit 1
+fi
 
 if [[ ${first_act_y1} -lt ${hist_y1} ]]; then
     echo "--first-y1-act (${first_act_y1}) must be >= ${hist_y1}"
