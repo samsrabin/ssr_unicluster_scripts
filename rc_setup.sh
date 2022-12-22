@@ -10,8 +10,6 @@ testinsfile="main_test2.ins"; testnproc=1
 #testinsfile="main_test2x2.ins"; testnproc=2
 #testinsfile="main_test160x3.ins"; testnproc=160
 inputmodule="cfx"
-walltime_hist="12:00:00"
-walltime_fut="12:00:00"  # Should take around ??? hours
 walltime_minutes_max=4320
 round_walltime_to_next=30        # minutes
 hist_y1=1850
@@ -40,15 +38,26 @@ elif [[ "${runtype}" == "lsf" ]]; then
     Nyears_pot=99999
     walltime_pot_minutes_peryr=3.4   # 160 processes, Unicluster
     walltime_pot_minutes_minimum=90  # 160 processes, Unicluster
+    walltime_hist="12:00:00"
+    walltime_fut="12:00:00"  # Should take around ??? hours
 elif [[ "${runtype}" == "lsa" || "${runtype}" -eq "sai" ]]; then
-    # LandSyMM agriculture (incl. SAI-LandSyMM)
+    # LandSyMM agriculture
     arch="landsymm-dev-crops"
     first_pot_y1=1955
     pot_step=5
     Nyears_pot=5
     Nyears_getready=2
-    walltime_pot_minutes_peryr=3.4   # 2022-11-03: For now, assuming the same time as lsf
-    walltime_pot_minutes_minimum=45  # 2022-11-04: A guess
+    if [[ "${runtype}" == "lsa" ]]; then
+        walltime_pot_minutes_peryr=5.0
+        walltime_pot_minutes_minimum=60
+        walltime_hist="18:00:00"
+        walltime_fut="18:00:00"
+    elif [[ "${runtype}" -eq "sai" ]]; then
+        walltime_pot_minutes_peryr=3.4
+        walltime_pot_minutes_minimum=45
+        walltime_hist="12:00:00"
+        walltime_fut="12:00:00"
+    fi
 else
     echo "runtype must be either lsf, lsa, or sai." >&2
     exit 1
