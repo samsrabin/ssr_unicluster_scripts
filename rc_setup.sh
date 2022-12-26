@@ -49,7 +49,7 @@ elif [[ "${runtype}" == "lsa" || "${runtype}" -eq "sai" ]]; then
     Nyears_getready=2
     if [[ "${runtype}" == "lsa" ]]; then
         walltime_pot_minutes_peryr=5.0
-        walltime_pot_minutes_minimum=60
+        walltime_pot_minutes_minimum=90
         walltime_hist="18:00:00"
         walltime_fut="18:00:00"
     elif [[ "${runtype}" -eq "sai" ]]; then
