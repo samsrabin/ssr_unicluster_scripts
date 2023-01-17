@@ -1,3 +1,37 @@
+# If not already provided, get input argument
+if [[ "${gcm_in}" == "" ]]; then
+    gcm_in="$1"
+fi
+if [[ "${gcm_in}" == "" ]]; then
+    echo "You must specify a GCM" >&2
+    exit 1
+fi
+
+# Get lowercase input name
+gcm_in_orig="${gcm_in}"
+gcm_in="$(echo ${gcm_in} | tr '[:upper:]' '[:lower:]')"
+
+# Get long name
+if [[ "${gcm_in}" == "g"* ]]; then
+    gcm_long="GFDL-ESM4"
+elif [[ "${gcm_in}" == "i"* ]]; then
+    gcm_long="IPSL-CM6A-LR"
+elif [[ "${gcm_in}" == "mp"* ]]; then
+    gcm_long="MPI-ESM1-2-HR"
+elif [[ "${gcm_in}" == "mr"* ]]; then
+    gcm_long="MRI-ESM2-0"
+elif [[ "${gcm_in}" == "u"* ]]; then
+    gcm_long="UKESM1-0-LL"
+else
+    echo "GCM ${gcm_in_orig} not recognized" >&2
+    exit 1
+fi
+
+# Make sure GCM data exist
+if [[ ! -d "/pfs/work7/workspace/scratch/xg4606-isimip3_climate/climate3b/historical/${gcm_long}-lpjg" ]]; then
+	echo "${gcm_long} does not appear to have any historical climate data" >&2
+	exit 1
+fi
 
 # Get lowercase long name
 gcm_long_lower=$(echo $gcm_long | tr '[:upper:]' '[:lower:]')

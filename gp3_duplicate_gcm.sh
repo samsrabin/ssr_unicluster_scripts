@@ -3,14 +3,7 @@ set -e
 
 cd /home/kit/imk-ifu/xg4606/GGCMI/runs_2022-09/isimip3b
 
-gcm_long=$1
-if [[ "${gcm_long}" == "" ]]; then
-	echo "You must provide gcm_long (e.g., MRI-ESM2-0)"
-	exit 1
-elif [[ ! -d "/pfs/work7/workspace/scratch/xg4606-isimip3_climate/climate3b/historical/${gcm_long}-lpjg" ]]; then
-	echo "${gcm_long} does not appear to be a valid GCM"
-	exit 1
-fi
+gcm_in="$1"
 
 . gp3_get_gcm_info.sh
 
