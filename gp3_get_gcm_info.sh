@@ -3,7 +3,7 @@ if [[ "${gcm_in}" == "" ]]; then
     gcm_in="$1"
 fi
 if [[ "${gcm_in}" == "" ]]; then
-    echo "You must specify a GCM" >&2
+    echo "You must specify a GCM as first argument" >&2
     exit 1
 fi
 
@@ -28,9 +28,15 @@ else
 fi
 
 # Make sure GCM data exist
-if [[ ! -d "/pfs/work7/workspace/scratch/xg4606-isimip3_climate/climate3b/historical/${gcm_long}-lpjg" ]]; then
-	echo "${gcm_long} does not appear to have any historical climate data" >&2
-	exit 1
+if [[ "${isimip3_climate_dir}" == "" ]]; then
+    isimip3_climate_dir="$2"
+fi
+if [[ "${isimip3_climate_dir}" == "" ]]; then
+    echo "You must specify isimip3_climate_dir as second argument" >&2
+    exit 1
+elif [[ ! -d "${isimip3_climate_dir}" ]]; then
+    echo "isimip3_climate_dir not found: ${isimip3_climate_dir}"
+    exit 1
 fi
 
 # Get lowercase long name
@@ -57,7 +63,12 @@ else
 fi
 
 # Get ensemble member
-ensemble_member=$(ls /pfs/work7/workspace/scratch/xg4606-isimip3_climate/climate3b/historical/${gcm_long}-lpjg/*_tas_* | grep -oE "r[0-9]i[0-9]p[0-9]f[0-9]")
+gcm_eg_tas_file="$(find "${isimip3_climate_dir}/climate3b" -type f -wholename "*/${gcm_long}-lpjg/*_tas_*" | head -n 1)"
+if [[ ! -f "${gcm_eg_tas_file}" ]]; then
+	echo "${gcm_long} does not appear to have any data: no example tas file found" >&2
+	exit 1
+fi
+ensemble_member=$(echo ${gcm_eg_tas_file} | grep -oE "r[0-9]i[0-9]p[0-9]f[0-9]")
 if [[ "${ensemble_member}" == "" ]]; then
 	echo "Error finding ensemble_member"
 	exit 1

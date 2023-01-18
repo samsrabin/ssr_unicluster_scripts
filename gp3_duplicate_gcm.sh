@@ -5,6 +5,11 @@ cd /home/kit/imk-ifu/xg4606/GGCMI/runs_2022-09/isimip3b
 
 gcm_in="$1"
 
+# SSR 2023-01-17
+# Original version, not the corrected version!
+# This is because the GGCMI3 protocol specifies the original version.
+isimip3_climate_dir="$(ws_find isimip3_climate)"
+
 . gp3_get_gcm_info.sh
 
 # Original GCM info
