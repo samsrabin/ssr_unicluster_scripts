@@ -10,7 +10,7 @@ gcm_in="$1"
 # This is because the GGCMI3 protocol specifies the original version.
 isimip3_climate_dir="$(ws_find isimip3_climate)"
 
-. gp3_get_gcm_info.sh
+. rc_get_gcm_info.sh
 
 # Original GCM info
 gcm0_long="UKESM1-0-LL"

@@ -9,7 +9,7 @@ gcm_in="$1"
 echo "WARNING: USING OLD, ARTIFACT-FILLED CLIMATE"
 isimip3_climate_dir="$(ws_find isimip3_climate)"
 
-. gp3_get_gcm_info.sh
+. rc_get_gcm_info.sh
 
 # Original GCM info
 gcm0_long="UKESM1-0-LL"
