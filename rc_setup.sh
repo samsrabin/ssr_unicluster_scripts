@@ -43,7 +43,7 @@ elif [[ "${runtype}" == "lsf" ]]; then
 elif [[ "${runtype}" == "lsa" || "${runtype}" -eq "sai" ]]; then
     # LandSyMM agriculture
     arch="landsymm-dev-crops"
-    first_pot_y1=1955
+    first_pot_y1=2000
     pot_step=5
     Nyears_pot=5
     Nyears_getready=2
