@@ -40,7 +40,7 @@ elif [[ "${runtype}" == "lsf" ]]; then
     walltime_pot_minutes_minimum=90  # 160 processes, Unicluster
     walltime_hist="12:00:00"
     walltime_fut="12:00:00"  # Should take around ??? hours
-elif [[ "${runtype}" == "lsa" || "${runtype}" -eq "sai" ]]; then
+elif [[ "${runtype}" == "lsa" || "${runtype}" == "sai" ]]; then
     # LandSyMM agriculture
     arch="landsymm-dev-crops"
     first_pot_y1=2000
