@@ -3,58 +3,14 @@ set -e
 
 cd /home/kit/imk-ifu/xg4606/GGCMI/runs_2022-09/isimip3b
 
-gcm_long=$1
-if [[ "${gcm_long}" == "" ]]; then
-	echo "You must provide gcm_long (e.g., MRI-ESM2-0)"
-	exit 1
-elif [[ ! -d "/pfs/work7/workspace/scratch/xg4606-isimip3_climate/climate3b/historical/${gcm_long}-lpjg" ]]; then
-	echo "${gcm_long} does not appear to be a valid GCM"
-	exit 1
-fi
+gcm_in="$1"
 
-# Get lowercase long name
-gcm_long_lower=$(echo $gcm_long | tr '[:upper:]' '[:lower:]')
-if [[ "${gcm_long_lower}" == "${gcm_long}" ]]; then
-	echo "Error finding gcm_long_lower"
-	exit 1
-fi
+# SSR 2023-01-17
+# Original version, not the corrected version!
+# This is because the GGCMI3 protocol specifies the original version.
+isimip3_climate_dir="$(ws_find isimip3_climate)"
 
-# Get short name
-if [[ "${gcm_long}" == "GFDL-ESM4" ]]; then
-	gcm_short="gfdl"
-elif [[ "${gcm_long}" == "IPSL-CM6A-LR" ]]; then
-	gcm_short="ipsl"
-elif [[ "${gcm_long}" == "MPI-ESM1-2-HR" ]]; then
-	gcm_short="mpi"
-elif [[ "${gcm_long}" == "MRI-ESM2-0" ]]; then
-	gcm_short="mri"
-elif [[ "${gcm_long}" == "UKESM1-0-LL" ]]; then
-	gcm_short="ukesm"
-else
-	echo "${gcm_long} can't be parsed into gcm_short"
-	exit 1
-fi
-
-# Get ensemble member
-ensemble_member=$(ls /pfs/work7/workspace/scratch/xg4606-isimip3_climate/climate3b/historical/${gcm_long}-lpjg/*_tas_* | grep -oE "r[0-9]i[0-9]p[0-9]f[0-9]")
-if [[ "${ensemble_member}" == "" ]]; then
-	echo "Error finding ensemble_member"
-	exit 1
-fi
-
-# Get tiny name
-gcm_tiny=$(echo ${gcm_long_lower} | cut -c1-2)
-if [[ "${gcm_tiny}" == "" ]]; then
-	echo "Error finding gcm_tiny"
-	exit 1
-fi
-
-echo "New GCM info:"
-echo "   gcm_long $gcm_long"
-echo "   gcm_long_lower $gcm_long_lower"
-echo "   gcm_short $gcm_short"
-echo "   gcm_tiny $gcm_tiny"
-echo "   ensemble_member $ensemble_member"
+. rc_get_gcm_info.sh
 
 # Original GCM info
 gcm0_long="UKESM1-0-LL"

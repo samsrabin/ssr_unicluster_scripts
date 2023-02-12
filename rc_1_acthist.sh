@@ -83,7 +83,7 @@ else
     fi
 
     # Make run directory from template
-    cp -a template "${dir_acthist}"
+    cp -aL template "${dir_acthist}"
     pushdq ${dir_acthist}
     if compgen -G .*.swp > /dev/null; then
         rm .*.swp
@@ -91,6 +91,12 @@ else
 
     # Replace placeholder values from template
     sed -i "s/UUUU/${lasthistyear}/" main.ins    # lasthistyear
+    [[ "${isimip3_climate_dir}" ]] && sed -i "s@ISIMIP3CLIMATEDIR@${isimip3_climate_dir}@g" main.ins
+    if [[ "${gcm_long}" ]]; then
+        sed -i "s/GCMLONGNAME/${gcm_long}/g" main.ins
+        sed -i "s/GCMLONGLOWER/${gcm_long_lower}/g" main.ins
+        sed -i "s/ENSEMBLEMEMBER/${ensemble_member}/g" main.ins
+    fi
     if [[ "${act_restart_year}" == "" ]]; then
         sed -iE "s/^\s*restart_year/\!restart_year/g" main.ins
     else
