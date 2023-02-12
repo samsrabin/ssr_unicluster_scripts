@@ -94,6 +94,8 @@ mem_per_node=-1 # MB
 mem_per_cpu_default=500 # MB
 mem_per_cpu=-1 # MB
 reservation=""
+gcm_in=""
+isimip3_climate_dir=""
 
 # Get default LPJ-GUESS code location
 if [[ "${LPJG_TOPDIR}" == "" ]]; then
@@ -234,6 +236,17 @@ do
         --lpjg_topdir )  shift
             lpjg_topdir=$1
             ;;
+
+        # GCM to use
+        -g | --gcm) shift
+            gcm_in="$1"
+            ;;
+
+        # ISIMIP3 climate directory to use
+        --isimip3-climate-dir) shift
+            isimip3_climate_dir="$1"
+            ;;
+
         *)
             echo "$script: illegal option $1"
             usage
@@ -258,25 +271,15 @@ if [[ ${first_act_y1} -lt ${hist_y1} ]]; then
     exit 1
 fi
 
+if [[ "${gcm_in}" != "" ]]; then
+    if [[ "${runtype}" != "lsa" ]]; then
+        echo "-g/--gcm currently only supported for runtype lsa (not ${runtype})" >&2
+        exit 1
+    fi
+fi
+
 # Process memory specification
 . "${HOME}/scripts/process_slurm_mem_spec.sh"
-
-# Get run set working directory
-runset_workdir="$(get_equiv_workdir.sh "$PWD")"
-if [[ ${istest} -eq 1 ]]; then
-    runset_workdir+="_test"
-fi
-
-# Set up dirForPLUM
-if [[ "${dirForPLUM}" != "" && ! -d "${dirForPLUM}" ]]; then
-    echo "dirForPLUM does not exist: ${dirForPLUM}"
-    exit 1
-elif [[ "${dirForPLUM}" == "" ]]; then
-    dirForPLUM=${runset_workdir}/outputs/outForPLUM-$(date "+%Y-%m-%d-%H%M%S")
-    mkdir -p ${dirForPLUM}
-    echo "Top-level output directory: $dirForPLUM"
-    echo " "
-fi
 
 # Do finishup or no?
 if [[ ${do_fu_only} -eq 1 ]]; then
@@ -375,6 +378,53 @@ while [[ ! -d template ]]; do
         exit 1
     fi
 done
+
+# Do we need to specify climate directory?
+if [[ $(grep "ISIMIP3CLIMATEDIR" template/main.ins | wc -l) -gt 0 && "${isimip3_climate_dir}" == "" ]]; then
+    if [[ "${runtype}" == "lsa" ]]; then
+        isimip3_climate_dir="/pfs/work7/workspace/scratch/xg4606-isimip3_climatev2"
+    else
+        echo "Specify --isimip3-climate-dir" >&2
+        exit 1
+    fi
+fi
+
+# Get GCM synonyms, if needed.
+# Then set up subdirectory.
+if [[ $(grep "GCMLONG\|ENSEMBLEMEMBER" template/main.ins | wc -l) -gt 0 ]]; then
+    if [[ "${gcm_in}" == "" ]]; then
+        echo "Specify -g/--gcm" >&2
+        exit 1
+    elif [[ "${isimip3_climate_dir}" == "" ]]; then
+        echo "Specify --isimip3-climate-dir" >&2
+        exit 1
+    fi
+    . rc_get_gcm_info.sh
+
+    mkdir -p ${gcm_long_lower}_${ensemble_member}
+    cd ${gcm_long_lower}_${ensemble_member}
+    if [[ -e template ]]; then
+        rm template
+    fi
+    ln -s ../template
+fi
+
+# Get run set working directory
+runset_workdir="$(get_equiv_workdir.sh "$PWD")"
+if [[ ${istest} -eq 1 ]]; then
+    runset_workdir+="_test"
+fi
+
+# Set up dirForPLUM
+if [[ "${dirForPLUM}" != "" && ! -d "${dirForPLUM}" ]]; then
+    echo "dirForPLUM does not exist: ${dirForPLUM}"
+    exit 1
+elif [[ "${dirForPLUM}" == "" ]]; then
+    dirForPLUM=${runset_workdir}/outputs/outForPLUM-$(date "+%Y-%m-%d-%H%M%S")
+    mkdir -p ${dirForPLUM}
+    echo "Top-level output directory: $dirForPLUM"
+    echo " "
+fi
 
 # Get name of runset
 runsetname="$(basename "$(realpath .)")"

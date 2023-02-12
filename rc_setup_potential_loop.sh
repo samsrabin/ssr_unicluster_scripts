@@ -181,12 +181,18 @@ for y1 in ${y1_list[@]}; do
         fi
     
         # Copy template runDir
-        cp -a ../template "${thisdir}"
+        cp -aL ../template "${thisdir}"
     
         pushdq "${thisdir}"
     
         # Fill template runDir
         sed -i "s/UUUU/${yN}/" main.ins    # lasthistyear
+        [[ "${isimip3_climate_dir}" ]] && sed -i "s@ISIMIP3CLIMATEDIR@${isimip3_climate_dir}@g" main.ins
+        if [[ "${gcm_long}" ]]; then
+            sed -i "s/GCMLONGNAME/${gcm_long}/g" main.ins
+            sed -i "s/GCMLONGLOWER/${gcm_long_lower}/g" main.ins
+            sed -i "s/ENSEMBLEMEMBER/${ensemble_member}/g" main.ins
+        fi
         # restarting
         sed -i "s/^\!restart_year VVVV/restart_year ${pot_restart_year}/g" main.ins
         sed -i "s/VVVV/${pot_restart_year}/" main.ins
@@ -228,6 +234,8 @@ for y1 in ${y1_list[@]}; do
                     echo "SSP ${thisSSP} not recognized for runtype ${runtype}" >&2
                     exit 1
                 fi
+            elif [[ ${runtype} == "lsa" ]]; then
+                sed -i "s/ssp585/${thisSSP}/g" main.ins
             fi
             # Save state if this potential run will need to be resumed in a future climate
             if [[ ${first_plut_year} -ge ${future_y1} && ${y1} -lt ${future_y1} ]]; then
@@ -349,6 +357,7 @@ for y1 in ${y1_list[@]}; do
         delete_state_arg=
     else
         echo WILL DELETE ${pot_restart_year} STATE
+
         delete_state_arg="--delete-state-year ${pot_restart_year}"
     fi
     if [[ ${actually_setup} -eq 1 ]]; then
