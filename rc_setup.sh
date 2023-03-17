@@ -73,7 +73,6 @@ fi
 
 
 # Set default values for non-positional arguments
-future_yN=2100
 istest=0
 arg_yes_fu=0
 arg_no_fu=0
@@ -87,7 +86,6 @@ nproc=160
 #Nyears_pot=100
 first_act_y1=${hist_y1}
 last_pot_y1=999999999
-pot_yN=2100
 maxNstates=3
 # Handle possible neither/both specs here
 mem_per_node_default=90000 # MB
@@ -301,6 +299,15 @@ if [[ "${runtype}" == "sai" ]]; then
         echo "At least one member of ssp list not recognized" >&2
         exit 1
     fi
+    if [[ "${future_yN}" == "" ]]; then
+        future_yN=2069
+    fi
+elif [[ "${future_yN}" == "" ]]; then
+    future_yN=2100
+fi
+
+if [[ ${pot_yN} == "" ]]; then
+    pot_yN="${future_yN}"
 fi
 
 if [[ "${lpjg_topdir}" == "" ]]; then
