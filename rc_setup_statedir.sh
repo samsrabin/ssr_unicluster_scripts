@@ -1,9 +1,5 @@
 
 state_path_hist="../states"
-if [[ ${runtype} == "sai" ]]; then
-    state_path_hist+="_${histname}.${ensemble_member_hist}"
-    state_path_thisSSP+=".${ensemble_member_fut}"
-fi
 
 if [[ ! -d ${state_path_thisSSP} ]]; then
     mkdir -p ${state_path_thisSSP}

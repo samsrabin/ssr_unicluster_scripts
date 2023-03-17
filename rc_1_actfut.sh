@@ -49,9 +49,6 @@ fi
 
 theseYears="${act_restart_year}-${lasthistyear}"
 thisDir="${thisSSP}_${theseYears}"
-if [[ "${runtype}" == "sai" ]]; then
-    thisDir="${thisDir/${thisSSP}/${thisSSP}.${ensemble_member_fut}}"
-fi
 
 if [[ ${lasthistyear} -lt ${act_restart_year} ]]; then
     echo "Skipping actual/${thisDir}. Not sure why it's trying this."
@@ -107,13 +104,13 @@ else
             sed -i "s/ssp585/${thisSSP}/g" main.ins
         elif [[ ${runtype} == "sai" ]]; then
             # Need to add functionality to handle ensemble members
-            if [[ "${thisSSP}" == "arise1.5" ]]; then
+            if [[ "${thisSSP}" == "arise1.5"* ]]; then
                 sed -i "s/CESM CMIP6 historical, ensemble member 1/CESM-WACCM ARISE-1.5, ensemble member 1/g" main.ins
                 sed -i "s/timeseries-cmip6/ARISE-SAI-1.5/g" main.ins
                 sed -i "s/b.e21.BWHIST.f09_g17.CMIP6-historical-WACCM.001/b.e21.BW.f09_g17.SSP245-TSMLT-GAUSS-DEFAULT.001/g" main.ins
                 sed -i "s/18500101-20141231/20350101-20691230/g" main.ins
                 sed -i -e "/CESM-WACCM ssp245, ensemble member 1/,+6d" main.ins
-            elif [[ "${thisSSP}" != "${histname}" && "${thisSSP}" != "ssp245" ]]; then
+            elif [[ "${thisSSP}" != "${histname}" && "${thisSSP}" != "ssp245"* ]]; then
                 echo "SSP ${thisSSP} not recognized for runtype ${runtype}" >&2
                 exit 1
             fi

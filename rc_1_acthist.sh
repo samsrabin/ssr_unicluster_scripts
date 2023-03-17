@@ -13,7 +13,12 @@ fi
 
 # Get first year in this run
 if [[ "${act_restart_year}" == "" ]]; then
-    firstyear_thisrun="spin"
+    if [[ "${histname}" != "hist" && "${thisSSP}" == "${histname}" ]]; then
+        act_restart_year=${first_act_y1}
+        firstyear_thisrun=${first_act_y1}
+    else
+        firstyear_thisrun="spin"
+    fi
 else
     firstyear_thisrun=${act_restart_year}
 fi
@@ -57,10 +62,7 @@ fi
 
 # Set up directory
 theseYears="${firstyear_thisrun}-${lasthistyear}"
-dir_acthist="actual/hist_${theseYears}"
-if [[ "${runtype}" == "sai" ]]; then
-    dir_acthist="${dir_acthist/hist/hist.${ensemble_member_hist}}"
-fi
+dir_acthist="actual/${histname}_${theseYears}"
 
 echo "#############################"
 echo "### ${dir_acthist} ###"
@@ -200,16 +202,12 @@ fi
 
 # Submit historical run or finishup
 state_path="$(cd ..; rc_get_rundir_top.sh ${istest} 0 "${runsetname}")/states"
-this_prefix="${prefix}_hist"
-if [[ "${runtype}" == "sai" ]]; then
-    state_path+="_hist.${ensemble_member_hist}"
-    this_prefix+=".${ensemble_member_hist}"
-fi
+this_prefix="${prefix}_${histname}"
 ispot=0
 do_setup ${walltime_hist} ${ispot} ${delete_state_arg}
 
 if [[ ${do_fu_only} -eq 0 ]]; then
-    arr_job_name+=("act-hist_${theseYears}")
+    arr_job_name+=("act-${histname}_${theseYears}")
     previous_act_jobnum=$(get_latest_run)
     if [[ "${submit}" != "" ]]; then
         arr_job_num+=( ${previous_act_jobnum} )

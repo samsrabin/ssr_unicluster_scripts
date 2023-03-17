@@ -132,11 +132,16 @@ for y1 in ${y1_list[@]}; do
         if [[ ${is_resuming} -eq 0 && ${y1} -gt ${hist_yN} ]]; then
 echo rc_setup_potential_loop rc_setup_statedir.sh A
             state_path_absolute=${state_path_absolute}/actual/states
+#            if [[ "${histname}" != "hist" ]]; then
+#                state_path_absolute+="_${histname}"
+#            fi
             state_path_thisSSP="${state_path_absolute}_${thisSSP}"
             . rc_setup_statedir.sh
         else
-echo rc_setup_potential_loop rc_setup_statedir.sh B
             state_path_absolute=${state_path_absolute}/potential/states
+#            if [[ "${histname}" != "hist" ]]; then
+#                state_path_absolute+="_${histname}"
+#            fi
             state_path_thisSSP=${state_path_absolute}_${thisPot}
             . rc_setup_statedir_pot.sh
         fi
@@ -148,14 +153,8 @@ echo rc_setup_potential_loop rc_setup_statedir.sh B
     thisdir=${thisPot}_${y1}-${yN}
     if [[ ${incl_future} -eq 1 ]]; then
         thisTopDir="${thisSSP}"
-        if [[ "${runtype}" == "sai" ]]; then
-            thisTopDir+=".${ensemble_member_fut}.hist${ensemble_member_hist}"
-        fi
     else
         thisTopDir="${histname}"
-        if [[ "${runtype}" == "sai" ]]; then
-            thisTopDir+=".${ensemble_member_hist}"
-        fi
     fi
     mkdir -p "${thisTopDir}"
     thisdir="${thisTopDir}/${thisdir}"
@@ -232,13 +231,13 @@ echo rc_setup_potential_loop rc_setup_statedir.sh B
         elif [[ ${runtype} == "sai" || ${runtype} == "lsa" ]]; then
             if [[ ${runtype} == "sai" ]]; then
                 # Need to add functionality to handle ensemble members
-                if [[ "${thisSSP}" == "arise1.5" ]]; then
+                if [[ "${thisSSP}" == "arise1.5"* ]]; then
                     sed -i "s/CESM CMIP6 historical, ensemble member 1/CESM-WACCM ARISE-1.5, ensemble member 1/g" main.ins
                     sed -i "s/timeseries-cmip6/ARISE-SAI-1.5/g" main.ins
                     sed -i "s/b.e21.BWHIST.f09_g17.CMIP6-historical-WACCM.001/b.e21.BW.f09_g17.SSP245-TSMLT-GAUSS-DEFAULT.001/g" main.ins
                     sed -i "s/18500101-20141231/20350101-20691230/g" main.ins
                     sed -i -e "/CESM-WACCM ssp245, ensemble member 1/,+6d" main.ins
-                elif [[ "${thisSSP}" != "${histname}" && "${thisSSP}" != "ssp245" ]]; then
+                elif [[ "${thisSSP}" != "${histname}" && "${thisSSP}" != "ssp245"* ]]; then
                     echo "SSP ${thisSSP} not recognized for runtype ${runtype}" >&2
                     exit 1
                 fi

@@ -288,6 +288,7 @@ if [[ "${runtype}" == "sai" ]]; then
             exit 1
         fi
         hist_y1=2015
+        first_act_y1=${hist_y1}
         future_y1=2035
         histname="ssp245"
     elif [[ "${ssp_list_nohist}" == *"ssp245"* ]]; then
@@ -306,6 +307,11 @@ elif [[ "${future_yN}" == "" ]]; then
     future_yN=2100
 fi
 
+if [[ ${first_act_y1} -lt ${hist_y1} ]]; then
+    echo "--first-y1-act (${first_act_y1}) must be >= ${hist_y1}"
+    exit 1
+fi
+
 if [[ ${pot_yN} == "" ]]; then
     pot_yN="${future_yN}"
 fi
@@ -317,11 +323,6 @@ if [[ "${lpjg_topdir}" == "" ]]; then
     exit 1
 elif [[ ! -d "${lpjg_topdir}" ]]; then
     echo "lpjg_topdir not found: ${lpjg_topdir}" >&2
-    exit 1
-fi
-
-if [[ ${first_act_y1} -lt ${hist_y1} ]]; then
-    echo "--first-y1-act (${first_act_y1}) must be >= ${hist_y1}"
     exit 1
 fi
 
@@ -414,13 +415,6 @@ else
 fi
 
 
-#############################################################################################
-
-. rc_get_years.sh
-. rc_helper_functions.sh
-
-#############################################################################################
-
 echo " "
 date
 echo " "
@@ -487,6 +481,29 @@ if [[ $(grep "GCMLONG\|ENSEMBLEMEMBER" template/main.ins | wc -l) -gt 0 ]]; then
         # Left-pad with zeros to length 3
         ensemble_member_hist=$(printf "%03d" ${ensemble_member_hist})
         [[ ${future_included} -gt 0 ]] && ensemble_member_fut=$(printf "%03d" ${ensemble_member_fut})
+
+        # Set up subdir for all runs with this historical ensemble member
+        mkdir -p hist${ensemble_member_hist}
+        cd hist${ensemble_member_hist}
+        if [[ -e template ]]; then
+            rm template
+        fi
+        ln -s ../template
+
+        # Append ensemble member (only needed for future period, since each run tree is associated with only 1 historical ensemble member)
+        if [[ "${histname}" != "hist" ]]; then
+            histname+=".${ensemble_member_fut}"
+        fi
+        ssp_list2=""
+        for s in ${ssp_list}; do
+            if [[ "${s}" == "hist" ]]; then
+                ssp_list2+="hist "
+            else
+                ssp_list2+="${s}.${ensemble_member_fut} "
+            fi
+        done
+        ssp_list="${ssp_list2}"
+        ssp_list2=
     else
         if [[ "${ensemble_member}${ensemble_member_hist}${ensemble_member_fut}" != "" ]]; then
             echo "Do not specify ensemble member(s) for ${runtype} run chains; they are determined automatically." >&2
@@ -509,6 +526,13 @@ if [[ $(grep "GCMLONG\|ENSEMBLEMEMBER" template/main.ins | wc -l) -gt 0 ]]; then
         ln -s ../template
     fi
 fi
+
+#############################################################################################
+
+. rc_get_years.sh
+. rc_helper_functions.sh
+
+#############################################################################################
 
 # Get run set working directory
 runset_workdir="$(get_equiv_workdir.sh "$PWD")"

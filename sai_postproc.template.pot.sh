@@ -6,16 +6,7 @@ PATH=$PATH:~/software/guess_utilities_1.3/bin
 pp_y1=QQQQ
 pp_yN=UUUU
 
-# Special thing for SAI runs
-if [[ ${pp_y1} -ge 2015 && ${pp_yN} -lt 2035 ]]; then
-    suffix="ssp245"
-elif [[ ( ${pp_y1} -lt 2015 && ${pp_yN} -lt 2015 ) || ${pp_y1} -ge 2035 ]]; then
-    suffix="THISSSP"
-else
-    suffix="???"
-fi
-
-thisDir=${pp_y1}-${pp_yN}_${suffix}
+thisDir=${pp_y1}-${pp_yN}_THISSSP
 
 echo $PWD > this_directory.txt
 

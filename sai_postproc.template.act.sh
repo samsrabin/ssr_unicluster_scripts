@@ -13,16 +13,7 @@ for i in "${!pp_y1_array[@]}"; do
 	pp_y1=${pp_y1_array[i]}
 	pp_yN=${pp_yN_array[i]}
 
-    # Special thing for SAI runs
-    if [[ ${pp_y1} -ge 2015 && ${pp_yN} -lt 2035 ]]; then
-        suffix="ssp245"
-    elif [[ ( ${pp_y1} -lt 2015 && ${pp_yN} -lt 2015 ) || ${pp_y1} -ge 2035 ]]; then
-        suffix="THISSSP"
-    else
-        suffix="???"
-    fi
-
-	thisDir=${pp_y1}-${pp_yN}_${suffix}
+	thisDir=${pp_y1}-${pp_yN}_THISSSP
 
 	mkdir -p postproc/${thisDir}
 	echo "   tslicing ${thisDir} tot_runoff..."
