@@ -49,6 +49,9 @@ fi
 
 theseYears="${act_restart_year}-${lasthistyear}"
 thisDir="${thisSSP}_${theseYears}"
+if [[ "${runtype}" == "sai" ]]; then
+    thisDir="${thisDir/${thisSSP}/${thisSSP}.${ensemble_member_fut}}"
+fi
 
 if [[ ${lasthistyear} -lt ${act_restart_year} ]]; then
     echo "Skipping actual/${thisDir}. Not sure why it's trying this."
@@ -175,7 +178,7 @@ else
         # Set up state directory for this SSP, if needed
         state_path="$(cd ..; rc_get_rundir_top.sh ${istest} 0 "${runsetname}")/states_${thisSSP}"
         state_path_thisSSP="${state_path}"
-        . lsf_setup_statedir.sh
+        . rc_setup_statedir.sh
 
         ispot=0
     fi

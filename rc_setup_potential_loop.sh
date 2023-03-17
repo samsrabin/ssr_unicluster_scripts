@@ -126,17 +126,22 @@ for y1 in ${y1_list[@]}; do
     if [[ ${do_fu_only} -eq 0 ]]; then
         # Get state directory
         state_path=""
-        rundir_top=placeholderneededinlsf_get_state_path_thisSSPdotsh
+        rundir_top=placeholderneededinrc_get_state_path_thisSSPdotsh
         cd ..
         state_path_absolute=${runset_workdir}
+echo state_path_absolute ${state_path_absolute}
         if [[ ${is_resuming} -eq 0 && ${y1} -gt ${hist_yN} ]]; then
             state_path_absolute=${state_path_absolute}/actual/states
+echo Handle state_path_absolute A >&2
+exit 1
             state_path_thisSSP="${state_path_absolute}_${thisSSP}"
-            . lsf_setup_statedir.sh
+            . rc_setup_statedir.sh
         else
             state_path_absolute=${state_path_absolute}/potential/states
+echo Handle state_path_absolute B >&2
+exit 1
             state_path_thisSSP=${state_path_absolute}_${thisPot}
-            . lsf_setup_statedir_pot.sh
+            . rc_setup_statedir_pot.sh
         fi
         state_path="${state_path_thisSSP}"
         cd potential

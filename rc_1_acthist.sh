@@ -25,7 +25,8 @@ firstsaveyear=$(echo ${save_years} | cut -d" " -f1)
 
 # Extend run to reach end of last potential period, if needed
 if [[ ${runtype} == "lsa" || ${runtype} == "sai" ]]; then
-    if [[ "${firstyear_thisrun}" == "spin" ]]; then                                                               firstrunyear=${hist_y1}
+    if [[ "${firstyear_thisrun}" == "spin" ]]; then
+        firstrunyear=${hist_y1}
     else
         firstrunyear=${act_restart_year}
     fi
@@ -57,6 +58,9 @@ fi
 # Set up directory
 theseYears="${firstyear_thisrun}-${lasthistyear}"
 dir_acthist="actual/hist_${theseYears}"
+if [[ "${runtype}" == "sai" ]]; then
+    dir_acthist="${dir_acthist/hist/hist.${ensemble_member_hist}}"
+fi
 
 echo "#############################"
 echo "### ${dir_acthist} ###"
@@ -197,6 +201,10 @@ fi
 # Submit historical run or finishup
 state_path="$(cd ..; rc_get_rundir_top.sh ${istest} 0 "${runsetname}")/states"
 this_prefix="${prefix}_hist"
+if [[ "${runtype}" == "sai" ]]; then
+    state_path+="_hist.${ensemble_member_hist}"
+    this_prefix+=".${ensemble_member_hist}"
+fi
 ispot=0
 do_setup ${walltime_hist} ${ispot} ${delete_state_arg}
 
