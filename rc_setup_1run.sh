@@ -1,9 +1,6 @@
 #!/bin/bash
 set -e
 
-echo "EXITING FROM rc_setup_1run.sh"
-exit 1
-
 if [[ "$#" -eq "0" ]]; then
     echo "usage:"
     echo "  `basename $0` <maininsfile> "other_ins_files" <grid> <input_module> <np> <imac|keam|linux|scc>"

@@ -129,17 +129,14 @@ for y1 in ${y1_list[@]}; do
         rundir_top=placeholderneededinrc_get_state_path_thisSSPdotsh
         cd ..
         state_path_absolute=${runset_workdir}
-echo state_path_absolute ${state_path_absolute}
         if [[ ${is_resuming} -eq 0 && ${y1} -gt ${hist_yN} ]]; then
+echo rc_setup_potential_loop rc_setup_statedir.sh A
             state_path_absolute=${state_path_absolute}/actual/states
-echo Handle state_path_absolute A >&2
-exit 1
             state_path_thisSSP="${state_path_absolute}_${thisSSP}"
             . rc_setup_statedir.sh
         else
+echo rc_setup_potential_loop rc_setup_statedir.sh B
             state_path_absolute=${state_path_absolute}/potential/states
-echo Handle state_path_absolute B >&2
-exit 1
             state_path_thisSSP=${state_path_absolute}_${thisPot}
             . rc_setup_statedir_pot.sh
         fi
@@ -150,12 +147,18 @@ exit 1
     # Get dirname
     thisdir=${thisPot}_${y1}-${yN}
     if [[ ${incl_future} -eq 1 ]]; then
-        mkdir -p "${thisSSP}"
-        thisdir="${thisSSP}/${thisdir}"
+        thisTopDir="${thisSSP}"
+        if [[ "${runtype}" == "sai" ]]; then
+            thisTopDir+=".${ensemble_member_fut}.hist${ensemble_member_hist}"
+        fi
     else
-        mkdir -p "hist"
-        thisdir="hist/${thisdir}"
+        thisTopDir="hist"
+        if [[ "${runtype}" == "sai" ]]; then
+            thisTopDir+=".${ensemble_member_hist}"
+        fi
     fi
+    mkdir -p "${thisTopDir}"
+    thisdir="${thisTopDir}/${thisdir}"
 
     # Get jobname
     this_jobname="${thisPot}-${thisSSP}"
