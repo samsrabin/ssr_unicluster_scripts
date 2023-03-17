@@ -98,7 +98,9 @@ else
     # Replace placeholder values from template
     sed -i "s/UUUU/${lasthistyear}/" main.ins    # lasthistyear
     [[ "${isimip3_climate_dir}" ]] && sed -i "s@ISIMIP3CLIMATEDIR@${isimip3_climate_dir}@g" main.ins
-    if [[ "${gcm_long}" ]]; then
+    if [[ "${runtype}" == "sai" ]]; then
+        sed -i "s/ENSEMBLEMEMBERHIST/${ensemble_member_hist}/g" main.ins
+    elif [[ "${gcm_long}" ]]; then
         sed -i "s/GCMLONGNAME/${gcm_long}/g" main.ins
         sed -i "s/GCMLONGLOWER/${gcm_long_lower}/g" main.ins
         sed -i "s/ENSEMBLEMEMBER/${ensemble_member}/g" main.ins

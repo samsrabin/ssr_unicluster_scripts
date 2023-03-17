@@ -195,7 +195,7 @@ echo rc_setup_potential_loop rc_setup_statedir.sh A
         # Fill template runDir
         sed -i "s/UUUU/${yN}/" main.ins    # lasthistyear
         [[ "${isimip3_climate_dir}" ]] && sed -i "s@ISIMIP3CLIMATEDIR@${isimip3_climate_dir}@g" main.ins
-        if [[ "${gcm_long}" ]]; then
+        if [[ "${runtype}" != "sai" && "${gcm_long}" ]]; then
             sed -i "s/GCMLONGNAME/${gcm_long}/g" main.ins
             sed -i "s/GCMLONGLOWER/${gcm_long_lower}/g" main.ins
             sed -i "s/ENSEMBLEMEMBER/${ensemble_member}/g" main.ins
@@ -230,9 +230,9 @@ echo rc_setup_potential_loop rc_setup_statedir.sh A
             sed -i -E "s/npatch_secondarystand\s+[0-9]+/npatch_secondarystand 20/g" landcover.ins
         elif [[ ${runtype} == "sai" || ${runtype} == "lsa" ]]; then
             if [[ ${runtype} == "sai" ]]; then
-                # Need to add functionality to handle ensemble members
                 if [[ "${thisSSP}" == "arise1.5"* ]]; then
-                    sed -i "s/CESM CMIP6 historical, ensemble member 1/CESM-WACCM ARISE-1.5, ensemble member 1/g" main.ins
+                    sed -i "s/ENSEMBLEMEMBERHIST/${ensemble_member_fut}/g" main.ins
+                    sed -i "s/CESM CMIP6 historical, ensemble member 1/CESM-WACCM ARISE-1.5, ensemble member ${ensemble_member_fut}/g" main.ins
                     sed -i "s/timeseries-cmip6/ARISE-SAI-1.5/g" main.ins
                     sed -i "s/b.e21.BWHIST.f09_g17.CMIP6-historical-WACCM.001/b.e21.BW.f09_g17.SSP245-TSMLT-GAUSS-DEFAULT.001/g" main.ins
                     sed -i "s/18500101-20141231/20350101-20691230/g" main.ins
@@ -240,6 +240,11 @@ echo rc_setup_potential_loop rc_setup_statedir.sh A
                 elif [[ "${thisSSP}" != "${histname}" && "${thisSSP}" != "ssp245"* ]]; then
                     echo "SSP ${thisSSP} not recognized for runtype ${runtype}" >&2
                     exit 1
+                else
+                    sed -i "s/ENSEMBLEMEMBERHIST/${ensemble_member_hist}/g" main.ins
+                    sed -i "s/historical, ensemble member 1/historical, ensemble member ${ensemble_member_hist}/g" main.ins
+                    sed -i "s/ENSEMBLEMEMBERFUT/${ensemble_member_fut}/g" main.ins
+                    sed -i "s/ssp245, ensemble member 1/ssp245, ensemble member ${ensemble_member_fut}/g" main.ins
                 fi
             elif [[ ${runtype} == "lsa" ]]; then
                 sed -i "s/ssp585/${thisSSP}/g" main.ins
