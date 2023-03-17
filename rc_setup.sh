@@ -63,8 +63,9 @@ else
     exit 1
 fi
 if [[ "${runtype}" == "sai" ]]; then
-    ssp_list="hist ssp245 arise1.5"
-    future_y1=2035
+    # This is handled elsewhere
+    ssp_list=
+    future_y1=
 else
     ssp_list="hist ssp126 ssp370 ssp585"
     future_y1=2015
@@ -271,6 +272,37 @@ do
     shift
 done
 
+histname="hist"
+if [[ "${runtype}" == "sai" ]]; then
+    if [[ "${ssp_list}" == "" ]]; then
+        echo "For sai run chains, you must provide -s/--ssp-list." >&2
+        exit 1
+    fi
+    ssp_list_nohist=$(echo ${ssp_list} | sed "s/hist//g")
+    if [[ $(echo ${ssp_list_nohist} | wc -w) -gt 1 && "${ssp_list}" == *"hist"* ]]; then
+        echo "For sai run chains with hist period, specify at most 1 future period." >&2
+        exit 1
+    fi
+    ssp_list_nohist="${ssp_list_nohist/ /}"
+    if [[ "${ssp_list_nohist}" == *"arise1.5"* ]]; then
+        if [[ "${ssp_list}" == *"hist"* ]]; then
+            echo "Do not specify arise1.5 with hist. Do it either by itself or with ssp245." >&2
+            exit 1
+        fi
+        hist_y1=2015
+        future_y1=2035
+        histname="ssp245"
+    elif [[ "${ssp_list_nohist}" == *"ssp245"* ]]; then
+        future_y1=2015
+    elif [[ "${ssp_list_nohist}" == "" ]]; then
+        # I.e., only hist
+        future_y1=2015
+    else
+        echo "At least one member of ssp list not recognized" >&2
+        exit 1
+    fi
+fi
+
 if [[ "${lpjg_topdir}" == "" ]]; then
     echo "You must specify --lpjg_topdir" >&2
     echo "You could also do the following: export LPJG_TOPDIR=/path/to/lpj-guess/code" >&2
@@ -356,7 +388,7 @@ else
 fi
 
 # Are we actually submitting historical period?
-if [[ $(echo ${ssp_list} | cut -f1 -d" ") == "hist" ]]; then
+if [[ $(echo ${ssp_list} | cut -f1 -d" ") == "${histname}" ]]; then
     do_hist=1
 else
     do_hist=0
@@ -364,7 +396,7 @@ fi
 
 # We don't need hist in the SSP list anymore
 if [[ ${do_hist} -eq 1 ]]; then
-    ssp_list="$(echo ${ssp_list} | sed "s/hist//")"
+    ssp_list="$(echo ${ssp_list} | sed "s/${histname}//")"
 fi
 
 # Future period?
@@ -537,7 +569,7 @@ while IFS= read -r save_years; do
 
     if [[ ${first_save_year} != "" && ${first_save_year} -le ${hist_yN} ]]; then
 
-        thisSSP="hist"
+        thisSSP="${histname}"
 
         # Sanity check
         if [[ ${do_hist} == 0 ]]; then
@@ -581,7 +613,7 @@ while IFS= read -r save_years; do
                 act_restart_year=""
             fi
             s=$((s + 1))
-            if [[ ${runtype} != "sai" && "${thisSSP}" != "hist" && "${thisSSP:0:3}" != "ssp" ]]; then
+            if [[ ${runtype} != "sai" && "${thisSSP}" != "${histname}" && "${thisSSP:0:3}" != "ssp" ]]; then
                 thisSSP="ssp${thisSSP}"
             fi
             this_prefix="${prefix}_${thisSSP}"
@@ -590,7 +622,7 @@ while IFS= read -r save_years; do
             if [[ "${first_pot_y1}" == "" ]]; then
                 first_pot_y1=$(echo ${list_pot_y1_future} | cut -d" " -f1)
             fi
-            if [[ ( ( ${first_save_year} != "" && ${first_pot_y1} -lt ${first_save_year} ) || ${potential_only} -eq 1 ) && ${did_resume_pre2015pots[s]} == 0 && ${thisSSP} != "hist" && ${actual_only} -eq 0 ]]; then
+            if [[ ( ( ${first_save_year} != "" && ${first_pot_y1} -lt ${first_save_year} ) || ${potential_only} -eq 1 ) && ${did_resume_pre2015pots[s]} == 0 && ${thisSSP} != "${histname}" && ${actual_only} -eq 0 ]]; then
                 resume_pre2015pots=1
                 echo rc_setup_potential_loop.sh B
                 . rc_setup_potential_loop.sh

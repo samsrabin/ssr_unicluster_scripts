@@ -113,7 +113,7 @@ else
                 sed -i "s/b.e21.BWHIST.f09_g17.CMIP6-historical-WACCM.001/b.e21.BW.f09_g17.SSP245-TSMLT-GAUSS-DEFAULT.001/g" main.ins
                 sed -i "s/18500101-20141231/20350101-20691230/g" main.ins
                 sed -i -e "/CESM-WACCM ssp245, ensemble member 1/,+6d" main.ins
-            elif [[ "${thisSSP}" != "hist" && "${thisSSP}" != "ssp245" ]]; then
+            elif [[ "${thisSSP}" != "${histname}" && "${thisSSP}" != "ssp245" ]]; then
                 echo "SSP ${thisSSP} not recognized for runtype ${runtype}" >&2
                 exit 1
             fi

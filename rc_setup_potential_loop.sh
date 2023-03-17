@@ -18,7 +18,7 @@ cd potential
 Nyears=$((Nyears_getready + Nyears_pot))
 
 # Get list of beginning years
-if [[ "${thisSSP}" == "hist" ]]; then
+if [[ "${thisSSP}" == "${histname}" ]]; then
     y1_list=(${list_pot_y1_hist[@]})
     yN_list=(${list_pot_yN_hist[@]})
 else
@@ -57,7 +57,7 @@ for y1 in ${y1_list[@]}; do
     pot_restart_year=${y1}
     y0=${y1}
     save_state=${list_pot_save_state[i]}
-    if [[ ${thisSSP} != "hist" ]]; then
+    if [[ ${thisSSP} != "${histname}" ]]; then
         is_resuming=${list_future_is_resuming[i]}
         if [[ ${is_resuming} -eq 1 ]]; then
             y0=${list_pot_y0_future[i]}
@@ -91,11 +91,11 @@ for y1 in ${y1_list[@]}; do
     else
         incl_future=0
     fi
-    if [[ ${incl_future} -eq 1 && ${thisSSP} == "hist" ]]; then
-        echo ${y1}-${yN}: '${incl_future} -eq 1 && ${thisSSP} == "hist"'
+    if [[ ${incl_future} -eq 1 && ${thisSSP} == "${histname}" ]]; then
+        echo ${y1}-${yN}: '${incl_future} -eq 1 && ${thisSSP} == "${histname}"'
         exit 1
-    elif [[ ${incl_future} -eq 0 && ${thisSSP} != "hist" ]]; then
-        echo ${y1}-${yN}: '${incl_future} -eq 0 && ${thisSSP} != "hist"'
+    elif [[ ${incl_future} -eq 0 && ${thisSSP} != "${histname}" ]]; then
+        echo ${y1}-${yN}: '${incl_future} -eq 0 && ${thisSSP} != "${histname}"'
         exit 1
     fi
 
@@ -152,7 +152,7 @@ echo rc_setup_potential_loop rc_setup_statedir.sh B
             thisTopDir+=".${ensemble_member_fut}.hist${ensemble_member_hist}"
         fi
     else
-        thisTopDir="hist"
+        thisTopDir="${histname}"
         if [[ "${runtype}" == "sai" ]]; then
             thisTopDir+=".${ensemble_member_hist}"
         fi
@@ -219,12 +219,12 @@ echo rc_setup_potential_loop rc_setup_statedir.sh B
             sed -i "s/do_plut 0/do_plut 1/g" landcover.ins
             sed -i "s/ZZZZ/${first_plut_year}/" landcover.ins    # first_plut_year
             # inputs
-            if [[ "${thisSSP}" == "hist" ]]; then
+            if [[ "${thisSSP}" == "${histname}" ]]; then
                 sed -i "s/ssp585/historical/g" main.ins
             else
                 sed -i "s/ssp585/${thisSSP}/g" main.ins
             fi
-            if [[ "${thisSSP}" == "hist" ]]; then
+            if [[ "${thisSSP}" == "${histname}" ]]; then
                 sed -i "s/co2_histhistorical/co2_histssp585/g" main.ins
             fi
             # number of patches
@@ -238,7 +238,7 @@ echo rc_setup_potential_loop rc_setup_statedir.sh B
                     sed -i "s/b.e21.BWHIST.f09_g17.CMIP6-historical-WACCM.001/b.e21.BW.f09_g17.SSP245-TSMLT-GAUSS-DEFAULT.001/g" main.ins
                     sed -i "s/18500101-20141231/20350101-20691230/g" main.ins
                     sed -i -e "/CESM-WACCM ssp245, ensemble member 1/,+6d" main.ins
-                elif [[ "${thisSSP}" != "hist" && "${thisSSP}" != "ssp245" ]]; then
+                elif [[ "${thisSSP}" != "${histname}" && "${thisSSP}" != "ssp245" ]]; then
                     echo "SSP ${thisSSP} not recognized for runtype ${runtype}" >&2
                     exit 1
                 fi
@@ -276,7 +276,7 @@ echo rc_setup_potential_loop rc_setup_statedir.sh B
             dependency="${dependency_in}"
             r=-1
             if [[ ${is_resuming} -eq 1 ]]; then
-                dep_jobname_prefix="${thisPot}-hist"
+                dep_jobname_prefix="${thisPot}-${histname}"
             else
                 dep_jobname_prefix="act-${thisSSP}"
             fi
