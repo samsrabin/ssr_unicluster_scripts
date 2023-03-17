@@ -117,6 +117,21 @@ do
             actual_only=1
             ;;
 
+        # SAI runs only: Ensemble member to use for all segments unless counteracted by ensemble_member_hist and/or ensemble_member_fut
+        -e  | --ensemble-member) shift
+            ensemble_member="$1"
+            ;;
+
+        # SAI runs only: Ensemble member to use for historical period
+        --ensemble-member-hist) shift
+            ensemble_member_hist="$1"
+            ;;
+
+        # SAI runs only: Ensemble member to use for future segments
+        --ensemble-member-fut) shift
+            ensemble_member_fut="$1"
+            ;;
+
         # Number of processors to use
         -n  | --nproc) shift
             nproc="$1"
@@ -389,24 +404,71 @@ if [[ $(grep "ISIMIP3CLIMATEDIR" template/main.ins | wc -l) -gt 0 && "${isimip3_
     fi
 fi
 
-# Get GCM synonyms, if needed.
+# Get GCM synonyms and ensemble member info, if needed.
 # Then set up subdirectory.
 if [[ $(grep "GCMLONG\|ENSEMBLEMEMBER" template/main.ins | wc -l) -gt 0 ]]; then
-    if [[ "${gcm_in}" == "" ]]; then
-        echo "Specify -g/--gcm" >&2
-        exit 1
-    elif [[ "${isimip3_climate_dir}" == "" ]]; then
-        echo "Specify --isimip3-climate-dir" >&2
-        exit 1
-    fi
-    . rc_get_gcm_info.sh
+    if [[ "${runtype}" == "sai" ]]; then
+        if [[ "${ensemble_member}" == "" ]]; then
+            echo "For sai run chains, you must provide an ensemble member." >&2
+            exit 1
+        fi
+        arise_included=$([[ "${ssp_list}" == *"arise"* ]] && echo 1 || echo 0)
+        ssp_included=$([[ "${ssp_list}" == *"ssp"* ]] && echo 1 || echo 0)
+        future_included=$((arise_included + ssp_included))
+        # Handle historical-period ensemble member (needed for future-only runs too)
+        # Get ensemble_member_hist
+        if [[ "${ensemble_member_hist}" == "" ]]; then
+            if [[ "${ensemble_member}" == "" ]]; then
+                echo "For sai run chains, you must provide -e|--ensemble-member[-hist]." >&2
+                exit 1
+            fi
+            ensemble_member_hist="${ensemble_member}"
+        fi
+        # Check for valid value
+        if [[ ( "${ensemble_member_hist}" -lt 1 || "${ensemble_member_hist}" -gt 3 ) ]]; then
+            echo "For sai run chains, historical ensemble member must be between 1 and 3 (inclusive)." >&2
+            exit 1
+        fi
+        # Handle future-period ensemble member
+        if [[ ${future_included} -gt 0 ]]; then
+            # Get ensemble_member_fut
+            if [[ "${ensemble_member_fut}" == "" ]]; then
+                if [[ "${ensemble_member}" == "" ]]; then
+                    echo "For SSP list containing future period, you must provide -e|--ensemble-member[-fut]." >&2
+                    exit 1
+                fi
+                ensemble_member_fut="${ensemble_member}"
+            fi
+            # Check for valid value
+            if [[ ( "${ensemble_member_fut}" -lt 1 || "${ensemble_member_fut}" -gt 10 ) ]]; then
+                echo "For sai run chains, future ensemble member must be between 1 and 10 (inclusive)." >&2
+                exit 1
+            fi
+        fi
+        # Left-pad with zeros to length 3
+        ensemble_member_hist=$(printf "%03d" ${ensemble_member_hist})
+        [[ ${future_included} -gt 0 ]] && ensemble_member_fut=$(printf "%03d" ${ensemble_member_fut})
+    else
+        if [[ "${ensemble_member}${ensemble_member_hist}${ensemble_member_fut}" != "" ]]; then
+            echo "Do not specify ensemble member(s) for ${runtype} run chains; they are determined automatically." >&2
+            exit 1
+        fi
+        if [[ "${gcm_in}" == "" ]]; then
+            echo "Specify -g/--gcm" >&2
+            exit 1
+        elif [[ "${isimip3_climate_dir}" == "" ]]; then
+            echo "Specify --isimip3-climate-dir" >&2
+            exit 1
+        fi
+        . rc_get_gcm_info.sh
 
-    mkdir -p ${gcm_long_lower}_${ensemble_member}
-    cd ${gcm_long_lower}_${ensemble_member}
-    if [[ -e template ]]; then
-        rm template
+        mkdir -p ${gcm_long_lower}_${ensemble_member}
+        cd ${gcm_long_lower}_${ensemble_member}
+        if [[ -e template ]]; then
+            rm template
+        fi
+        ln -s ../template
     fi
-    ln -s ../template
 fi
 
 # Get run set working directory
