@@ -101,6 +101,8 @@ done
 # Generate lists of states to save in historical and future periods
 hist_save_years=
 fut_save_years=
+# Include a list of states to never delete (aside from first historical and first future years, which are already protected)
+never_delete_state_years=
 if [[ ${potential_only} -eq 0 ]]; then
     if [[ ${do_hist} -eq 1 ]]; then
         hist_save_years="${list_pot_y1_hist[@]}"
@@ -123,6 +125,10 @@ if [[ ${potential_only} -eq 0 ]]; then
             continue
         fi
         fut_save_years+=" ${y}"
+        if [[ "${runtype}" == "sai" && $((y + Nyears_getready)) -eq 2035 ]]; then
+            fut_save_years+=" 2035"
+            never_delete_state_years+=" 2035"
+        fi
     done
 
     echo "Saving states in actual runs at beginning of years:"

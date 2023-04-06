@@ -205,9 +205,9 @@ echo rc_setup_potential_loop rc_setup_statedir.sh A
         sed -i "s/VVVV/${pot_restart_year}/" main.ins
         sed -i "s/firstoutyear 1850/firstoutyear ${y1}/" main.ins    # firstoutyear
         sed -i "s/restart 0/restart 1/g" main.ins
-        sed -i "s/WWWW/\"${future_y1}\"/" main.ins    # save_years
         if [[ ${runtype} == "lsf" ]]; then
             # saving state
+            sed -i "s/WWWW/\"${future_y1}\"/" main.ins    # save_years
             if [[ ${y1} -ge ${future_y1} ]]; then
                 sed -i "s/save_state 1/save_state 0/g" main.ins
             fi
@@ -249,10 +249,17 @@ echo rc_setup_potential_loop rc_setup_statedir.sh A
             elif [[ ${runtype} == "lsa" ]]; then
                 sed -i "s/ssp585/${thisSSP}/g" main.ins
             fi
-            # Save state if this potential run will need to be resumed in a future climate
+            do_save_state=0
+            save_state_year=${future_y1}
             if [[ ${first_plut_year} -ge ${future_y1} && ${y1} -lt ${future_y1} ]]; then
-                sed -i "s/WWWW/${future_y1}/g" main.ins
-            else
+                do_save_state=1
+            elif [[ "${runtype}" == "sai" && ${y1} -lt 2035 && ${yN} -ge 2035 ]]; then
+                do_save_state=1
+                save_state_year=2035
+            fi
+            # Save state if this potential run will need to be resumed in a future climate
+            sed -i "s/WWWW/\"${save_state_year}\"/g" main.ins
+            if [[ ${do_save_state} -eq 0 ]]; then
                 sed -i "s/save_state 1/save_state 0/g" main.ins
             fi
             # Set up restart info
@@ -364,8 +371,15 @@ echo rc_setup_potential_loop rc_setup_statedir.sh A
         exit 1
     fi
 
+    if [[ $(grep "WWWW" main.ins | wc -l) -gt 0 ]]; then
+        echo "WWWW not replaced with a number for save_years (even just a dummy)" >&2
+        exit 1
+    fi
+
     # Actually set up and even submit, if being called from within setup_all.sh
     if [[ ( ${pot_restart_year} -le ${hist_y1} || ${act_restart_year} -eq ${y1} || ${pot_restart_year} -eq ${future_y1} || ${pot_restart_year} -eq $((future_y1 - Nyears_getready)) ) && ${y1} -ne $(echo "${fut_save_years}" | awk '{print $NF}') ]]; then
+        delete_state_arg=
+    elif [[ "${never_delete_state_years}" == *"${pot_restart_year}"* ]]; then
         delete_state_arg=
     else
         echo WILL DELETE ${pot_restart_year} STATE
