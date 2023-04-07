@@ -8,7 +8,11 @@ if [[ ! -d ${state_path_thisSSP} ]]; then
         if [[ -L ${y} ]]; then
             rm -f ${y}
         fi
-        ln -s ${state_path_hist}/${y}
+        if [[ "${runtype}" == "sai" && "${thisSSP}" != "ssp245" && ${y} -gt 2015 ]]; then
+            ln -s ../states_ssp245.${ensemble_member_fut}/${y}
+        else
+            ln -s ${state_path_hist}/${y}
+        fi
     done
     popd 1>/dev/null
 fi
