@@ -137,7 +137,6 @@ for y1 in ${y1_list[@]}; do
         cd ..
         state_path_absolute=${runset_workdir}
         if [[ ${is_resuming} -eq 0 && ${y1} -gt ${hist_yN} && ${save_state_special} -eq 0 ]]; then
-echo rc_setup_potential_loop rc_setup_statedir.sh A
             state_path_absolute=${state_path_absolute}/actual/states
             state_path_thisSSP="${state_path_absolute}_${thisSSP}"
             . rc_setup_statedir.sh
