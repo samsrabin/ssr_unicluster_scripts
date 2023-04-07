@@ -13,7 +13,9 @@ if [[ -L ${y0} ]]; then
     rm -f ${y0}
 fi
 
-if [[ "${histname}" != "hist" && "${thisSSP}" != "${histname}" ]]; then
+if [[ ${save_state_sai2035} -eq 1 ]]; then
+    ln -s ../../actual/states_ssp245.${ensemble_member_fut}/${y0}
+elif [[ "${histname}" != "hist" && "${thisSSP}" != "${histname}" ]]; then
     ln -s ../../actual/states_${histname}/${y0}
 else
     ln -s ../../actual/states/${y0}

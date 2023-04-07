@@ -122,6 +122,13 @@ for y1 in ${y1_list[@]}; do
         fi
     fi
 
+    # Is this run saving state for a special reason?
+    save_state_sai2035=0
+    if [[ "${runtype}" == "sai" && ${y1} -lt 2035 && ${yN} -ge 2035 ]]; then
+        save_state_sai2035=1
+    fi
+    save_state_special=${save_state_sai2035}
+
     # Set up state directory for this run
     if [[ ${do_fu_only} -eq 0 ]]; then
         # Get state directory
@@ -129,19 +136,13 @@ for y1 in ${y1_list[@]}; do
         rundir_top=placeholderneededinrc_get_state_path_thisSSPdotsh
         cd ..
         state_path_absolute=${runset_workdir}
-        if [[ ${is_resuming} -eq 0 && ${y1} -gt ${hist_yN} ]]; then
+        if [[ ${is_resuming} -eq 0 && ${y1} -gt ${hist_yN} && ${save_state_special} -eq 0 ]]; then
 echo rc_setup_potential_loop rc_setup_statedir.sh A
             state_path_absolute=${state_path_absolute}/actual/states
-#            if [[ "${histname}" != "hist" ]]; then
-#                state_path_absolute+="_${histname}"
-#            fi
             state_path_thisSSP="${state_path_absolute}_${thisSSP}"
             . rc_setup_statedir.sh
         else
             state_path_absolute=${state_path_absolute}/potential/states
-#            if [[ "${histname}" != "hist" ]]; then
-#                state_path_absolute+="_${histname}"
-#            fi
             state_path_thisSSP=${state_path_absolute}_${thisPot}
             . rc_setup_statedir_pot.sh
         fi
@@ -253,7 +254,7 @@ echo rc_setup_potential_loop rc_setup_statedir.sh A
             save_state_year=${future_y1}
             if [[ ${first_plut_year} -ge ${future_y1} && ${y1} -lt ${future_y1} ]]; then
                 do_save_state=1
-            elif [[ "${runtype}" == "sai" && ${y1} -lt 2035 && ${yN} -ge 2035 ]]; then
+            elif [[ ${save_state_sai2035} -eq 1 ]]; then
                 do_save_state=1
                 save_state_year=2035
             fi
