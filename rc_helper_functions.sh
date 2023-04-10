@@ -50,6 +50,7 @@ function do_setup {
 }
 
 pushdq () {
+    echo pwd $PWD
     command pushd "$@" > /dev/null
 }
 

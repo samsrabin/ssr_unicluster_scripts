@@ -18,12 +18,14 @@ cd potential
 Nyears=$((Nyears_getready + Nyears_pot))
 
 # Get list of beginning years
-if [[ "${thisSSP}" == "${histname}" ]]; then
+if [[ "${thisSSP}" == "${histname}" && ! ( "${runtype}" == "sai" && "${thisSSP}" == "ssp245"* && "${ssp_list}" != *"hist"* ) ]]; then
     y1_list=(${list_pot_y1_hist[@]})
     yN_list=(${list_pot_yN_hist[@]})
+    echo y1_list hist $y1_list
 else
     y1_list=(${list_pot_y1_future[@]})
     yN_list=(${list_pot_yN_future[@]})
+    echo y1_list future $y1_list
 fi
 
 # This string will be used for actual runs that we want
@@ -51,6 +53,7 @@ else
 fi
 i=-1
 for y1 in ${y1_list[@]}; do
+    echo y1 $y1
     i=$((i+1))
 
     is_resuming=0
@@ -91,10 +94,10 @@ for y1 in ${y1_list[@]}; do
     else
         incl_future=0
     fi
-    if [[ ${incl_future} -eq 1 && ${thisSSP} == "${histname}" ]]; then
+    if [[ ${incl_future} -eq 1 && ${thisSSP} == "hist" ]]; then
         echo ${y1}-${yN}: '${incl_future} -eq 1 && ${thisSSP} == "${histname}"'
         exit 1
-    elif [[ ${incl_future} -eq 0 && ${thisSSP} != "${histname}" ]]; then
+    elif [[ ${incl_future} -eq 0 && ${thisSSP} != "hist" ]]; then
         echo ${y1}-${yN}: '${incl_future} -eq 0 && ${thisSSP} != "${histname}"'
         exit 1
     fi

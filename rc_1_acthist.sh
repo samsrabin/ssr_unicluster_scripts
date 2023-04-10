@@ -100,6 +100,9 @@ else
     [[ "${isimip3_climate_dir}" ]] && sed -i "s@ISIMIP3CLIMATEDIR@${isimip3_climate_dir}@g" main.ins
     if [[ "${runtype}" == "sai" ]]; then
         sed -i "s/ENSEMBLEMEMBERHIST/${ensemble_member_hist}/g" main.ins
+        if [[ "${ssp_list}" != *"hist"* ]]; then
+            sed -i "s/ENSEMBLEMEMBERFUT/${ensemble_member_fut}/g" main.ins
+        fi
     elif [[ "${gcm_long}" ]]; then
         sed -i "s/GCMLONGNAME/${gcm_long}/g" main.ins
         sed -i "s/GCMLONGLOWER/${gcm_long_lower}/g" main.ins
@@ -203,7 +206,13 @@ else
 fi
 
 # Submit historical run or finishup
-state_path="$(cd ..; rc_get_rundir_top.sh ${istest} 0 "${runsetname}")/states"
+if [[ "${thisSSP}" != "hist" ]]; then # e.g., SAI ssp245 when ssplist is ssp245 and arise1.5
+    state_path="$(cd ..; rc_get_rundir_top.sh ${istest} 0 "${runsetname}")/states_${thisSSP}"
+    state_path_thisSSP="${state_path}"
+    . rc_setup_statedir.sh
+else
+    state_path="$(cd ..; rc_get_rundir_top.sh ${istest} 0 "${runsetname}")/states"
+fi
 this_prefix="${prefix}_${histname}"
 ispot=0
 do_setup ${walltime_hist} ${ispot} ${delete_state_arg}

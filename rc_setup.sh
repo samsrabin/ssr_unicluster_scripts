@@ -290,9 +290,13 @@ if [[ "${runtype}" == "sai" ]]; then
         hist_y1=2015
         first_act_y1=${hist_y1}
         future_y1=2035
+        first_pot_y1=2015
         histname="ssp245"
     elif [[ "${ssp_list_nohist}" == *"ssp245"* ]]; then
         future_y1=2015
+        if [[ "${ssp_list}" != *"hist"* ]]; then
+            first_pot_y1=2015
+        fi
     elif [[ "${ssp_list_nohist}" == "" ]]; then
         # I.e., only hist
         future_y1=2015
@@ -303,9 +307,12 @@ if [[ "${runtype}" == "sai" ]]; then
     if [[ "${future_yN}" == "" ]]; then
         future_yN=2069
     fi
+    echo ssp_list A $ssp_list
 elif [[ "${future_yN}" == "" ]]; then
     future_yN=2100
 fi
+
+echo hist_y1 $hist_y1
 
 if [[ ${first_act_y1} -lt ${hist_y1} ]]; then
     echo "--first-y1-act (${first_act_y1}) must be >= ${hist_y1}"
@@ -403,8 +410,11 @@ else
 fi
 
 # We don't need hist in the SSP list anymore
+# If, e.g., we're doing SAI ssp245+arise1.5, ssp245 is our
+# "historical period" but it continues into the "future,"
+# so we don't remove it from the list.
 if [[ ${do_hist} -eq 1 ]]; then
-    ssp_list="$(echo ${ssp_list} | sed "s/${histname}//")"
+    ssp_list="$(echo ${ssp_list} | sed "s/hist//")"
 fi
 
 # Future period?
@@ -441,13 +451,13 @@ fi
 # Then set up subdirectory.
 if [[ $(grep "GCMLONG\|ENSEMBLEMEMBER" template/main.ins | wc -l) -gt 0 ]]; then
     if [[ "${runtype}" == "sai" ]]; then
-        if [[ "${ensemble_member}" == "" ]]; then
-            echo "For sai run chains, you must provide an ensemble member." >&2
-            exit 1
-        fi
         arise_included=$([[ "${ssp_list}" == *"arise"* ]] && echo 1 || echo 0)
         ssp_included=$([[ "${ssp_list}" == *"ssp"* ]] && echo 1 || echo 0)
         future_included=$((arise_included + ssp_included))
+        if [[ "${ensemble_member}" == "" && ( ${ensemble_member_hist} == "" || ( ${future_included} -eq 1 && ${ensemble_member_fut} == "" ) ) ]]; then
+            echo "For sai run chains, you must provide an ensemble member." >&2
+            exit 1
+        fi
         # Handle historical-period ensemble member (needed for future-only runs too)
         # Get ensemble_member_hist
         if [[ "${ensemble_member_hist}" == "" ]]; then
@@ -590,9 +600,23 @@ if [[ "${save_years_lines}" == "" ]]; then
     exit 1
 fi
 
+
+echo " "
+echo " "
+echo " "
+echo save_years_lines:
+while IFS= read -r save_years; do
+echo $save_years
+done <<< ${save_years_lines}
+echo " "
+echo " "
+echo " "
+
+
 # Set up/start a run for each set of save years
 N_future_periods=0
 while IFS= read -r save_years; do
+    echo save_years $save_years
 
     # First year in this this determines whether we're in the historical
     # period or not
@@ -632,6 +656,7 @@ while IFS= read -r save_years; do
     else
         N_future_periods=$((N_future_periods + 1))
         if [[ ${N_future_periods} -eq 1 && ${act_restart_year} != "" ]]; then
+            echo Setting up act_restart_year_eachSSP_array
             act_restart_year_eachSSP_array=()
             for thisSSP in ${ssp_list}; do
                 act_restart_year_eachSSP_array+=( ${act_restart_year} )
