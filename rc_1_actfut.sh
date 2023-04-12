@@ -84,11 +84,12 @@ else
         sed -i "s/restart 0/restart 1/g" main.ins
         sed -iE "s/^\!restart_year VVVV/restart_year ${act_restart_year}/g" main.ins
         sed -i "s/VVVV/${act_restart_year}/" main.ins    # restart_year
-        set -x
-        #sed -i "s/WWWW/\"${fut_save_years/ ${fake_save_year}/}\"/" main.ins    # save_years
-        sed -i "s/WWWW/\"${fut_save_years/${fake_save_year}/}\"/" main.ins    # save_years
+        if [[ "${fake_save_year}" != "" ]]; then
+            sed -i "s/WWWW/\"${save_years/ ${fake_save_year}/}\"/" main.ins    # save_years
+        else
+            sed -i "s/WWWW/\"${save_years}\"/" main.ins    # save_years
+        fi
         sed -i 's/save_years " /save_years "/g' main.ins
-        set +x
         [[ "${isimip3_climate_dir}" ]] && sed -i "s@ISIMIP3CLIMATEDIR@${isimip3_climate_dir}@g" main.ins
         if [[ "${gcm_long}" ]]; then
             sed -i "s/GCMLONGNAME/${gcm_long}/g" main.ins

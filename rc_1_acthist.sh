@@ -104,7 +104,11 @@ else
         sed -i "s/VVVV/${act_restart_year}/" main.ins    # restart_year
         sed -i "s/restart 0/restart 1/g" main.ins
     fi
-    sed -i "s/WWWW/\"${save_years/ ${fake_save_year}/}\"/" main.ins    # save_years
+    if [[ "${fake_save_year}" != "" ]]; then
+        sed -i "s/WWWW/\"${save_years/ ${fake_save_year}/}\"/" main.ins    # save_years
+    else
+        sed -i "s/WWWW/\"${save_years}\"/" main.ins    # save_years
+    fi
     if [[ ${runtype} == "lsf" ]]; then
         sed -i "s/XXXX/${last_LUyear_past}/" landcover.ins    # XXXXpast_YYYYall_LU.txt
         sed -i "s/YYYY/${last_LUyear_all}/" landcover.ins    # XXXXpast_YYYYall_LU.txt
