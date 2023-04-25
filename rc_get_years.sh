@@ -24,6 +24,9 @@ if [[ ${do_future_act} -eq 1 ]]; then
     last_year_act_hist=${hist_yN}
 fi
 
+# Are we in the post-2014 period of an SAI run?
+[[ ${runtype} == "sai" && "${ssp_list}" != *"hist"* ]] && post2014sai=1 || post2014sai=0
+
 # Generate lists of start and end years for potential runs
 list_pot_y1_hist=()
 list_pot_y1_future=()
@@ -40,18 +43,22 @@ i=0
 list_pot_y0_future=()
 echo A
 while [[ ${do_hist} -eq 1 ]] && [[ ${y1} -le ${pot_yN} ]] && [[ ${y1} -le ${last_pot_y1} ]] && [[ ${yN} -lt ${future_y1} ]]; do
-    echo y0 $y0, y1 $y1
-    list_pot_y1_hist+=(${y0})
 
-    if [[ ${yN} -ge ${future_y1} ]]; then
-        list_pot_yN_hist+=(${hist_yN})
-        list_pot_y1_future+=(${future_y1})
-        list_pot_yN_future+=(${yN})
-        list_pot_y0_future+=(${y0})
-        list_pot_save_state+=(1)
-    else
-        list_pot_yN_hist+=(${yN})
-        list_pot_save_state+=(0)
+    if [[ ! ( ${post2014sai} == 1 && ${y0} -lt ${hist_y1} ) ]]; then
+
+        echo y0 $y0, y1 $y1
+        list_pot_y1_hist+=(${y0})
+
+        if [[ ${yN} -ge ${future_y1} ]]; then
+            list_pot_yN_hist+=(${hist_yN})
+            list_pot_y1_future+=(${future_y1})
+            list_pot_yN_future+=(${yN})
+            list_pot_y0_future+=(${y0})
+            list_pot_save_state+=(1)
+        else
+            list_pot_yN_hist+=(${yN})
+            list_pot_save_state+=(0)
+        fi
     fi
 
     y0=$((y0 + pot_step))
@@ -115,7 +122,7 @@ if [[ ${potential_only} -eq 0 ]]; then
     if [[ ${do_hist} -eq 1 ]]; then
         #hist_save_years="${list_pot_y1_hist[@]}"
         for y in ${list_pot_y1_hist[@]}; do
-            if [[ ${yprev} -lt ${hist_y1} && ${y} -gt ${hist_y1} ]]; then
+            if [[ ${yprev} -lt ${hist_y1} && ${y} -gt ${hist_y1} && ${post2014sai} == 0 ]]; then
                 hist_save_years+="${hist_y1} "
             fi
             hist_save_years+="${y} "
@@ -228,7 +235,7 @@ echo hist_save_years_trans $hist_save_years_trans
 # If running spinup period only, make sure to save a restart for firsthistyear
 separate_spinup=0
 no_spinup=0
-if [[ ${runtype} == "sai" && "${ssp_list}" != *"hist"* ]]; then
+if [[ ${post2014sai} == 1 ]]; then
     no_spinup=1
 fi
 if [[ ${no_spinup} -eq 0 && $(echo ${hist_save_years_spin} | wc -w) -le $((maxNstates - 1)) && ${potential_only} -eq 0 ]]; then
