@@ -665,10 +665,12 @@ while IFS= read -r save_years; do
 
         s=-1
         for thisSSP in ${ssp_list}; do
+            s=$((s + 1))
             if [[ ${N_future_periods} -eq 1 ]]; then
                 act_restart_year=""
+            else
+                act_restart_year=${act_restart_year_eachSSP_array[$s]}
             fi
-            s=$((s + 1))
             if [[ ${runtype} != "sai" && "${thisSSP}" != "${histname}" && "${thisSSP:0:3}" != "ssp" ]]; then
                 thisSSP="ssp${thisSSP}"
             fi
