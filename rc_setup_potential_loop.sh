@@ -68,15 +68,14 @@ for y1 in ${y1_list[@]}; do
         fi
     fi
 
-    echo " "
-    echo thisSSP $thisSSP
-    echo save_years $save_years
-    echo pot_years $pot_years
-    echo y0 $y0
-    echo y1 $y1
-    echo first_pot_y1 $first_pot_y1
-    echo first_save_year $first_save_year
-    echo is_resuming $is_resuming
+#    echo thisSSP $thisSSP
+#    echo save_years $save_years
+#    echo pot_years $pot_years
+#    echo y0 $y0
+#    echo y1 $y1
+#    echo first_pot_y1 $first_pot_y1
+#    echo first_save_year $first_save_year
+#    echo is_resuming $is_resuming
 
 
     if [[ ( "${save_years}" != *"${y1}"* || "${pot_years}" != *"${y0}"* ) && ( ( ${first_pot_y1} -ge ${first_save_year} && ${potential_only} -ne 1 ) || ${is_resuming} -eq 0 ) ]]; then
@@ -87,6 +86,9 @@ for y1 in ${y1_list[@]}; do
         continue
     elif [[ ( ${is_resuming} -eq 1 && ${first_pot_y1} -gt ${y1} ) || ( ${is_resuming} -eq 0 && $((first_pot_y1 - Nyears_getready)) -gt ${y1} ) ]]; then
 #        echo skipping C
+        continue
+    elif [[ ${pot_restart_year} -gt ${act_restart_year} ]]; then
+#        echo skipping D
         continue
     fi
 
