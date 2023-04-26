@@ -58,6 +58,7 @@ thisDir="${thisSSP}_${theseYears}"
 if [[ ${lasthistyear} -lt ${act_restart_year} ]]; then
     echo "Skipping actual/${thisDir}. Not sure why it's trying this."
 else
+    did_actfut=1
     echo "###############################"
     echo "### actual/${thisDir} ###"
     echo "###############################"

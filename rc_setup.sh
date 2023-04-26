@@ -678,13 +678,23 @@ while IFS= read -r save_years; do
             if [[ "${first_pot_y1}" == "" ]]; then
                 first_pot_y1=$(echo ${list_pot_y1_future} | cut -d" " -f1)
             fi
+
+            # Are we in the post-2034 period of SAI ssp245?
+            [[ ${post2014sai} -eq 1 \
+                && ${thisSSP} == "ssp245"* \
+                && ${first_save_year} -gt ${future_y1} \
+            ]] && post2034sai_ssp245=1 || post2034sai_ssp245=0
+
+            did_potential_B=0
             if [[ ( ( ${first_save_year} != "" && ${first_pot_y1} -lt ${first_save_year} ) || ${potential_only} -eq 1 ) && ${did_resume_pre2015pots[s]} == 0 && ${thisSSP} != "${histname}" && ${actual_only} -eq 0 ]]; then
                 resume_pre2015pots=1
                 echo rc_setup_potential_loop.sh B
                 . rc_setup_potential_loop.sh
+                did_potential_B=1
                 did_resume_pre2015pots[s]=1
             fi
 
+            did_actfut=0
             if [[ ${potential_only} -eq 0 && ${do_future_act} -eq 1 ]]; then
                 pushdq "actual"
                 if [[ "${dependency_on_latest_potset}" != "" ]]; then
@@ -700,7 +710,7 @@ while IFS= read -r save_years; do
                 popdq
             fi # if doing future-actual
 
-            if [[ ${actual_only} -eq 0 && "${save_years}" != "" ]]; then
+            if [[ ${actual_only} -eq 0 && "${save_years}" != "" && ! ( ${did_potential_B} -eq 1 && ${did_actfut} -eq 0 ) ]]; then
                 pot_years="${save_years}"
                 resume_pre2015pots=0
                 echo rc_setup_potential_loop.sh C

@@ -18,7 +18,7 @@ cd potential
 Nyears=$((Nyears_getready + Nyears_pot))
 
 # Get list of beginning years
-if [[ "${thisSSP}" == "${histname}" ]]; then
+if [[ "${thisSSP}" == "${histname}" && ${post2034sai_ssp245} -eq 0 ]]; then
     y1_list=(${list_pot_y1_hist[@]})
     yN_list=(${list_pot_yN_hist[@]})
     echo "y1_list hist: $y1_list"
@@ -60,7 +60,7 @@ for y1 in ${y1_list[@]}; do
     pot_restart_year=${y1}
     y0=${y1}
     save_state=${list_pot_save_state[i]}
-    if [[ ${thisSSP} != "${histname}" ]]; then
+    if [[ ${thisSSP} != "${histname}" || ${post2034sai_ssp245} -eq 1 ]]; then
         is_resuming=${list_future_is_resuming[i]}
         if [[ ${is_resuming} -eq 1 ]]; then
             y0=${list_pot_y0_future[i]}
@@ -68,21 +68,24 @@ for y1 in ${y1_list[@]}; do
         fi
     fi
 
-#    echo save_years $save_years
-#    echo pot_years $pot_years
-#    echo y0 $y0
-#    echo y1 $y1
-#    echo first_pot_y1 $first_pot_y1
-#    echo first_save_year $first_save_year
-#    echo resume_pre2015pots $resume_pre2015pots
+    echo " "
+    echo thisSSP $thisSSP
+    echo save_years $save_years
+    echo pot_years $pot_years
+    echo y0 $y0
+    echo y1 $y1
+    echo first_pot_y1 $first_pot_y1
+    echo first_save_year $first_save_year
+    echo is_resuming $is_resuming
 
-    if [[ ( "${save_years}" != *"${y1}"* || "${pot_years}" != *"${y0}"* ) && ( ( ${first_pot_y1} -ge ${first_save_year} && ${potential_only} -ne 1 ) || ${resume_pre2015pots} -eq 0 ) ]]; then
+
+    if [[ ( "${save_years}" != *"${y1}"* || "${pot_years}" != *"${y0}"* ) && ( ( ${first_pot_y1} -ge ${first_save_year} && ${potential_only} -ne 1 ) || ${is_resuming} -eq 0 ) ]]; then
 #        echo skipping A
         continue
-    elif [[ ${resume_pre2015pots} -eq 1 && ${y0} -ge ${first_save_year} ]]; then
+    elif [[ ${is_resuming} -eq 1 && ${y0} -ge ${first_save_year} ]]; then
 #        echo skipping B
         continue
-    elif [[ ( ${resume_pre2015pots} -eq 1 && ${first_pot_y1} -gt ${y1} ) || ( ${resume_pre2015pots} -eq 0 && $((first_pot_y1 - Nyears_getready)) -gt ${y1} ) ]]; then
+    elif [[ ( ${is_resuming} -eq 1 && ${first_pot_y1} -gt ${y1} ) || ( ${is_resuming} -eq 0 && $((first_pot_y1 - Nyears_getready)) -gt ${y1} ) ]]; then
 #        echo skipping C
         continue
     fi
@@ -94,8 +97,8 @@ for y1 in ${y1_list[@]}; do
     else
         incl_future=0
     fi
-    if [[ ${incl_future} -eq 1 && ${thisSSP} == "${histname}" ]]; then
-        echo ERROR ${y1}-${yN}: '${incl_future} -eq 1 && ${thisSSP} == "${histname}"'
+    if [[ ${incl_future} -eq 1 && ${thisSSP} == "${histname}" && ${post2034sai_ssp245} -eq 0 ]]; then
+        echo ERROR ${y1}-${yN}: '${incl_future} -eq 1 && ${thisSSP} == "${histname}" && ${post2034sai_ssp245} -eq 0'
         exit 1
     elif [[ ${incl_future} -eq 0 && ${thisSSP} != "${histname}" ]]; then
         echo ERROR ${y1}-${yN}: '${incl_future} -eq 0 && ${thisSSP} != "${histname}"'
@@ -164,6 +167,15 @@ for y1 in ${y1_list[@]}; do
 
     # Get jobname
     this_jobname="${thisPot}-${thisSSP}"
+    if [[ "${runtype}" == "sai" && "${thisPot}" == "2035pot" && "${thisSSP}" == "ssp245"* ]]; then
+        this_jobname+="-${y1}"
+    fi
+    # Ensure uniqueness (won't work if job names contain spaces)
+    if [[ " ${arr_job_name[@]} " == *" ${this_jobname} "* ]]; then
+        echo "Job ${this_jobname} already present in arr_job_name (${arr_job_name[@]})" >&2
+        exit 1
+    fi
+    echo this_jobname $this_jobname
 
 #    echo $thisdir
 #    echo $state_path_thisSSP
