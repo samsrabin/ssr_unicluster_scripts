@@ -19,6 +19,14 @@ echo state_path_thisSSP $state_path_thisSSP
             ln -s ${state_path_hist}/${y}
         fi
     done
+
+    if [[ "${runtype}" == "sai" && "${thisSSP}" == "ssp245"* && ${act_restart_year} -eq 2015 ]]; then
+        if [[ -L ${act_restart_year} ]]; then
+            rm -f ${act_restart_year}
+        fi
+        ln -s ${state_path_hist}/${act_restart_year}
+    fi
+
     popd 1>/dev/null
 #else
 #    echo SKIPING rc_setup_statedir.sh
