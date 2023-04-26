@@ -615,6 +615,10 @@ echo " "
 
 # Set up/start a run for each set of save years
 N_future_periods=0
+sai_ssp245_resume2015=0
+if [[ ${post2014sai} -eq 1 && ${first_pot_y1} -le ${hist_y1} ]]; then
+    sai_ssp245_resume2015=1
+fi
 while IFS= read -r save_years; do
     echo save_years $save_years
 

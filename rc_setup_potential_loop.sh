@@ -18,14 +18,24 @@ cd potential
 Nyears=$((Nyears_getready + Nyears_pot))
 
 # Get list of beginning years
+y1_list=()
+yN_list=()
 if [[ "${thisSSP}" == "${histname}" && ${post2034sai_ssp245} -eq 0 ]]; then
-    y1_list=(${list_pot_y1_hist[@]})
-    yN_list=(${list_pot_yN_hist[@]})
-    echo "y1_list hist: $y1_list"
+    y1_list=()
+    yN_list=()
+    if [[ ${thisSSP} == "ssp245"* && ${sai_ssp245_resume2015} -eq 1 ]]; then
+        y1_list+=($((hist_y1 - Nyears_getready)))
+        yN_list+=($((hist_y1 + Nyears_pot - 1)))
+    fi
+    y1_list+=(${list_pot_y1_hist[@]})
+    yN_list+=(${list_pot_yN_hist[@]})
+    echo "y1_list hist: ${y1_list[@]}"
+    echo "yN_list hist: ${yN_list[@]}"
 else
     y1_list=(${list_pot_y1_future[@]})
     yN_list=(${list_pot_yN_future[@]})
-    echo "y1_list future: $y1_list"
+    echo "y1_list future: ${y1_list[@]}"
+    echo "yN_list future: ${yN_list[@]}"
 fi
 
 # This string will be used for actual runs that we want
@@ -66,6 +76,10 @@ for y1 in ${y1_list[@]}; do
             y0=${list_pot_y0_future[i]}
             pot_restart_year=${future_y1}
         fi
+    elif [[ ${thisSSP} == "ssp245"* && ${sai_ssp245_resume2015} -eq 1 ]]; then
+        is_resuming=1
+        y1=$((y0 + Nyears_getready))
+        sai_ssp245_resume2015=0
     fi
 
 #    echo thisSSP $thisSSP
