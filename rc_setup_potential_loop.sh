@@ -442,6 +442,10 @@ for y1 in ${y1_list[@]}; do
         rmdir "${home_dir_realpath}"
     fi
 
+    if [[ ${is_resuming} -eq 1 ]]; then
+        did_resume_pre2015pots[s]=1
+    fi
+
     popd 1>/dev/null
 
 done
