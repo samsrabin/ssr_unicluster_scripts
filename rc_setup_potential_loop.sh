@@ -90,6 +90,8 @@ for y1 in ${y1_list[@]}; do
 #    echo first_pot_y1 $first_pot_y1
 #    echo first_save_year $first_save_year
 #    echo is_resuming $is_resuming
+#    echo pot_restart_year $pot_restart_year
+#    echo act_restart_year $act_restart_year
 
 
     if [[ ( "${save_years}" != *"${y1}"* || "${pot_years}" != *"${y0}"* ) && ( ( ${first_pot_y1} -ge ${first_save_year} && ${potential_only} -ne 1 ) || ${is_resuming} -eq 0 ) ]]; then
@@ -102,7 +104,12 @@ for y1 in ${y1_list[@]}; do
 #        echo skipping C
         continue
     elif [[ ${pot_restart_year} -gt ${act_restart_year} ]]; then
+        # This potential run begins after the latest-generated state file
 #        echo skipping D
+        continue
+    elif [[ ${is_resuming} -eq 1 && ${did_resume_pre2015pots[s]} -eq 1 ]]; then
+        # This run is a resumer for its scenario but has already been set up
+#        echo skipping E
         continue
     fi
 
