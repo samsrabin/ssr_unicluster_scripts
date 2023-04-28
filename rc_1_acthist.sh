@@ -136,6 +136,14 @@ else
         fi
         pp_y1_list=""
         pp_yN_list=""
+        if [[ ${act_restart_year} -eq ${hist_y1} \
+          && "${runtype}" == "sai" \
+          && "${thisSSP}" == "ssp245"* \
+          ]]; then
+            pp_y1_list="${hist_y1}"
+            pp_yN_list="$((hist_y1 + Nyears_pot - 1))"
+        fi
+
         for i in ${!list_pot_y1_hist[@]}; do
             this_pot_y1=${list_pot_y1_hist[i]}
             this_pot_y1=$((this_pot_y1 + Nyears_getready))
