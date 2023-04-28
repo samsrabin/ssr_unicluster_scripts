@@ -45,6 +45,26 @@ function do_setup {
         state_path="-s ${state_path}"
     fi
 
+    if [[ "${dependency}" != "" ]]; then
+        will_depend_text="Will depend on job(s)"
+        for j in $(echo ${dependency} | grep -oE " [0-9]+"); do
+            jname=""
+            jj=-1
+            for n in ${arr_job_num[@]}; do
+                jj=$((jj + 1))
+                if [[ ${n} -eq ${j} ]]; then
+                    jname="${arr_job_name[jj]}"
+                    break
+                fi
+            done
+            if [[ "${jname}" == "" ]]; then
+                jname=${j}
+            fi
+            will_depend_text+=" ${jname}"
+        done
+        echo ${will_depend_text}
+    fi
+
     rc_setup_1run.sh ${topinsfile} "$(get_ins_files)" ${gridlist} ${inputmodule} ${nproc} ${arch} ${walltime} -p "${this_prefix}" ${state_path} ${submit} ${ppfudev} ${dependency} ${reservation} --lpjg_topdir "${lpjg_topdir}" ${mem_spec} ${delete_state_arg}
 
 }
