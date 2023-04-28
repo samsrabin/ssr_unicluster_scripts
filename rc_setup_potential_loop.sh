@@ -70,6 +70,18 @@ for y1 in ${y1_list[@]}; do
         sai_ssp245_resume2015=0
     fi
 
+    # Get jobname
+    if [[ ${is_resuming} -eq 1 ]]; then
+        first_plut_year=$((y0+Nyears_getready))
+    else
+        first_plut_year=$((y1+Nyears_getready))
+    fi
+    thisPot=${first_plut_year}pot
+    this_jobname="${thisPot}-${thisSSP}"
+    if [[ "${runtype}" == "sai" && "${thisPot}" == "2035pot" && "${thisSSP}" == "ssp245"* ]]; then
+        this_jobname+="-${y1}"
+    fi
+
 #    echo thisSSP $thisSSP
 #    echo save_years $save_years
 #    echo pot_years $pot_years
@@ -80,6 +92,8 @@ for y1 in ${y1_list[@]}; do
 #    echo is_resuming $is_resuming
 #    echo pot_restart_year $pot_restart_year
 #    echo act_restart_year $act_restart_year
+#    echo s $s
+#    echo "did_resume_pre2015pots ${did_resume_pre2015pots[@]}"
 
 
     if [[ ( "${save_years}" != *"${y1}"* || "${pot_years}" != *"${y0}"* ) && ( ( ${first_pot_y1} -ge ${first_save_year} && ${potential_only} -ne 1 ) || ${is_resuming} -eq 0 ) ]]; then
@@ -95,11 +109,18 @@ for y1 in ${y1_list[@]}; do
         # This potential run begins after the latest-generated state file
 #        echo skipping D
         continue
-    elif [[ ${is_resuming} -eq 1 && ${did_resume_pre2015pots[s]} -eq 1 ]]; then
+    elif [[ ${is_resuming} -eq 1 && " ${arr_job_name[@]} " == *" ${this_jobname} "* ]]; then
         # This run is a resumer for its scenario but has already been set up
 #        echo skipping E
         continue
     fi
+
+    # Ensure job name uniqueness (won't work if job names contain spaces)
+    if [[ " ${arr_job_name[@]} " == *" ${this_jobname} "* ]]; then
+        echo "Job ${this_jobname} already present in arr_job_name (${arr_job_name[@]})" >&2
+        exit 1
+    fi
+    echo this_jobname $this_jobname
 
     # Reset dependency info
     if [[ ${did_reset_dependency_potloop} -eq 0 ]]; then
@@ -133,14 +154,6 @@ for y1 in ${y1_list[@]}; do
         echo ERROR ${y1}-${yN}: '${incl_future} -eq 0 && ${thisSSP} != "${histname}"'
         exit 1
     fi
-
-    # Name this one (e.g. 1850pot)
-    if [[ ${is_resuming} -eq 1 ]]; then
-        first_plut_year=$((y0+Nyears_getready))
-    else
-        first_plut_year=$((y1+Nyears_getready))
-    fi
-    thisPot=${first_plut_year}pot
 
     # Get walltime
     if [[ ${istest} -eq 1 ]]; then
@@ -193,18 +206,6 @@ for y1 in ${y1_list[@]}; do
     fi
     mkdir -p "${thisTopDir}"
     thisdir="${thisTopDir}/${thisdir}"
-
-    # Get jobname
-    this_jobname="${thisPot}-${thisSSP}"
-    if [[ "${runtype}" == "sai" && "${thisPot}" == "2035pot" && "${thisSSP}" == "ssp245"* ]]; then
-        this_jobname+="-${y1}"
-    fi
-    # Ensure uniqueness (won't work if job names contain spaces)
-    if [[ " ${arr_job_name[@]} " == *" ${this_jobname} "* ]]; then
-        echo "Job ${this_jobname} already present in arr_job_name (${arr_job_name[@]})" >&2
-        exit 1
-    fi
-    echo this_jobname $this_jobname
 
 #    echo $thisdir
 #    echo $state_path_thisSSP
@@ -456,7 +457,7 @@ for y1 in ${y1_list[@]}; do
     fi
 
     if [[ ${is_resuming} -eq 1 ]]; then
-        did_resume_pre2015pots[s]=1
+        did_resume_pre2015pots[${thisSSP}]=$((did_resume_pre2015pots[${thisSSP}] + 1))
     fi
 
     popd 1>/dev/null

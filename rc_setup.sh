@@ -582,12 +582,12 @@ previous_act_jobnum=
 mkdir -p actual
 act_restart_year=
 
-did_resume_pre2015pots=()
+declare -A did_resume_pre2015pots
 for thisSSP in ${ssp_list}; do
     if [[ ${first_pot_y1} -le ${future_y1} ]]; then
-        did_resume_pre2015pots+=(0)
+        did_resume_pre2015pots[${thisSSP}]=0
     else
-        did_resume_pre2015pots+=(-1)
+        did_resume_pre2015pots[${thisSSP}]=-1
     fi
 done
 
@@ -691,7 +691,7 @@ while IFS= read -r save_years; do
                 && ${first_save_year} -gt ${future_y1} \
             ]] && post2034sai_ssp245=1 || post2034sai_ssp245=0
 
-            if [[ ( ( ${first_save_year} != "" && ${first_pot_y1} -lt ${first_save_year} ) || ${potential_only} -eq 1 ) && ${did_resume_pre2015pots[s]} == 0 && ${thisSSP} != "${histname}" && ${actual_only} -eq 0 ]]; then
+            if [[ ( ( ${first_save_year} != "" && ${first_pot_y1} -lt ${first_save_year} ) || ${potential_only} -eq 1 ) && ${did_resume_pre2015pots[${thisSSP}]} == 0 && ${thisSSP} != "${histname}" && ${actual_only} -eq 0 ]]; then
                 resume_pre2015pots=1
                 echo rc_setup_potential_loop.sh B
                 . rc_setup_potential_loop.sh
