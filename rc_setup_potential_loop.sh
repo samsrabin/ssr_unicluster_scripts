@@ -38,19 +38,7 @@ else
     echo "yN_list future: ${yN_list[@]}"
 fi
 
-# This string will be used for actual runs that we want
-# to make wait until after the completion of this set of
-# potential runs.
-if [[ ${potential_only} -eq 1 ]]; then
-    if [[ "${dependency_on_latest_potset}" != "" ]]; then
-        dependency="${dependency_on_latest_potset}"
-        dependency_on_latest_potset=""
-    else
-        dependency="${dependency_in}"
-    fi
-else
-    dependency_on_latest_potset="${dependency_in}"
-fi
+did_reset_dependency_potloop=0
 
 ###################
 # Loop through periods
@@ -111,6 +99,24 @@ for y1 in ${y1_list[@]}; do
         # This run is a resumer for its scenario but has already been set up
 #        echo skipping E
         continue
+    fi
+
+    # Reset dependency info
+    if [[ ${did_reset_dependency_potloop} -eq 0 ]]; then
+        # This string will be used for actual runs that we want
+        # to make wait until after the completion of this set of
+        # potential runs.
+        if [[ ${potential_only} -eq 1 ]]; then
+            if [[ "${dependency_on_latest_potset}" != "" ]]; then
+                dependency="${dependency_on_latest_potset}"
+                dependency_on_latest_potset=""
+            else
+                dependency="${dependency_in}"
+            fi
+        else
+            dependency_on_latest_potset="${dependency_in}"
+        fi
+        did_reset_dependency_potloop=1
     fi
 
     # Does this run include the ssp period?
