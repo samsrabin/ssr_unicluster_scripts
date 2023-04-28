@@ -219,8 +219,8 @@ do_setup ${walltime_hist} ${ispot} ${delete_state_arg}
 
 if [[ ${do_fu_only} -eq 0 ]]; then
     arr_job_name+=("act-${histname}_${theseYears}")
-    previous_act_jobnum=$(get_latest_run)
     if [[ "${submit}" != "" ]]; then
+        previous_act_jobnum=$(get_latest_run)
         arr_job_num+=( ${previous_act_jobnum} )
     fi
     arr_y1+=(0) # nonsense
