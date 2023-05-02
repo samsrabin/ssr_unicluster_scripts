@@ -24,7 +24,6 @@ else
 fi
 
 # Get lasthistyear
-echo save_years $save_years;
 lasthistyear=$((lastsaveyear - 1))
 firstsaveyear=$(echo ${save_years} | cut -d" " -f1)
 

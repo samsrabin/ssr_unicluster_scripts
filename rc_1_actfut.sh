@@ -1,16 +1,12 @@
 if [[ "${act_restart_year}" == "" ]]; then
     act_restart_year=${future_y1}
-    echo act_restart_year A $act_restart_year
 elif [[ "${act_restart_year_eachSSP_array[$s]}" != "" ]]; then
     act_restart_year=${act_restart_year_eachSSP_array[$s]}
-    echo act_restart_year B $act_restart_year
 fi
 lastsaveyear=$(echo ${save_years} | awk '{print $NF}')
 
 # Possibly skip this run
 if [[ ${act_restart_year} -lt ${first_act_y1} ]]; then
-    echo SKIPPING?
-    echo "   act_restart_year $act_restart_year < first_act_y1 $first_act_y1"
     # Set up for next historical run or finishup, if any
     act_restart_year=${lastsaveyear}
     popdq
@@ -18,7 +14,6 @@ if [[ ${act_restart_year} -lt ${first_act_y1} ]]; then
 fi
 
 # Get lasthistyear
-echo save_years $save_years;
 lasthistyear=$((lastsaveyear - 1))
 
 # Extend run to reach end of last potential period, if needed

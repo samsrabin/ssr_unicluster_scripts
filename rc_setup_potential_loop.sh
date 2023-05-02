@@ -29,13 +29,9 @@ if [[ "${thisSSP}" == "${histname}" && ${post2034sai_ssp245} -eq 0 ]]; then
     fi
     y1_list+=(${list_pot_y1_hist[@]})
     yN_list+=(${list_pot_yN_hist[@]})
-    echo "y1_list hist: ${y1_list[@]}"
-    echo "yN_list hist: ${yN_list[@]}"
 else
     y1_list=(${list_pot_y1_future[@]})
     yN_list=(${list_pot_yN_future[@]})
-    echo "y1_list future: ${y1_list[@]}"
-    echo "yN_list future: ${yN_list[@]}"
 fi
 
 did_reset_dependency_potloop=0
@@ -51,7 +47,6 @@ else
 fi
 i=-1
 for y1 in ${y1_list[@]}; do
-    echo y1 $y1
     i=$((i+1))
 
     is_resuming=0

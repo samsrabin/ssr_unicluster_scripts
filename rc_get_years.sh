@@ -1,6 +1,5 @@
 
 # Get info for last XXXXpast_YYYYall_LU.txt
-echo first_pot_y1 $first_pot_y1
 first_LUyear_past=$((first_pot_y1 - Nyears_getready))
 last_LUyear_past=${first_LUyear_past}
 last_LUyear_all=$((last_LUyear_past + 1))
@@ -41,12 +40,10 @@ if [[ ${yN} -gt ${pot_yN} ]]; then
 fi
 i=0
 list_pot_y0_future=()
-echo A
 while [[ ${do_hist} -eq 1 ]] && [[ ${y1} -le ${pot_yN} ]] && [[ ${y1} -le ${last_pot_y1} ]] && [[ ${yN} -lt ${future_y1} ]]; do
 
     if [[ ! ( ${post2014sai} == 1 && ${y0} -lt ${hist_y1} ) ]]; then
 
-        echo y0 $y0, y1 $y1
         list_pot_y1_hist+=(${y0})
 
         if [[ ${yN} -ge ${future_y1} ]]; then
@@ -77,9 +74,7 @@ fi
 
 h=-1
 list_future_is_resuming=()
-echo B
 while [[ ${y1} -le ${pot_yN} ]] && [[ ${y1} -le ${last_pot_y1} ]] && [[ ${y1} -lt ${future_yN} ]]; do
-    echo y0 $y0, y1 $y1
     list_pot_save_state+=(0)
     if [[ ${yN} -gt ${pot_yN} ]]; then
         yN=${pot_yN}
@@ -110,9 +105,6 @@ while [[ ${y1} -le ${pot_yN} ]] && [[ ${y1} -le ${last_pot_y1} ]] && [[ ${y1} -l
     yN=$((yN + pot_step))
 done
 
-echo list_pot_y1_hist ${list_pot_y1_hist[@]}
-echo list_pot_y1_future ${list_pot_y1_future[@]}
-
 # Generate lists of states to save in historical and future periods
 hist_save_years=
 fut_save_years=
@@ -128,18 +120,15 @@ if [[ ${potential_only} -eq 0 ]]; then
             hist_save_years+="${y} "
             yprev=${y}
         done
-        echo hist_save_years A $hist_save_years
     fi
     added_future_y1=0
     i=-1
-    echo list_pot_y1_future ${list_pot_y1_future[@]}
     for y in ${list_pot_y1_future[@]}; do
         i=$((i+1))
         is_resuming=${list_future_is_resuming[i]}
         if [[ ${is_resuming} -eq 1 ]]; then
             if [[ ${added_future_y1} -eq 0 ]]; then
                 hist_save_years+=" ${future_y1}"
-                echo hist_save_years B $hist_save_years
                 added_future_y1=1
             fi
             continue
@@ -229,9 +218,6 @@ for y in ${hist_save_years}; do
     hist_save_years_trans=${hist_save_years_trans/${y}/}
 done
 
-echo hist_save_years_spin $hist_save_years_spin
-echo hist_save_years_trans $hist_save_years_trans
-
 # If running spinup period only, make sure to save a restart for firsthistyear
 separate_spinup=0
 no_spinup=0
@@ -244,11 +230,6 @@ if [[ ${no_spinup} -eq 0 && $(echo ${hist_save_years_spin} | wc -w) -le $((maxNs
         hist_save_years_spin="${hist_save_years_spin} ${firsthistyear}"
     fi
 fi
-
-
-echo hist_save_years_spin $hist_save_years_spin
-echo hist_save_years_trans $hist_save_years_trans
-echo fut_save_years_lines $fut_save_years_lines
 
 
 # Split each save_years list up as needed given maxNstates
