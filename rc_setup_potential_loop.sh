@@ -276,21 +276,22 @@ for y1 in ${y1_list[@]}; do
         elif [[ ${runtype} == "sai" || ${runtype} == "lsa" ]]; then
             if [[ ${runtype} == "sai" ]]; then
                 if [[ "${thisSSP}" == "arise1.5"* ]]; then
-                    sed -i "s/ENSEMBLEMEMBERHIST/${ensemble_member_fut}/g" main.ins
-                    sed -i "s/CESM CMIP6 historical, ensemble member 1/CESM-WACCM ARISE-1.5, ensemble member ${ensemble_member_fut}/g" main.ins
+                    # Special handling because historical period doesn't transition directly to ARISE period. Thus we put ARISE stuff in file_*1...
+                    sed -i "s/CESM CMIP6 historical, ensemble member ENSEMBLEMEMBERHIST/CESM-WACCM ARISE-1.5, ensemble member ${ensemble_member_fut}/g" main.ins
                     sed -i "s/timeseries-cmip6/ARISE-SAI-1.5/g" main.ins
-                    sed -i "s/b.e21.BWHIST.f09_g17.CMIP6-historical-WACCM.001/b.e21.BW.f09_g17.SSP245-TSMLT-GAUSS-DEFAULT.001/g" main.ins
-                    sed -i "s/18500101-20141231/20350101-20691230/g" main.ins
-                    sed -i -e "/CESM-WACCM ssp245, ensemble member 1/,+6d" main.ins
+                    sed -i "s/b.e21.BWHIST.f09_g17.CMIP6-historical-WACCM.ENSEMBLEMEMBERHIST/b.e21.BW.f09_g17.SSP245-TSMLT-GAUSS-DEFAULT.ENSEMBLEMEMBERFUT/g" main.ins
+                    sed -i "s/18500101-20141231/20350101-20691231/g" main.ins
+                    # ...and delete file_*2
+                    sed -i -e "/CESM-WACCM ssp245, ensemble member/,+6d" main.ins
                 elif [[ "${thisSSP}" != "${histname}" && "${thisSSP}" != "ssp245"* ]]; then
                     echo "SSP ${thisSSP} not recognized for runtype ${runtype}" >&2
                     exit 1
                 else
-                    sed -i "s/ENSEMBLEMEMBERHIST/${ensemble_member_hist}/g" main.ins
                     sed -i "s/historical, ensemble member 1/historical, ensemble member ${ensemble_member_hist}/g" main.ins
-                    sed -i "s/ENSEMBLEMEMBERFUT/${ensemble_member_fut}/g" main.ins
                     sed -i "s/ssp245, ensemble member 1/ssp245, ensemble member ${ensemble_member_fut}/g" main.ins
                 fi
+                sed -i "s/ENSEMBLEMEMBERHIST/${ensemble_member_hist}/g" main.ins
+                sed -i "s/ENSEMBLEMEMBERFUT/${ensemble_member_fut}/g" main.ins
             elif [[ ${runtype} == "lsa" ]]; then
                 sed -i "s/ssp585/${thisSSP}/g" main.ins
             fi
