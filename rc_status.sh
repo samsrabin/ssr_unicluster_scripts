@@ -558,8 +558,8 @@ for g in ${gcmlist}; do
 
             popdq
         done
-        all_hist_act_periods="$(echo ${these_actdirs_array[@]} | grep -oE "hist_\S{4}-[0-9]{4}" | sed 's/hist_//g')"
-        all_fut_act_periods="$(echo ${these_fut_actdirs_array[@]} | grep -oE "[0-9]{4}-[0-9]{4}" | sort | uniq)"
+        all_hist_act_segments="$(echo ${these_actdirs_array[@]} | grep -oE "hist_\S{4}-[0-9]{4}" | sed 's/hist_//g')"
+        all_fut_act_segments="$(echo ${these_fut_actdirs_array[@]} | grep -oE "[0-9]{4}-[0-9]{4}" | sort | uniq)"
         
         s=0
         latest_job=""
@@ -597,7 +597,7 @@ for g in ${gcmlist}; do
                 thisline="${histspacing}"
             fi
 
-            # Get actual periods
+            # Get actual directories associated with this period
             theseactdirs="${these_actdirs_array[$((s-1))]}"
 
             # Change to this directory
@@ -611,14 +611,14 @@ for g in ${gcmlist}; do
                 pushdq "${d}"
             fi
 
-            # Check actual periods
+            # Check actual segments
             x=0
             if [[ "${ssp}" == "hist"* ]]; then
-                all_act_periods="${all_hist_act_periods}"
+                all_act_segments="${all_hist_act_segments}"
             else
-                all_act_periods="${all_fut_act_periods}"
+                all_act_segments="${all_fut_act_segments}"
             fi
-            for this_period in ${all_act_periods}; do
+            for this_segment in ${all_act_segments}; do
                 x=$((x + 1))
                 if [[ $x -eq 1 && "${ssp}" != "hist" ]]; then
                     if [[ "${runtype}" == "sai" ]]; then
@@ -628,9 +628,9 @@ for g in ${gcmlist}; do
                     fi
                 fi
 
-                # Do this ssp's actual dirs include this period? If not, skip.
+                # Do this ssp's actual dirs include this segment? If not, skip.
                 set +e
-                d_act="$(echo ${theseactdirs} | grep -oE "\S+_${this_period}")"
+                d_act="$(echo ${theseactdirs} | grep -oE "\S+_${this_segment}")"
                 set -e
                 if [[ "${d_act}" == "" ]]; then
                     thisline+=" ${symbol_runna}"
