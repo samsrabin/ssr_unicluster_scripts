@@ -19,8 +19,27 @@ testing=0
 verbose=0
 work_cols=1
 force_update=0
-gcmlist="gfdl ipsl mpi mri ukesm"
 runset_home_dir="$PWD"
+ensemble_member_hist=
+ensemble_member_fut=
+if [[ "${runtype}" == "sai" ]]; then
+    gcmlist=
+else
+    gcmlist="gfdl ipsl mpi mri ukesm"
+fi
+
+# Get runtype and set default arguments
+runtype="$1"
+shift
+if [[ "${runtype}" == "" ]]; then
+    echo "You must provide runtype (lsf, lsa, or sai)." >&2
+    exit 1
+elif [[ "${runtype}" != "sai" \
+        && "${runtype}" != "lsf" \
+        && "${runtype}" != "lsa" ]] ; then
+    echo "runtype must be lsf, lsa, or sai." >&2
+    exit 1
+fi
 
 # Args while-loop
 while [ "$1" != "" ];
@@ -33,8 +52,29 @@ do
         -f  | --force-update)
             force_update=1
             ;;
+        -eh | --ensemble-member-hist)
+            shift
+            if [[ "${runtype}" != "sai" ]]; then
+                echo "Do not specify -eh/--ensemble-member-hist for runtype ${runtype}" >&2
+                exit 1
+            fi
+            ensemble_member_hist="$(printf "%03d" "$1")"
+            gcmlist="hist${ensemble_member_hist}"
+            ;;
+        -ef | --ensemble-member-fut)
+            shift
+            if [[ "${runtype}" != "sai" ]]; then
+                echo "Do not specify -ef/--ensemble-member-fut for runtype ${runtype}" >&2
+                exit 1
+            fi
+            ensemble_member_fut="$(printf "%03d" "$1")"
+            ;;
         -g  | --gcmlist)
             shift
+            if [[ "${runtype}" == "sai" ]]; then
+                echo "Do not specify -g/--gcmlist for runtype sai" >&2
+                exit 1
+            fi
             gcmlist="$1"
             ;;
         -h  | --home-cols)
@@ -54,6 +94,16 @@ do
     esac
     shift
 done
+
+if [[ "${runtype}" == "sai" ]]; then
+    if [[ "${gcmlist}" == "" ]]; then
+        echo "For runtype sai, you must provide -eh/--ensemble-member-hist" >&2
+        exit 1
+    elif [[ "${ensemble_member_fut}" == "" ]]; then
+        echo "For runtype sai, you must provide -ef/--ensemble-member-fut" >&2
+        exit 1
+    fi
+fi
 
 pushdq () {
     command pushd "$@" > /dev/null
@@ -388,7 +438,13 @@ function get_act_col_heads {
         col_code="ACTF"
         testSSP="$(ls -1 "actual" | grep -oE "ssp[0-9]+" | sort | uniq | head -n 1)"
     fi
-    theseactdirs=$(ls -d "actual/${testSSP}_"* | grep -vE "\.tar$")
+echo testSSP $testSSP >&2
+echo pwd $PWD >&2
+    if [[ ${runtype} == "sai" && "${ssp}" != "hist" ]]; then
+        theseactdirs=$(ls -d "actual/${testSSP}.${ensemble_member_fut}_"* | grep -vE "\.tar$")
+    else
+        theseactdirs=$(ls -d "actual/${testSSP}_"* | grep -vE "\.tar$")
+    fi
     if [[ ${work_cols} -eq 1 ]]; then
         popdq
     fi
@@ -421,11 +477,14 @@ hist_act_col_heads=""
 future_act_col_heads=""
 pot_col_heads=""
 for g in ${gcmlist}; do
+    echo "g: ${g}"
     if ! compgen -G "${g}"*/ >/dev/null; then
         continue
     fi
     dirlist=$(ls -d "${g}"* | grep -v "calibration\|_test\|\.sh")
+    echo "dirlist: $dirlist"
     for d in ${dirlist}; do
+        echo "d: ${d}"
         islast_act=0
     
         # If this directory doesn't even have a working directory set up, you can skip
@@ -463,8 +522,13 @@ for g in ${gcmlist}; do
             pot_run_names=""
         fi
         cd actual
-        ssp_list="$(ls -d * | grep -v "states" | grep -oE "[a-z0-9]+_" | sed "s/_//g" | sort | uniq)"
+        if [[ ${runtype} == "sai" ]]; then
+            ssp_list="hist $(ls -d * | grep -v "states" | grep -oE "[a-z0-9][a-z0-9]+(1.5)?\.${ensemble_member_fut}_" | sed "s/_//g" | sort | uniq)"
+        else
+            ssp_list="$(ls -d * | grep -v "states" | grep -oE "[a-z0-9]+_" | sed "s/_//g" | sort | uniq)"
+        fi
         cd ..
+        echo ssp_list $ssp_list
         popdq
         
         s=0
@@ -523,14 +587,29 @@ for g in ${gcmlist}; do
             if [[ "${spinline}" != "" ]]; then
                 theseactdirs="${spinline}"$'\n'"$(echo -e "${theseactdirs}" | grep -v "hist_spin")"
             fi
+
+            # ARISE sims are missing the first 2 actual periods. Add these dummy periods that will add spacing text to the line.
+            # FRAGILE!
+            if [[ "${ssp}" == "arise"* ]]; then
+                theseactdirs="_ _ ${theseactdirs}"
+            fi
         
             # Check actual periods
             x=0
             for d_act in ${theseactdirs}; do
                 x=$((x + 1))
+                echo x $x  $d_act
                 homedir_rel="${d_act}"
                 if [[ $x -eq 1 && "${ssp}" != "hist" ]]; then
-                    thisline="${thisline} ${ssp/ssp/}"
+                    if [[ "${runtype}" == "sai" ]]; then
+                        thisline="${thisline} ${ssp}"
+                    else
+                        thisline="${thisline} ${ssp/ssp/}"
+                    fi
+                fi
+                if [[ "${d_act}" == "_" ]]; then
+                    thisline+=" ${symbol_runna}"
+                    continue
                 fi
                 check_jobs ${thischain_name}_$(basename ${d_act})_
                 if [[ ${latest_job} -gt ${latest_actual_job} ]]; then
@@ -595,6 +674,9 @@ for g in ${gcmlist}; do
         done
     done
 done
+
+echo hist_col_heads $hist_col_heads
+echo future_col_heads $future_col_heads
 
 cat $tmpfile | column --table --table-columns RUNSET,${hist_col_heads},SSP,${future_col_heads} -s ": " | sed "s/@/ /g"
 
