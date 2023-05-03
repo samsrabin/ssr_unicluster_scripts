@@ -523,7 +523,6 @@ for g in ${gcmlist}; do
             ssp_list="$(ls -d * | grep -v "states" | grep -oE "[a-z0-9]+_" | sed "s/_//g" | sort | uniq)"
         fi
         cd ..
-        echo ssp_list $ssp_list
         popdq
 
         # Get all actual periods present. This will allow us to put spaceholders in columns of rows that don't have the column's period.
@@ -701,9 +700,6 @@ for g in ${gcmlist}; do
         done
     done
 done
-
-echo hist_col_heads $hist_col_heads
-echo future_col_heads $future_col_heads
 
 cat $tmpfile | column --table --table-columns RUNSET,${hist_col_heads},SSP,${future_col_heads} -s ": " | sed "s/@/ /g"
 
