@@ -530,6 +530,41 @@ for g in ${gcmlist}; do
         cd ..
         echo ssp_list $ssp_list
         popdq
+
+        # Get all actual periods present. This will allow us to put spaceholders in columns of rows that don't have the column's period.
+        these_actdirs_array=()
+        these_fut_actdirs_array=()
+        for ssp in ${ssp_list}; do
+            if [[ ${work_cols} -eq 1 ]]; then
+                runset_workdir="$(get_equiv_workdir.sh "$PWD/${d}")"
+                if [[ ${testing} -eq 1 ]]; then
+                    runset_workdir+="_test"
+                fi
+                pushdq "${runset_workdir}"
+            else
+                pushdq "${d}"
+            fi
+            theseactdirs=$(ls -d "actual/${ssp}_"* | grep -vE "\.tar$")
+            if [[ "${theseactdirs}" == "" ]]; then
+                echo "No directories found matching ${d}/actual/${ssp}_*"
+                exit 1
+            fi
+            # If there's a "spin" directory, put it on top
+            spinline="$(echo -e "${theseactdirs}" | { grep "hist_spin" || true; })"
+            if [[ "${spinline}" != "" ]]; then
+                theseactdirs="${spinline}"$'\n'"$(echo -e "${theseactdirs}" | grep -v "hist_spin")"
+            fi
+
+            # Save to array(s)
+            these_actdirs_array+=("${theseactdirs}")
+            if [[ "${ssp}" != "hist"* ]]; then
+                these_fut_actdirs_array+=("${theseactdirs}")
+            fi
+
+            popdq
+        done
+        all_hist_act_periods="$(echo ${these_actdirs_array[@]} | grep -oE "hist_\S{4}-[0-9]{4}" | sed 's/hist_//g')"
+        all_fut_act_periods="$(echo ${these_fut_actdirs_array[@]} | grep -oE "[0-9]{4}-[0-9]{4}" | sort | uniq)"
         
         s=0
         latest_job=""
@@ -568,6 +603,9 @@ for g in ${gcmlist}; do
             fi
 
             # Get actual periods
+            theseactdirs="${these_actdirs_array[$((s-1))]}"
+
+            # Change to this directory
             if [[ ${work_cols} -eq 1 ]]; then
                 runset_workdir="$(get_equiv_workdir.sh "$PWD/${d}")"
                 if [[ ${testing} -eq 1 ]]; then
@@ -577,29 +615,16 @@ for g in ${gcmlist}; do
             else
                 pushdq "${d}"
             fi
-            theseactdirs=$(ls -d "actual/${ssp}_"* | grep -vE "\.tar$")
-            if [[ "${theseactdirs}" == "" ]]; then
-                echo "No directories found matching ${d}/actual/${ssp}_*"
-                exit 1
-            fi
-            # If there's a "spin" directory, put it on top
-            spinline="$(echo -e "${theseactdirs}" | { grep "hist_spin" || true; })"
-            if [[ "${spinline}" != "" ]]; then
-                theseactdirs="${spinline}"$'\n'"$(echo -e "${theseactdirs}" | grep -v "hist_spin")"
-            fi
 
-            # ARISE sims are missing the first 2 actual periods. Add these dummy periods that will add spacing text to the line.
-            # FRAGILE!
-            if [[ "${ssp}" == "arise"* ]]; then
-                theseactdirs="_ _ ${theseactdirs}"
-            fi
-        
             # Check actual periods
             x=0
-            for d_act in ${theseactdirs}; do
+            if [[ "${ssp}" == "hist"* ]]; then
+                all_act_periods="${all_hist_act_periods}"
+            else
+                all_act_periods="${all_fut_act_periods}"
+            fi
+            for this_period in ${all_act_periods}; do
                 x=$((x + 1))
-                echo x $x  $d_act
-                homedir_rel="${d_act}"
                 if [[ $x -eq 1 && "${ssp}" != "hist" ]]; then
                     if [[ "${runtype}" == "sai" ]]; then
                         thisline="${thisline} ${ssp}"
@@ -607,10 +632,17 @@ for g in ${gcmlist}; do
                         thisline="${thisline} ${ssp/ssp/}"
                     fi
                 fi
-                if [[ "${d_act}" == "_" ]]; then
+
+                # Do this ssp's actual dirs include this period? If not, skip.
+                set +e
+                d_act="$(echo ${theseactdirs} | grep -oE "\S+_${this_period}")"
+                set -e
+                if [[ "${d_act}" == "" ]]; then
                     thisline+=" ${symbol_runna}"
                     continue
                 fi
+                homedir_rel="${d_act}"
+
                 check_jobs ${thischain_name}_$(basename ${d_act})_
                 if [[ ${latest_job} -gt ${latest_actual_job} ]]; then
                     latest_actual_job=${latest_job}
