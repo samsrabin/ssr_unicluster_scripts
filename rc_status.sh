@@ -438,8 +438,6 @@ function get_act_col_heads {
         col_code="ACTF"
         testSSP="$(ls -1 "actual" | grep -oE "ssp[0-9]+" | sort | uniq | head -n 1)"
     fi
-echo testSSP $testSSP >&2
-echo pwd $PWD >&2
     if [[ ${runtype} == "sai" && "${ssp}" != "hist" ]]; then
         theseactdirs=$(ls -d "actual/${testSSP}.${ensemble_member_fut}_"* | grep -vE "\.tar$")
     else
@@ -477,14 +475,11 @@ hist_act_col_heads=""
 future_act_col_heads=""
 pot_col_heads=""
 for g in ${gcmlist}; do
-    echo "g: ${g}"
     if ! compgen -G "${g}"*/ >/dev/null; then
         continue
     fi
     dirlist=$(ls -d "${g}"* | grep -v "calibration\|_test\|\.sh")
-    echo "dirlist: $dirlist"
     for d in ${dirlist}; do
-        echo "d: ${d}"
         islast_act=0
     
         # If this directory doesn't even have a working directory set up, you can skip
