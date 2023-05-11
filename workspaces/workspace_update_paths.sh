@@ -16,7 +16,6 @@ if [[ ${ws1_path} == "" ]]; then
         exit 1
     fi
 fi
-ws1=$1
 
 # Make sure new workspace exists
 ws2=${2}
@@ -41,7 +40,7 @@ if [[ ! -d "${d}" ]]; then
     exit 1
 fi
 
-filelist=($({ grep -l "${ws1_path}" $(find "${d}" -type f -and \( \( -name "*ins" -or -name "*sh" \) -not -wholename "*BAD*" -not -wholename "*3b.*" \)) || true; }))
+filelist=($({ grep -l "${ws1_path}" $(find "${d}" -type f -and \( \( -name "*ins" -or -name "*sh" -or -name "*.m" \) -not -wholename "*BAD*" -not -wholename "*3b.*" \)) || true; }))
 if [[ "${filelist}" == "" ]]; then
     echo "No files in ${d}/ contain path to ${ws1}"
     exit 0

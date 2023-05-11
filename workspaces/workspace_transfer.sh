@@ -3,6 +3,7 @@ set -e
 
 # Make sure old workspace exists
 ws1=$1
+shift
 if [[ ${ws1} == "" ]]; then
     echo "You must provide old workspace name!"
     exit 1
@@ -14,7 +15,8 @@ if [[ ${ws1_path} == "" ]]; then
 fi
 
 # Make sure new workspace exists
-ws2=${2}
+ws2=${1}
+shift
 if [[ ${ws2} == "" ]]; then
     echo "You must provide new workspace name!"
     exit 1
@@ -25,11 +27,19 @@ if [[ ${ws2_path} == "" ]]; then
     exit 1
 fi
 
+incl_excl="$@"
+
 # Do the transfer
-rsync -ahm --info=progress2 --partial ${ws1_path}/ ${ws2_path}
+echo Starting rsync 1
+set +e
+rsync -ahm --info=progress2 --partial --remove-source-files ${incl_excl} ${ws1_path}/ ${ws2_path}
 
 # And again, for good measure
-rsync -ahm --info=progress2 --partial ${ws1_path}/ ${ws2_path}
+echo Starting rsync 2
+rsync -ahm --info=progress2 --partial --remove-source-files ${incl_excl} ${ws1_path}/ ${ws2_path}
+exitcode=$?
+set -e
 
 # Exit with the exit code of the rsync
-exit $?
+echo Done
+exit $exitcode

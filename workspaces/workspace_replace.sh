@@ -3,6 +3,7 @@ set -e
 
 # Make sure old workspace exists
 ws1=$1
+shift
 if [[ ${ws1} == "" ]]; then
     echo "You must provide old workspace name!"
     exit 1
@@ -14,7 +15,8 @@ if [[ ${ws1_path} == "" ]]; then
 fi
 
 # Make sure new workspace does NOT exist
-ws2=${2}
+ws2=${1}
+shift
 if [[ ${ws2} == "" ]]; then
     echo "You must provide new workspace name!"
     exit 1
@@ -25,9 +27,13 @@ if [[ $(ws_list -s | grep "${ws2} ") != "" ]]; then
     exit 1
 fi
 
+incl_excl="$@"
+
 ws_allocate ${ws2} 9999999
 
-workspace_transfer.sh ${ws1} ${ws2}
+echo "Transferring ${ws1} to ${ws2}..."
+
+workspace_transfer.sh ${ws1} ${ws2} ${incl_excl}
 exitcode=$?
 
 if [[ $exitcode -eq 0 ]]; then
