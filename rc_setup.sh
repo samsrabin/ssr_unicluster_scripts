@@ -552,14 +552,13 @@ fi
 
 # Set up dirForPLUM
 if [[ "${dirForPLUM}" != "" && ! -d "${dirForPLUM}" ]]; then
-    echo "dirForPLUM does not exist: ${dirForPLUM}"
-    exit 1
+    echo "dirForPLUM does not exist; creating."
 elif [[ "${dirForPLUM}" == "" ]]; then
     dirForPLUM=${runset_workdir}/outputs/outForPLUM-$(date "+%Y-%m-%d-%H%M%S")
-    mkdir -p ${dirForPLUM}
-    echo "Top-level output directory: $dirForPLUM"
     echo " "
 fi
+echo "Top-level output directory: $dirForPLUM"
+mkdir -p "${dirForPLUM}"
 
 # Get name of runset
 runsetname="$(basename "$(realpath .)")"
