@@ -19,7 +19,7 @@ testing=0
 verbose=0
 work_cols=1
 force_update=0
-runset_home_dir="$PWD"
+runset_home_dir="$(realpath "$PWD")"
 ensemble_member_hist=
 ensemble_member_fut=
 if [[ "${runtype}" == "sai" ]]; then
