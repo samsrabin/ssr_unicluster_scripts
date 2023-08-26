@@ -178,7 +178,10 @@ fi
 # Parse absolute state path, if not provided
 if [[ "${state_path_absolute}" == "" ]]; then
 	topdir=$(realpath ..)
-	state_path_absolute=$(realpath $(echo $topdir | sed "s@/pfs/data5@@" | sed "s@$HOME@$WORK@" | sed "s@/$topdir@@")/states)
+	state_path_absolute=$(echo $topdir | sed "s@/pfs/data5@@" | sed "s@$HOME@$WORK@" | sed "s@/$topdir@@")/states
+    if [[ -d "${state_path_absolute}" ]]; then
+        state_path_absolute="$(realpath state_path_absolute)"
+    fi
 fi
 
 # Get directories, modifying paths if testing
