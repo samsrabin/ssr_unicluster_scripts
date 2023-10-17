@@ -95,7 +95,7 @@ mem_per_cpu_default=500 # MB
 mem_per_cpu=-1 # MB
 reservation=""
 gcm_in=""
-isimip3_climate_dir=""
+isimip3_climate_dir="$ISIMIP3_CLIMATE_DIR"
 
 # Get default LPJ-GUESS code location
 if [[ "${LPJG_TOPDIR}" == "" ]]; then
@@ -381,12 +381,8 @@ done
 
 # Do we need to specify climate directory?
 if [[ $(grep "ISIMIP3CLIMATEDIR" template/main.ins | wc -l) -gt 0 && "${isimip3_climate_dir}" == "" ]]; then
-    if [[ "${runtype}" == "lsa" ]]; then
-        isimip3_climate_dir="/pfs/work7/workspace/scratch/xg4606-isimip3_climatev2"
-    else
-        echo "Specify --isimip3-climate-dir" >&2
-        exit 1
-    fi
+    echo "Specify --isimip3-climate-dir" >&2
+    exit 1
 fi
 
 # Get GCM synonyms, if needed.
