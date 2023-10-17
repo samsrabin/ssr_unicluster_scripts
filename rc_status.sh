@@ -413,6 +413,9 @@ function get_act_col_heads {
 }
 
 cd "${runset_home_dir}"
+if [[ -d actual || -d potential ]]; then
+    cd ..
+fi
 
 tmpfile=.tmp.lsf_view_jobchains.$(date +%N)
 touch $tmpfile
