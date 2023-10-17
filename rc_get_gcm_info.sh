@@ -3,7 +3,7 @@ if [[ "${gcm_in}" == "" ]]; then
     gcm_in="$1"
 fi
 if [[ "${gcm_in}" == "" ]]; then
-    echo "You must specify a GCM as first argument" >&2
+    echo "You must specify a GCM as first argument to rc_get_gcm_info.sh" >&2
     exit 1
 fi
 
@@ -32,7 +32,7 @@ if [[ "${isimip3_climate_dir}" == "" ]]; then
     isimip3_climate_dir="$2"
 fi
 if [[ "${isimip3_climate_dir}" == "" ]]; then
-    echo "You must specify isimip3_climate_dir as second argument" >&2
+    echo "You must specify isimip3_climate_dir as second argument to rc_get_gcm_info.sh" >&2
     exit 1
 elif [[ ! -d "${isimip3_climate_dir}" ]]; then
     echo "isimip3_climate_dir not found: ${isimip3_climate_dir}"
