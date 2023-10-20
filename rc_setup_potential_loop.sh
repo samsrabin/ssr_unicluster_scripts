@@ -238,6 +238,8 @@ for y1 in ${y1_list[@]}; do
                 sed -i "s/ssp585/${thisSSP}/g" main.ins
                 sed -i "s/co2_histhist/co2_histssp585/g" main.ins
             fi
+            sed -i "s/histsoc-histsoc/histsoc-ssp585soc/g" main.ins
+            sed -i "s/histsoc_hist/histsoc_ssp585/g" main.ins
             # Save state if this potential run will need to be resumed in a future climate
             if [[ ${first_plut_year} -ge ${future_y1} && ${y1} -lt ${future_y1} ]]; then
                 sed -i "s/WWWW/${future_y1}/g" main.ins
