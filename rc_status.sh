@@ -212,7 +212,9 @@ function get_symbol() {
                         # Was job canceled?
                         if [[ $(tail -n 100 ${file_stdout} | grep "State: CANCELLED" | wc -l) -ne 0 ]]; then
                             symbol="${symbol_canceled_manual}"
+                            set +e
                             touch ${file_stdout}.canceled_manual
+                            set -e
 
                             # Did job fail?
                         elif [[ $(tail -n 100 ${file_stdout} | grep "State: FAILED\|State: NODE_FAIL" | wc -l) -ne 0 ]]; then
@@ -244,7 +246,9 @@ function get_symbol() {
                             # If all processes completed with "Finished" message, that's great!
                             if [[ $nprocs == $nfinished ]]; then
                                 symbol="${symbol_ok}"
+                                set +e
                                 touch ${file_stdout}.ok
+                                set -e
 
 
                             # Otherwise, assume run failed.
@@ -417,7 +421,7 @@ if [[ -d actual || -d potential ]]; then
     cd ..
 fi
 
-tmpfile=.tmp.lsf_view_jobchains.$(date +%N)
+tmpfile=$HOME/.tmp.lsf_view_jobchains.$(date +%N)
 touch $tmpfile
 
 hist_act_col_heads=""
