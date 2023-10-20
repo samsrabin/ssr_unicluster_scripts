@@ -4,11 +4,7 @@ set -e
 reservation=""
 #reservation="-r landsymm-project"
 realinsfile="main.ins"
-testinsfile="main_test2.ins"; testnproc=1
-#testinsfile="main_test1_fast.ins"; testnproc=1
-#testinsfile="test3x40.ins"; testnproc=40
-#testinsfile="main_test2x2.ins"; testnproc=2
-#testinsfile="main_test160x3.ins"; testnproc=160
+testinsfile="main_test2.ins"
 inputmodule="cfx"
 walltime_minutes_max=4320
 round_walltime_to_next=30        # minutes
@@ -96,6 +92,7 @@ mem_per_cpu=-1 # MB
 reservation=""
 gcm_in=""
 isimip3_climate_dir="$ISIMIP3_CLIMATE_DIR"
+testnproc=1
 
 # Get default LPJ-GUESS code location
 if [[ "${LPJG_TOPDIR}" == "" ]]; then
@@ -132,9 +129,19 @@ do
             submit="--submit"
             ;;
 
-        # Do a "test" chain instead of the real thing. Uses $testinsfile instead of $realinsfile (see top of script)
+        # Do a "test" chain instead of the real thing. Uses $testinsfile instead of $realinsfile (see top of script for defaults)
         -t  | --test)
             istest=1
+            ;;
+
+            # The name of top-level ins-file to read for testing purposes (instead of $realinsfile). No effect if not also specifying -t/--test.
+        --testinsfile) shift
+            testinsfile="$1"
+            ;;
+
+            # The number of processors to use for testing purposes. No effect if not also specifying -t/--test.
+        --testnproc) shift
+            testnproc="$1"
             ;;
 
         # The name of the directory in $LPJG_TOPDIR (or --lpjg_topdir) where the guess executable can be found. Well, mostly. For --arch XXXX, the name of the directory should be build_XXXX.
