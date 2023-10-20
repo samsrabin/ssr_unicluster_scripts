@@ -37,7 +37,7 @@ elif [[ "${runtype}" == "lsf" ]]; then
     Nyears_getready=2
     Nyears_pot=99999
     walltime_pot_minutes_peryr=3.7   # 160 processes, Unicluster
-    walltime_pot_minutes_minimum=90  # 160 processes, Unicluster
+    walltime_pot_minutes_minimum=120 # 160 processes, Unicluster
     walltime_hist="12:00:00"
     walltime_fut="12:00:00"  # Should take around ??? hours
 elif [[ "${runtype}" == "lsa" || "${runtype}" == "sai" ]]; then
