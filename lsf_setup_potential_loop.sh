@@ -131,7 +131,9 @@ for y1 in ${y1_list[@]}; do
         if [[ ${is_resuming} -eq 0 && ${y1} -gt ${hist_yN} ]]; then
             state_path_absolute=${state_path_absolute}/actual/states
             state_path_thisSSP="${state_path_absolute}_${thisSSP}"
+            parent_script="lsf_setup_potential_loop.sh"
             . lsf_setup_statedir.sh
+            parent_script=
         else
             state_path_absolute=${state_path_absolute}/potential/states
             state_path_thisSSP=${state_path_absolute}_${thisPot}

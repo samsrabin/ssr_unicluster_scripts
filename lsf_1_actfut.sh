@@ -73,7 +73,9 @@ else
     # Set up state directory for this SSP, if needed
     state_path="$(cd ..; lsf_get_rundir_top.sh ${istest} 0)/states_${thisSSP}"
     state_path_thisSSP="${state_path}"
+    parent_script="lsf_1_actfut.sh"
     . lsf_setup_statedir.sh
+    parent_script=
 
     ispot=0
 fi
