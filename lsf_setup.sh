@@ -122,6 +122,17 @@ do
         -d | --dependency)  shift
             dependency_in="-d $1"
             ;;
+
+            # The name of top-level ins-file to read for testing purposes (instead of $realinsfile). No effect if not also specifying -t/--test.
+        --testinsfile) shift
+            testinsfile="$1"
+            ;;
+
+            # The number of processors to use for testing purposes. No effect if not also specifying -t/--test.
+        --testnproc) shift
+            testnproc="$1"
+            ;;
+
         *)
             echo "$script: illegal option $1"
             usage
