@@ -440,9 +440,7 @@ ${reservation_txt_sbatch}
 
 set -e
 
-#$HOME/scripts_peter/module_gnu.sh
-module unload \$(module -t list 2>&1 | grep "tools\|app\|io\|compiler\|mpi\|lib\|math\|devel\|numlib\|cae\|chem\|system")
-module load compiler/gnu mpi/openmpi
+source $HOME/scripts_peter/module_gnu.sh 1>/dev/null 2>&1
 module list
 export HDF5_DISABLE_VERSION_CHECK=1
 
