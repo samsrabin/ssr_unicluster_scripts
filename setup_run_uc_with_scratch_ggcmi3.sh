@@ -224,36 +224,36 @@ if [[ ${nprocess} -gt ${tasks_per_node} ]]; then
 	fi
 	nnodes=$((nprocess/tasks_per_node))
 	if [[ ${dev} -eq 1 ]]; then
-		queue=dev_multiple
+		queue=dev_cpu
 		walltime=30:00
 	else
-		queue=multiple
+		queue=cpu
 	fi
 	excl_text="#SBATCH --exclusive"
 else
 	nnodes=1
 	if [[ ${dev} -eq 1 ]]; then
-		queue=dev_single
+		queue=dev_cpu
 		walltime=30:00
 		finishup_nprocs=2
 	else
-		queue=single
+		queue=cpu
 	fi
 	excl_text=""
 fi
 
 # Get info for job_finish, assuming that reservation is only on one queue
 if [[ ${reservation} == "" ]]; then
-	finishup_partition="single"
+	finishup_partition="cpu"
 	finishup_nprocs=8
 	if [[ ${dev} -eq 1 ]]; then
 		finishup_t_min=30
-		finishup_partition="dev_single"
+		finishup_partition="dev_cpu"
 	fi
 else
 	finishup_partition=${queue}
 fi
-if [[ ${finishup_partition} == "multiple" ]]; then
+if [[ ${finishup_partition} == "cpu" ]]; then
 	finishup_nprocs=$((tasks_per_node * 2))
 fi
 
