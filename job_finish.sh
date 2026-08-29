@@ -11,6 +11,8 @@ if [[ "$CLUSTER" == fh1 || "$SLURM_CLUSTER_NAME" == fh1 ]]; then
 	part="singlenode"
 elif [[ "$CLUSTER" == uc2 || "$SLURM_CLUSTER_NAME" == uc2 ]]; then
 	part="single"
+elif [[ "$CLUSTER" == uc3 || "$SLURM_CLUSTER_NAME" == uc3 ]]; then
+	part="cpu"
 else
 	part=""
 fi
@@ -53,6 +55,8 @@ export WORK=$WORK
 if [[ "$CLUSTER" == fh1 || "$SLURM_CLUSTER_NAME" == fh1 ]]; then
    sbatch --partition ${part} -n ${nprocs} -t ${timemin} ${dependency} $N_jobname ${reservation} --mail-type=ALL ~/scripts/finishup_scc.sh $homedir
 elif [[ "$CLUSTER" == uc2 || "$SLURM_CLUSTER_NAME" == uc2 ]]; then
+   sbatch --partition ${part} -n ${nprocs} -t ${timemin} ${dependency} $N_jobname ${reservation} --ntasks-per-core=1 --mem=20000mb --mail-type=ALL ~/scripts/finishup_scc.sh $homedir
+elif [[ "$CLUSTER" == uc3 || "$SLURM_CLUSTER_NAME" == uc3 ]]; then
    sbatch --partition ${part} -n ${nprocs} -t ${timemin} ${dependency} $N_jobname ${reservation} --ntasks-per-core=1 --mem=20000mb --mail-type=ALL ~/scripts/finishup_scc.sh $homedir
 else
    echo "ERROR: This cluster not recognized!"
